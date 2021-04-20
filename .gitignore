@@ -39,9 +39,14 @@ vignettes/*.pdf
 .Renviron
 
 # ignore the testing directory
-testing/
-test/
-SnpEff/
-db/
+testing
+test
+SnpEff
+db
 01-Sep-2019-VariantSummaries.tsv
 old.R
+
+# ignore temporary backup copies
+*\~
+# ignore emacs backup files
+\#*
