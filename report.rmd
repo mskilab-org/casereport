@@ -1,0 +1,590 @@
+---
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
+    theme: flatly
+params:
+  set_title: "My Title!"
+  pair: "this.pair"
+  outdir: "my.location"
+  bam: "tumor_bam"
+  tumor_type: "AAAA"
+  server: "ggjs url"
+---
+
+<style type="text/css">
+body, td {
+font-size: 16px;
+}
+
+pre code, pre, code {
+font-size: 15px;
+color: rgb(20, 20, 20);
+white-space: pre !important;
+overflow-x: scroll !important;
+word-break: keep-all !important;
+word-wrap: initial !important;
+}
+
+h1{
+font-size: 22pt;
+}
+
+h2{
+font-size: 20pt;
+}
+
+h3{
+font-size: 16pt;
+}
+</style>
+
+---
+title: `r params$set_title`
+---
+    
+```{r, setup, include = FALSE, echo = FALSE, message = TRUE}
+knitr::opts_chunk$set(
+     collapse = TRUE, fig.width = 8, fig.height = 8, message = FALSE, warning = FALSE,
+     echo = FALSE)
+ library(skitools) ##Appears skitools needed for wij() - JR
+ library(skidb)
+ library(ggplot2)
+ ## library(ggpubr)
+ library(ggforce)
+ ## library(ggpubr)
+ library(png)
+ library(kableExtra)
+ library(hwriter)
+ library(htmlwidgets)
+ library(svglite)
+library(slickR)
+library(plotly)
+## library(trackViewer)
+## library(TxDb.Hsapiens.UCSC.hg19.knownGene)
+## library(org.Hs.eg.db)
+message("Loaded Packages")
+## sl = hg_seqlengths(chr = FALSE)[c(1:22, "X", "Y")]
+## hg19 = si2gr(sl) %>% gr.stripstrand %>% unname
+sl = readRDS(paste0(params$outdir, "/sl.rds"))
+hg = readRDS(paste0(params$outdir, "/hg.rds"))
+message("Loading Gencode genes")
+## gff = readRDS(gzcon(url('http://mskilab.com/gGnome/hg19/gencode.v19.annotation.gtf.gr.rds')))
+## ge = readRDS(paste0(opt$libdir,"/db/ge.rds"))
+## pge = readRDS(paste0(opt$libdir,"/db/pge.rds"))
+## gff = skidb::read_gencode(fn = params$gencode)
+pge = readRDS(paste0(params$outdir, "/pge.rds"))
+gt.ge = readRDS(paste0(params$outdir, "/gt.ge.rds"))
+## names(pge) = pge$gene_name
+## ug = readRDS(paste0(opt$libdir,"/db/ug.rds"))
+## gt.ge = readRDS(paste0(opt$libdir,"/db/gt.ge.rds"))
+## gg = gG(jabba = opt$jabba_rds)
+## gg = events(gg)
+gg = readRDS(paste0(params$outdir, "/complex.rds"))
+## cvgt = covcbs(opt$cbs_cov_rds, purity = gg$meta$purity, ploidy = gg$meta$ploidy, rebin = 5e3)
+cvgt = readRDS(paste0(params$outdir, "/coverage.gtrack.rds"))
+out = readRDS(paste0(params$outdir, "/oncotable.rds"))
+som.dt = readRDS(paste0(params$outdir, "/somatic.mutations.rds"))
+som = dt2gr(som.dt)
+som.gt = gTrack(som, name = "coding variants", circles = TRUE, bars = TRUE)
+```
+
+***
+# Synopsis
+Tumor type: `r params$tumor_type`
+
+<!-- Age: -->
+
+<!-- Sex: -->
+
+<!-- Stage: -->
+
+
+*** 
+# Altered Cancer Genes{.tabset .tabset-fade .tabset-pills}
+```{r, gene-centric table, message = FALSE, echo = FALSE, results = "asis"}
+ct = 
+if (nrow(ct)>0){
+    gs = ct[, unique(gene)]
+    cat("\n")
+    for (g in gs){
+        cat('##', g, '<br>', '\n')
+        if (g )
+        kbl(ct[gene==g])
+        ## this.win = pge[g] + 1e4
+        ## this.gene <- geneTrack(
+        ##     get(g, org.Hs.egSYMBOL2EG),
+        ##     TxDb.Hsapiens.UCSC.hg19.knownGene)[[1]]
+        ## this.gene$dat2 = som %&% pge[g]
+        ## optSty <- optimizeStyle(trackList(this.gene), theme="col")
+        ## trackList <- optSty$tracks
+        ## viewerStyle <- optSty$style
+        ## vp <- viewTracks(trackList, gr=this.win, viewerStyle=viewerStyle)
+        ## plot(c(cvgt, gg$gtrack(height = 30), gt.ge, som.gt), this.win)
+        cat('\n', '<br>', '\n\n')
+        ## wij(DT::datatable(
+        ##     ct[gene==g],
+        ##     escape = FALSE,
+        ##     filter = 'top',
+        ##     options = list(
+        ##         pageLength = 10
+        ##     ),
+        ##     rownames = row.names
+        ## ),
+        ## "",
+        ## embed = TRUE)
+    }
+}
+```
+
+***
+# Nonsynonymous Mutations and INDELs {.tabset .tabset-fade .tabset-pills}
+<!-- Multiple databases of actionable events exist.  These are either known drivers, -->
+<!-- druggable targets, or variants with prognostic significance.  This report uses -->
+<!-- [CIVIC](https://civicdb.org/home) as a resource.  The CIVIC database has been -->
+<!-- cross referenced with all of the discovered genomic alterations in this case. -->
+
+Relevant events are as follows:
+
+```{r, coding mutations, message = FALSE, echo = FALSE,results='asis'}
+## if(file.exists("CIVIC.hits.rds")){
+##     y = try(readRDS("CIVIC.hits.rds"))
+##     y = y[ ,c(1,4,5,6)]
+##     names(y) = c("Alteration", "gene", "CIVIC ID", "Number of Publications")
+##     y = y[!duplicated(y$Alteration), ]
+##     knitr::kable(y, padding = 200, format = "html")
+## }
+if (file.exists(paste0(params$outdir, "/somatic.mutations.rds"))){
+    ## cat(
+    ##     kbl(som.dt[, .(seqnames, pos = start, REF, ALT, gene, vartype, annotation, impact, variant.g, variant.c, variant.p)]) %>%
+    ##     kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = FALSE)
+    ## )
+    tab = som.dt[!duplicated(variant.g)][
+      , .(seqnames, pos = start, REF, ALT, gene, variant.p, vartype, annotation, impact)][
+        order(impact)]
+
+    ## row.colors = c('lightgray', 'white')
+    ## row.bgcolor = as.list(as.character(
+    ##     gplots::col2hex(row.colors)[(seq_len(nrow(tab))) %% length(row.colors)+1]
+    ## ));
+    ## names(row.bgcolor) = rownames(tab)
+    ## ## if (!is.null(highlight))
+    ## ##     row.bgcolor[rownames(tab[highlight,, drop = FALSE])] = list(gplots::col2hex(high.color));
+    ## header.colors = c('#4A4A4A', 'white')
+    ## row.bgcolor = c(gplots::col2hex(header.colors[1]), row.bgcolor)
+    ## col.bgcolor = gplots::col2hex(header.colors[1])
+    ## data.size = 15
+    ## title.size = 15
+    ## footer.size = 20
+    ## header.size = round(1.1*data.size)
+    ## col.style = sprintf('font-weight:bold; font-size:%spx; color:%s; text-align:center',
+    ##                     header.size, gplots::col2hex(header.colors[2]));
+    ## row.style = rep(sprintf('font-size:%spx; text-align:center', data.size), nrow(tab))
+    ## names(row.style) = rownames(tab)
+    ## row.style = c(list(sprintf('font-weight:bold; font-size:%spx; color:%s; text-align:center', header.size, gplots::col2hex(header.colors[2]))), row.style)
+    ## hwriter::hwrite(
+    ##     tab,
+    ##     row.style = row.style,
+    ##     col.style = col.style,
+    ##     col.bgcolor = col.bgcolor,
+    ##     ## row.names = row.names,
+    ##     ## col.names = col.names,
+    ##     row.bgcolor = row.bgcolor,
+    ##     table.frame = 'void',
+    ##     table.style = 'margin-left: 30px; margin-top: 30px',
+    ##     br = TRUE)
+    w = wij(DT::datatable(
+        tab,
+        escape = FALSE,
+        filter = 'top',
+        options = list(
+            pageLength = 10
+        ),
+        rownames = row.names
+    ),
+    "",
+    embed = TRUE)
+    w
+}
+```
+<br>
+
+
+***
+# Fusion Genes 
+
+Fusion Events may be relevant as drivers in certain cancer types.  They may also
+arise by chance, as the result of structural variants.  Here we report only the
+fusion events which are in frame fusions, which link 2 or more genes.
+
+```{r, fusions, results='asis', echo = FALSE}
+## files <- dir("fusions/")
+## headers <- gsub(".*-","",gsub(".png","", dir("fusions/")))
+if (file.exists(paste0(params$outdir, "/fusions.rds"))){
+    fu = readRDS(paste0(params$outdir, "/fusions.rds"))
+    
+    plotsToSVG <- lapply(seq_along(fu), function(i){
+        svglite::xmlSVG(
+            code = {
+                fname = fu$dt[i, name] %>% gsub(pattern = ",", replacement = "--")
+                fp = grbind(
+                    pge %Q% (gene_name %in% strsplit(fu[i]$dt$genes, ",")[[1]]),
+                    fu[i]$footprint,
+                    fu$graph$edges[fu[i]$dt$sedge.id[[1]]][type=="ALT"]$junctions$breakpoints
+                ) + 1e5                
+                ## fpw = median(width(fp))
+                ## plot(c(bands.gt, cvgt, gg$gt), fp + fpw/2, legend.params = list(plot = FALSE))
+                ## plot(c(cvgt, gg$gt), fp + fpw/2, legend.params = list(plot = FALSE))
+                plot(c(cvgt, gg$gt, fu$gtrack(name = )), fp, legend.params = list(plot = FALSE))
+                title(fname)
+            },
+            standalone = TRUE)
+    })
+    ## if (et[ett]>1){
+    slick_up <- slickR(
+        plotsToSVG, height = 500, width = "95%",
+        objLinks = this.ev[, ev.js]) +
+        settings(slidesToShow = 1, slidesToScroll = 1)
+    slick_down <- slickR(plotsToSVG, height = 100, width = "95%") +
+        settings(slidesToScroll = 1,  slidesToShow = 3,
+                 centerMode = TRUE, focusOnSelect = TRUE)
+    slick_up %synch% slick_down
+    
+    for (i in seq_along(fu)){
+        cat("###", fu[i]$dt$name, '<br>', '\n')
+        ## plot.new()
+        ## this.png = try(readPNG(paste0("fusions/",files[n])))
+        ## try(grid::grid.raster(this.png,width = 1.0))
+        this.win = grbind(
+            pge %Q% (gene_name %in% strsplit(fu[i]$dt$genes, ",")[[1]]),
+            fu[i]$footprint,
+            fu$graph$edges[fu[i]$dt$sedge.id[[1]]][type=="ALT"]$junctions$breakpoints
+        ) + 1e5
+        ## TODO: add the RNA supporting reads!!
+        plot(c(cvgt, gg$gtrack(height = 30), fu[i]$gt, gt.ge), this.win,
+             y0 = 0, y.pretty = 2)
+        cat('\n', '<br>', '\n\n')
+    }
+}
+
+```
+
+
+***
+# Variant Patterns
+## Structural Events {.tabset .tabset-fade .tabset-pills}
+```{r, SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+ev = readRDS(paste0(params$outdir, "/events.rds"))
+if (nrow(ev)){
+    ## TODO: expand view range
+    ## TODO: simplify X ticks
+    ## TODO: build one carousel for one type of SVs
+    et = ev[, sort(table(type))]
+    ev.fp = ev[, parse.gr(footprint)]
+    ev.fp$ev.id = ev$ev.id[ev.fp$grl.ix]
+    ## et.wij = lapply(names(et), function(ett){
+    ##     ## cat('\n')
+    ##     this.ev = ev[type==ett]
+    ##     ## cat("### ", ett, '(', nrow(this.ev), ')', '<br>', '\n')
+    ##     plotsToSVG <- lapply(seq_len(nrow(this.ev)), function(i){
+    ##         svglite::xmlSVG(
+    ##             code = {
+    ##                 fp = ev.fp %Q% (ev.id==this.ev[i, ev.id])
+    ##                 fpw = median(width(fp))
+    ##                 plot(c(bands.gt, cvgt, gg$gt), fp + fpw/2,)
+    ##                 title(this.ev[i, ev.id])
+    ##             },
+    ##             standalone = TRUE)
+    ##     })
+    ##     ## if (et[ett]>1){
+    ##     slick_up <- slickR(plotsToSVG, height = 500, width = "95%") +
+    ##         settings(slidesToShow = 1, slidesToScroll = 1)
+    ##     slick_down <- slickR(plotsToSVG, height = 100, width = "95%") +
+    ##         settings(slidesToScroll = 1,  slidesToShow = 3,
+    ##                  centerMode = TRUE, focusOnSelect = TRUE)
+    ##     slick_up %synch% slick_down
+    ##     ## } else {
+    ##     ##     slickR(plotsToSVG, height = 500, width = "95%") +
+    ##     ##         settings(slidesToShow = 1, slidesToScroll = 1)
+    ##     ## }
+    ##     ## cat('\n', '<br>', '\n\n')
+    ## })
+    this.ev = ev
+    plotsToSVG <- lapply(seq_len(nrow(this.ev)), function(i){
+        svglite::xmlSVG(
+            code = {
+                fp = ev.fp %Q% (ev.id==this.ev[i, ev.id])
+                ## fpw = median(width(fp))
+                ## plot(c(bands.gt, cvgt, gg$gt), fp + fpw/2, legend.params = list(plot = FALSE))
+                ## plot(c(cvgt, gg$gt), fp + fpw/2, legend.params = list(plot = FALSE))
+                plot(c(cvgt, gg$gt), fp + 5e5, legend.params = list(plot = FALSE))
+                title(this.ev[i, ev.id])
+            },
+            standalone = TRUE)
+    })
+    ## if (et[ett]>1){
+    slick_up <- slickR(
+        plotsToSVG, height = 500, width = "95%",
+        objLinks = this.ev[, ev.js]) +
+        settings(slidesToShow = 1, slidesToScroll = 1)
+    slick_down <- slickR(plotsToSVG, height = 100, width = "95%") +
+        settings(slidesToScroll = 1,  slidesToShow = 3,
+                 centerMode = TRUE, focusOnSelect = TRUE)
+    slick_up %synch% slick_down
+    ## et = ev[, sort(table(type))]
+    ## for (i in seq_len(nrow(ev))){
+    ##     cat("### ", ev[i, ev.id], '<br>', '\n')
+    ##     plot.new()
+    ##     this.png = try(readPNG(ev[i, ev.png]))
+    ##     ## usr = par(mar=c(0,0,0,0), xpd=NA, mgp=c(0,0,0), oma=c(0,0,0,0), ann=F)
+    ##     ## ## try(rasterImage(this.png,usr[1],usr[3],usr[2],usr[4]))
+    ##     try(grid::grid.raster(this.png,width = 1.0, just = "center"))
+    ##     cat('\n', '<br>', '\n\n')
+    ## }
+}
+```
+
+<!-- ### Simple Structural Events {.tabset .tabset-fade .tabset-pills} -->
+
+<!-- ```{r, results='asis', echo = FALSE, out.width = "100%", fig.align = "center", eval = FALSE} -->
+<!-- files <- dir("simple_events/") -->
+<!-- headers <- gsub(".*-","",gsub(".png","", dir("simple_events/"))) -->
+
+<!-- if(length(headers) >0) { -->
+<!--     for (n in 1:length(headers)){ -->
+<!--         cat("###", headers[n], '<br>', '\n\n') -->
+<!--         plot.new() -->
+<!--         usr = par(mar=c(0,0,0,0), xpd=NA, mgp=c(0,0,0), oma=c(0,0,0,0), ann=F) -->
+<!--         this.png = try(readPNG(paste0('simple_events/',files[n]))) -->
+<!--         try(rasterImage(this.png,usr[1],usr[3],usr[2],usr[4])) -->
+<!--         try(grid::grid.raster(this.png,width = 1.0, just = "center")) -->
+<!--         cat('\n', '<br>', '\n\n') -->
+<!--     }} -->
+<!-- ``` -->
+
+
+<!-- ### Chromothripsis Events {.tabset .tabset-fade .tabset-pills} -->
+
+<!-- ```{r, results='asis', echo = FALSE, out.width = "200%", fig.align = "left", eval = FALSE} -->
+<!-- files <- dir("chromothripsis_events/") -->
+<!-- headers <- gsub(".*-","",gsub(".png","", dir("chromothripsis_events/"))) -->
+
+<!-- if(length(headers) >0) { -->
+<!--     for (n in 1:length(headers)){ -->
+<!--         cat("###", headers[n], '<br>', '\n') -->
+<!--         plot.new() -->
+<!--         this.png = try(readPNG(paste0("chromothripsis_events/",files[n]))) -->
+<!--         try(grid::grid.raster(this.png,width = 1.0)) -->
+<!--         cat('\n', '<br>', '\n\n') -->
+<!--     }} -->
+<!-- ``` -->
+
+
+<!-- ### BFBs {.tabset .tabset-fade .tabset-pills} -->
+<!-- ```{r, results='asis', echo = FALSE, eval = FALSE} -->
+<!-- files <- dir("bfb_events/") -->
+<!-- headers <- gsub(".*-","",gsub(".png","", dir("bfb_events/"))) -->
+
+<!-- if(length(headers) >0) { -->
+<!--     for (n in 1:length(headers)){ -->
+<!--         cat("###", headers[n], '<br>', '\n') -->
+<!--         plot.new() -->
+<!--         this.png = try(readPNG(paste0("bfb_events/",files[n]))) -->
+<!--         try(grid::grid.raster(this.png,width = 1.0)) -->
+<!--         cat('\n', '<br>', '\n\n') -->
+<!--     }} -->
+<!-- ``` -->
+
+
+<!-- ### Templated Insertion Chains {.tabset .tabset-fade .tabset-pills} -->
+
+<!-- ```{r, results='asis', echo = FALSE, eval = FALSE} -->
+<!-- files <- dir("tic_events/") -->
+<!-- headers <- gsub(".*-","",gsub(".png","", dir("tic_events/"))) -->
+
+<!-- if(length(headers) >0) { -->
+<!--     for (n in 1:length(headers)){ -->
+<!--         cat("###", headers[n], '<br>', '\n') -->
+<!--         plot.new() -->
+<!--         this.png = try(readPNG(paste0("tic_events/",files[n]))) -->
+<!--         try(grid::grid.raster(this.png,width = 1.0)) -->
+<!--         cat('\n', '<br>', '\n\n') -->
+<!--     }} -->
+<!-- ``` -->
+
+***
+## Mutational Signatures and Contexts
+
+Mutational burden, as measured in units of somatic mutations per megabase,
+demonstrates disease specificity in distribution.  Individual tumors, however,
+may fall well outside expected values for their type, presumably depending upon underlying
+mutational processes.
+
+
+<!-- ```{r, message=FALSE, echo=FALSE, eval = FALSE} -->
+<!-- tmb = readPNG(paste0(params$pair,"TMB_Context.png")) -->
+<!-- grid::grid.raster(tmb) -->
+<!-- ``` -->
+
+<br>
+
+SNV Signature analysis can provide a sense of the mutational processes
+underlying somatic variants in a tumor.  In this analysis, single nucleotide
+variants have been analysed via the deconstructSigs pipeline and the burden of
+COSMIC mutational signatures has been estimated.
+
+<!-- ```{r, message=FALSE, echo=FALSE,fig.asp = 0.50} -->
+<!-- sigs = readPNG(paste0(params$outdir, "/SNV_Signatures.png")) -->
+<!-- grid::grid.raster(sigs) -->
+<!-- ``` -->
+
+***
+
+<div class =  "row">
+<div class =  "col-md-6">
+
+SNV counts contributing to the above fractional signatures are reported here.  Values are fractional signature multiplied by total number of filtered and contributing SNVs to arrive at total contributing SNV count.
+
+<br>
+
+
+</div>
+
+<div class =  "col-md-6">
+### 
+
+<!-- ```{r, message=FALSE, echo=FALSE, fig.align = "left", warning=FALSE} -->
+<!-- if(file.exists(paste0(params$outdir,"/SNV_Sig_burden.png"))){ -->
+<!--     sigburden = readPNG(paste0(params$outdir,"/SNV_Sig_burden.png")) -->
+<!--     try(grid::grid.raster(sigburden))} else { message("No signature burden plot!")} -->
+<!-- ``` -->
+</div>
+</div>
+
+
+
+
+***
+
+<div class =  "row">
+<div class =  "col-md-6">
+
+# Sequencing Quality Metrics
+
+<br>
+
+WGS Libary Quality estimates are based upon three parameters:
+
+* Ploidy-corrected sample purity, which reflects an estimate of the fraction of
+tumor-derived vs normal-derived nuclear material from which the WGS library was
+made.
+
+* Coverage depth: Number of whole-genome equivalents (~3e9 base pairs) returned
+by the sequencing experiment
+
+* Coverage variance: The degree of local variability in read coverage, generally
+indicative of library preparation quality.  A measure of noise.  High PCR duplicates and (Very)
+highly rearranged tumors are two cases where this value will be high. The method
+used is Derivative Log Ratio Spread (DLRS)
+
+</div>
+
+<div class =  "col-md-6">
+### 
+
+```{r, message=FALSE, echo=FALSE, fig.align = "left", warning=FALSE, eval = FALSE}
+## if(file.exists(paste0(params$outpath,"/purity_donut.png"))){
+##     purity = readPNG(paste0(params$outpath,"/purity_donut.png"))
+##     try(grid::grid.raster(purity))} else { message("No Purity Donut!")}
+```
+</div>
+</div>
+
+<div class =  "row">
+
+<div class =  "col-md-6">
+### Coverage
+```{r, message = FALSE, echo = FALSE, eval = FALSE}
+## this.file = gsub("([^/]*)$",
+##                  "aligned.alignment_summary_metrics",
+##                  normalizePath(params$bam))
+
+## if(file.exists(this.file)){y = fread(this.file)
+##     bases = y[3, "PF_HQ_ALIGNED_BASES"]
+##     depth = bases/sum(hg_seqlengths())
+##     ggplot(depth, aes(x = params$pair, y = PF_HQ_ALIGNED_BASES)) +
+##         geom_col(fill = "slateblue3") +
+##         geom_text(aes(y = PF_HQ_ALIGNED_BASES + 5, label = floor(PF_HQ_ALIGNED_BASES)), size = 6) +
+##         ylim(0, 120) +
+##         theme_classic() +
+##         labs(fill = "", y = "Genome Equivalents", title = paste0(" "),size = 20) +
+##         theme(legend.position = "none",
+##               axis.text.x = element_text(size = 25, angle = 0,vjust = 0.5),
+##               axis.text.y = element_text(size = 20, angle = 0,vjust = 0),
+##               axis.title.y = element_text(size = 30),
+##               axis.title.x = element_blank()
+##               )
+## } else{ message("No Picard Alignment Summary!")}
+```
+</div>
+
+<div class =  "col-md-6">
+### Coverage Variance
+```{r, message=FALSE, echo=FALSE, fig.align = "left", eval = FALSE}
+y = read.csv(paste0(params$pair, "_quality_metrics.csv"))
+y$pair = params$pair
+ref = readRDS("/gpfs/commons/groups/imielinski_lab/DB/modules/CaseReport/db/bulk.stats.rds")
+
+require(gridExtra) 
+
+barplot = ggplot(y, aes(x = pair, y = variance)) +
+    geom_col(fill = "slateblue3") +
+    ylim(0,0.5) +
+    theme_classic() +
+    labs(fill = "", y = "DLRS Coverage Variance", title = paste0(" "),size = 20) +
+    theme(legend.position = "none",
+          axis.text.x = element_text(size = 25, angle = 0,vjust = 0.5),
+          axis.text.y = element_text(size = 20, angle = 0,vjust = 0),
+          axis.title.y = element_text(size = 30),
+          axis.title.x = element_blank()
+          )
+sinaplot = ggplot(ref, aes(x = "IPM Cohort Data", y = variance)) +
+    geom_sina(color = "grey30", size = 3) +
+    ylim(0,0.5) +
+    labs(fill = " ", y = "", title = paste0(" "), size = 20) +
+    theme_classic() +
+    theme(legend.position = "none",
+          axis.text.x = element_text(size = 25, angle = 0,vjust = 0.5),
+          axis.text.y = element_blank(),
+          axis.title.x = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks = element_blank())
+grid.arrange(barplot, sinaplot, ncol = 2)
+
+```
+</div>
+</div>
+
+## 
+
+***
+
+# About
+
+This is a case report based upon whole genome sequencing performed between Weill
+Cornell's [Institute for Precision Medicine](https://eipm.weill.cornell.edu/), and the [New York Genome Center](https://http://nygenome.org/), with
+analysis performed by members of the [Imielinski Lab](https://www.mskilab.org/).
+
+This report draws on methods developed by many groups and individuals, with
+appropriate citations to be found in the footnotes.
+
+The goal of this report is fourfold:
+
+* To provide a sense of WGS library quality
+* To frame molecular features of this case in the setting of other WGS datasets
+* To explore structural alterations to the genome which cannot be determined
+with less-than-whole genome sequencing
+	+ Including an analysis of complex structural features
+* To report potentially actionable and clinically relevant mutations
