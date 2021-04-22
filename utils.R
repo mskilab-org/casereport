@@ -365,10 +365,10 @@ get_oncokb_annotations = function(oncokb.response,
 #' @title test_oncokb_api
 #' @description
 #'
-#' An function to test our internal API with OncoKB
+#' A function to test our internal API with OncoKB
 #'
 #' @author Alon Shaiber
-test_oncokb_api = function(){
+test_oncokb_api = function(oncokb.token){
     # this is an example actionable genomic alteration
     example1 = data.table(seqnames = '7', start = '140453136', end = '140453136', REF = 'A', ALT = 'T')
     # this is a gene that exists in the database, but a variant that does not

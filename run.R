@@ -41,6 +41,7 @@ if (!exists('opt'))
         make_option(c("--server"), type = "character", default = "https://mskilab.com/gGraph/", help = "URL of the gGnome.js browser"),
         make_option(c("--somatic_snv_cn"), type = "character", help = "MLE somatic SNV CN estimate from snv_multiplicity2 module"),
         make_option(c("--germline_snv_cn"), type = "character", help = "MLE germline SNV CN estimate from snv_multiplicity2 module")
+        make_option(c("--oncokb_token"), default = '~/keys/oncokb.token', type = "character", help = "a token to use when querying OncoKB. If you don't have a token, you must first obtain one from: https://www.oncokb.org/apiAccess. By default looking for the key in '~/keys/oncokb.token'. If no valid key is provided then OncoKB annotations will be skipped.")
     )
     parseobj = OptionParser(option_list=option_list)
     opt = parse_args(parseobj)
@@ -484,22 +485,22 @@ if(opt$knit_only == FALSE){
     ##     saveRDS(hits3, paste0(opt$outdir,"/","CIVIC.hits.rds"))
     ## }
 
-    
     ## ######################
     ## match up with OncoKB
     ## ######################
-    oncokb.token = readLines("~xyao/keys/oncokb.token")
+    oncokb.token = opt$oncokb_token
+    if (file.exists(oncokb.token)){
+        message('Querying OncoKB to annotate genomic alterations')
+        oncokb = get_oncokb_response(som.dt, oncokb.token = oncokb.token)
+        oncokb_annotations = get_oncokb_annotations(oncokb)
+        oncokb_annotations[, key_for_merging := .I]
+        som.dt[, key_for_merging := .I]
+        bla = merge(som.dt, oncokb_annotations, by = 'key_for_merging')
+        onco_kb_entry_url = get_oncokb_gene_entry_url(oncokb)
+    } else {
+        message('No OncoKB token was provided so skipping OncoKB annotations')
+    }
 
-    oncokb = get_oncokb_response(som.dt, oncokb.token = oncokb.token)
-
-    oncokb_annotations = get_oncokb_annotations(oncokb)
-    oncokb_annotations[, key_for_merging := .I]
-    som.dt[, key_for_merging := .I]
-    bla = merge(som.dt, oncokb_annotations, by = 'key_for_merging')
-    onco_kb_entry_url = get_oncokb_gene_entry_url(oncokb)
-
-
-    
 
     ## message("Coverage data QC")
     ## cbs = readRDS(opt$cbs_cov_rds)
