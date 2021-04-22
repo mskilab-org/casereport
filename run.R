@@ -488,34 +488,15 @@ if(opt$knit_only == FALSE){
     ## ######################
     ## match up with OncoKB
     ## ######################
-    ## build one query
-    ## oncokb = "https://www.oncokb.org/api/v1/annotate"
-    ## oncokb.token = readLines("~/keys/oncokb.token")
+    oncokb.token = readLines("~xyao/keys/oncokb.token")
 
-    ## wtf = som %Q% (gene=="HCFC1") %>% head(1)
-    ## wtf = som[1]
+    oncokb = get_oncokb_response(som.dt, oncokb.token = oncokb.token)
 
-    ## all.res = lapply(
-    ##     1:nrow(som.dt), 
-    ##     function(i){
-    ##         res = GET(
-    ##             url = paste0(
-    ##                 oncokb, "/mutations/byGenomicChange?",
-    ##                 "genomicLocation=", som.dt[i, asc(seqnames)], "%2C",
-    ##                 som.dt[i, start], "%2C",
-    ##                 som.dt[i, end], "%2C",
-    ##                 som.dt[i, REF], "%2C", som.dt[i, ALT],
-    ##                 "&referenceGenome=GRCh37"),
-    ##             add_headers(authorization = paste("Bearer", oncokb.token)),
-    ##             add_headers(accept = "application/json")
-    ##         )
-    ##     })
-
-    ## som.dt$oncokb.status = sapply(all.res, function(res) res$status_code)
-    ## success.ix = which(between(som.dt$oncokb.status, 200, 299))
-    ## som.dt$oncokb.variantExist = sapply(all.res, function(res) res$)
-
-
+    oncokb_annotations = get_oncokb_annotations(oncokb)
+    oncokb_annotations[, key_for_merging := .I]
+    som.dt[, key_for_merging := .I]
+    bla = merge(som.dt, oncokb_annotations, by = 'key_for_merging')
+    onco_kb_entry_url = get_oncokb_gene_entry_url(oncokb)
 
 
     

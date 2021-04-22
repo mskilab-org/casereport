@@ -235,6 +235,7 @@ get_oncokb_gene_entry_url = function(oncokb.response){
         oncokb.response = list(oncokb.response)
     }
     urls = sapply(oncokb.response, function(response){
+        baseurl = 'https://www.oncokb.org/gene'
         if (!inherits(response, 'response')){
             stop('You must provide an response object or a list of response objects.')
         }
@@ -242,27 +243,34 @@ get_oncokb_gene_entry_url = function(oncokb.response){
         if (oncokb.content$geneExist == FALSE){
             return(NA)
         }
-        if (length(oncokb.content$treatments) == 0){
-            return(NA)
-        }
-        alterations = oncokb.content$treatments[[1]]$alterations
-        if (is.null(alterations)){
-            return(NA)
-        }
-        if (!inherits(alterations, 'list')){
-            return(NA)
-        }
-        alteration = alterations[[1]]
         gene = strsplit(oncokb.content$geneSummary, ',')[[1]][1]
         if (length(gene) == 0 | !is.character(gene)){
             return(NA)
         }
-        baseurl = 'https://www.oncokb.org/gene'
-        if (is.character(alteration) & length(alteration) > 0){
-            library(RCurl)
-            url = paste0(baseurl, '/', gene, '/', alteration, '/')
-            if (url.exists(url)){
-                return(url)
+        if (!(length(oncokb.content$treatments) == 0)){
+        # Notice: I am using the treatments object to get the AA mutation
+        # in the future we can switch to reading it from our VCF file
+            alterations = oncokb.content$treatments[[1]]$alterations
+            if (is.null(alterations)){
+                return(NA)
+            }
+            if (!inherits(alterations, 'list')){
+                return(NA)
+            }
+            alteration = alterations[[1]]
+            if (is.character(alteration) & length(alteration) > 0){
+                library(RCurl)
+                # if a URL exists for the specific alteration then let's go there
+                url_alteration = paste0(baseurl, '/', gene, '/', alteration, '/')
+                if (url.exists(url_alteration)){
+                    return(url_alteration)
+                }
+            }
+        } else {
+            # If there was no URL for the specific alteration then we will try to go to the gene
+            url_gene = paste0(baseurl, '/', gene, '/')
+            if (url.exists(url_gene)){
+                return(url_gene)
             }
         }
         return(NA)
