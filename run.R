@@ -495,8 +495,9 @@ if(opt$knit_only == FALSE){
         oncokb_annotations = get_oncokb_annotations(oncokb)
         oncokb_annotations[, key_for_merging := .I]
         som.dt[, key_for_merging := .I]
-        bla = merge(som.dt, oncokb_annotations, by = 'key_for_merging')
-        onco_kb_entry_url = get_oncokb_gene_entry_url(oncokb)
+        som.dt = merge(som.dt, oncokb_annotations, by = 'key_for_merging')
+        som.dt$key_for_merging = NULL
+        som.dt$onco_kb_entry_url = get_oncokb_gene_entry_url(oncokb)
     } else {
         message('No OncoKB token was provided so skipping OncoKB annotations')
     }
