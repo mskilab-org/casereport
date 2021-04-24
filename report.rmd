@@ -10,6 +10,7 @@ params:
   pair: "this.pair"
   outdir: "my.location"
   bam: "tumor_bam"
+  jabba: "jabba.rds"
   tumor_type: "AAAA"
   server: "ggjs url"
 ---
@@ -27,7 +28,7 @@ overflow-x: scroll !important;
 word-break: keep-all !important;
 word-wrap: initial !important;
 }
-
+	
 h1{
 font-size: 22pt;
 }
@@ -50,6 +51,7 @@ knitr::opts_chunk$set(
      collapse = TRUE, fig.width = 8, fig.height = 8, message = FALSE, warning = FALSE,
      echo = FALSE)
  library(skitools) ##Appears skitools needed for wij() - JR
+ library(gTrack)
  library(skidb)
  library(ggplot2)
  ## library(ggpubr)
@@ -60,8 +62,8 @@ knitr::opts_chunk$set(
  library(hwriter)
  library(htmlwidgets)
  library(svglite)
-library(slickR)
-library(plotly)
+ library(slickR)
+ library(plotly)
 ## library(trackViewer)
 ## library(TxDb.Hsapiens.UCSC.hg19.knownGene)
 ## library(org.Hs.eg.db)
@@ -77,6 +79,9 @@ message("Loading Gencode genes")
 ## gff = skidb::read_gencode(fn = params$gencode)
 pge = readRDS(paste0(params$outdir, "/pge.rds"))
 gt.ge = readRDS(paste0(params$outdir, "/gt.ge.rds"))
+gt.ge$name = "GENCODE"
+gt.ge$ywid = 0.2
+gt.ge$height = 30
 ## names(pge) = pge$gene_name
 ## ug = readRDS(paste0(opt$libdir,"/db/ug.rds"))
 ## gt.ge = readRDS(paste0(opt$libdir,"/db/gt.ge.rds"))
@@ -86,33 +91,80 @@ gg = readRDS(paste0(params$outdir, "/complex.rds"))
 ## cvgt = covcbs(opt$cbs_cov_rds, purity = gg$meta$purity, ploidy = gg$meta$ploidy, rebin = 5e3)
 cvgt = readRDS(paste0(params$outdir, "/coverage.gtrack.rds"))
 out = readRDS(paste0(params$outdir, "/oncotable.rds"))
-som.dt = readRDS(paste0(params$outdir, "/somatic.mutations.rds"))
-som = dt2gr(som.dt)
-som.gt = gTrack(som, name = "coding variants", circles = TRUE, bars = TRUE)
+jabba = readRDS(params$jabba)
+
+if (file.exists(paste0(params$outdir, "/somatic.mutations.rds"))){
+    som.dt = readRDS(paste0(params$outdir, "/somatic.mutations.rds"))
+}
+
+if (file.exists(paste0(params$outdir, "/germline.mutations.rds"))){
+    ger.dt = readRDS(paste0(params$outdir, "/germline.mutations.rds"))
+}
+
 ```
 
 ***
 # Synopsis
 Tumor type: `r params$tumor_type`
 
-<!-- Age: -->
+WGS-based estimation of tumor cell content: `r gg$meta$purity`
 
-<!-- Sex: -->
+WGS-based estimation of tumor ploidy: `r gg$meta$ploidy`
 
-<!-- Stage: -->
+WGS-based estimation of TMB (number per Mb): `r out[track=="tmb" & type=="density", value]`
+ 
+WGS-based estimation of junction burden: `r length(gg$junctions[type=="ALT"])`
 
+*** 
+# SV overview {.tabset .tabset-fade .tabset-pills}
+```{r, overview, message = FALSE, echo = FALSE, results = "asis", out.width = "100%"}
+gts = c(cvgt, gg$gtrack(name = params$pair, height = 30))
+if (file.exists(paste0(params$outdir, "/scna.gr.rds"))){
+	scna.gr = readRDS(paste0(params$outdir, "/scna.gr.rds"))
+	scna.gt = gTrack(scna.gr, name = "scna", height = 3)
+	gts = c(scna.gt, gts)
+}
+
+## make whole genome gTrack plot
+cat('##', "whole genome CN", '<br>', '\n')
+plot(gts, hg, gap = 1e7)
+cat('\n', '<br>', '\n\n')
+
+## make whole genome circos plot
+cat('##', "whole genome Circos", '<br>', '\n')
+circos(
+junctions = gg$junctions[type=="ALT"],
+cov = cvgt@data[[1]],
+segs = gr.fix(gg$gr, hg),
+y.field = "cn"
+)
+cat('\n', '<br>', '\n\n')
+
+```
 
 *** 
 # Altered Cancer Genes{.tabset .tabset-fade .tabset-pills}
 ```{r, gene-centric table, message = FALSE, echo = FALSE, results = "asis"}
-ct = 
-if (nrow(ct)>0){
-    gs = ct[, unique(gene)]
+if (file.exists(paste0(params$outdir, "/cool.ge.rds"))){
     cat("\n")
-    for (g in gs){
-        cat('##', g, '<br>', '\n')
-        if (g )
-        kbl(ct[gene==g])
+    gs = readRDS(paste0(params$outdir, "/cool.ge.rds"))
+    for (g in gs$gene){
+        cat('##', paste0(g, " (", gs[gene==g, role], ")"), '<br>', '\n')
+        this = out[gene==g]
+        if (is.element("short", this$type)){
+            cat(g, "has the following nonsyn somatic mutations:")
+            kbl(som.dt[gene==g, .(seqnames, pos = start, REF, ALT, gene, variant.p, vartype, annotation, vcn = est_cn_ll)]) %>%
+                kable_classic(full_width = F)
+        }
+        if (is.element("short_germline", this$type)){
+            cat(g, "has the following high impact germline mutations:")
+            kbl(ger.dt[gene==g, .(seqnames, pos = start, REF, ALT, gene, variant.p, vartype, annotation, vcn = est_cn_ll)]) %>%
+                kable_classic(full_width = F)
+        }
+        if (grepl("del|amp", this$type)){
+            plot(c(gts, gt.ge), (pge %Q% (gene_name==g)) + 1e6, y0 = 0)
+        }
+        cat('\n', '<br>', '\n\n')
         ## this.win = pge[g] + 1e4
         ## this.gene <- geneTrack(
         ##     get(g, org.Hs.egSYMBOL2EG),
@@ -123,7 +175,6 @@ if (nrow(ct)>0){
         ## viewerStyle <- optSty$style
         ## vp <- viewTracks(trackList, gr=this.win, viewerStyle=viewerStyle)
         ## plot(c(cvgt, gg$gtrack(height = 30), gt.ge, som.gt), this.win)
-        cat('\n', '<br>', '\n\n')
         ## wij(DT::datatable(
         ##     ct[gene==g],
         ##     escape = FALSE,
@@ -136,80 +187,10 @@ if (nrow(ct)>0){
         ## "",
         ## embed = TRUE)
     }
+} else {
+	cat("There's no CGC or DDR genes with potentially functional alterations.")
 }
 ```
-
-***
-# Nonsynonymous Mutations and INDELs {.tabset .tabset-fade .tabset-pills}
-<!-- Multiple databases of actionable events exist.  These are either known drivers, -->
-<!-- druggable targets, or variants with prognostic significance.  This report uses -->
-<!-- [CIVIC](https://civicdb.org/home) as a resource.  The CIVIC database has been -->
-<!-- cross referenced with all of the discovered genomic alterations in this case. -->
-
-Relevant events are as follows:
-
-```{r, coding mutations, message = FALSE, echo = FALSE,results='asis'}
-## if(file.exists("CIVIC.hits.rds")){
-##     y = try(readRDS("CIVIC.hits.rds"))
-##     y = y[ ,c(1,4,5,6)]
-##     names(y) = c("Alteration", "gene", "CIVIC ID", "Number of Publications")
-##     y = y[!duplicated(y$Alteration), ]
-##     knitr::kable(y, padding = 200, format = "html")
-## }
-if (file.exists(paste0(params$outdir, "/somatic.mutations.rds"))){
-    ## cat(
-    ##     kbl(som.dt[, .(seqnames, pos = start, REF, ALT, gene, vartype, annotation, impact, variant.g, variant.c, variant.p)]) %>%
-    ##     kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = FALSE)
-    ## )
-    tab = som.dt[!duplicated(variant.g)][
-      , .(seqnames, pos = start, REF, ALT, gene, variant.p, vartype, annotation, impact)][
-        order(impact)]
-
-    ## row.colors = c('lightgray', 'white')
-    ## row.bgcolor = as.list(as.character(
-    ##     gplots::col2hex(row.colors)[(seq_len(nrow(tab))) %% length(row.colors)+1]
-    ## ));
-    ## names(row.bgcolor) = rownames(tab)
-    ## ## if (!is.null(highlight))
-    ## ##     row.bgcolor[rownames(tab[highlight,, drop = FALSE])] = list(gplots::col2hex(high.color));
-    ## header.colors = c('#4A4A4A', 'white')
-    ## row.bgcolor = c(gplots::col2hex(header.colors[1]), row.bgcolor)
-    ## col.bgcolor = gplots::col2hex(header.colors[1])
-    ## data.size = 15
-    ## title.size = 15
-    ## footer.size = 20
-    ## header.size = round(1.1*data.size)
-    ## col.style = sprintf('font-weight:bold; font-size:%spx; color:%s; text-align:center',
-    ##                     header.size, gplots::col2hex(header.colors[2]));
-    ## row.style = rep(sprintf('font-size:%spx; text-align:center', data.size), nrow(tab))
-    ## names(row.style) = rownames(tab)
-    ## row.style = c(list(sprintf('font-weight:bold; font-size:%spx; color:%s; text-align:center', header.size, gplots::col2hex(header.colors[2]))), row.style)
-    ## hwriter::hwrite(
-    ##     tab,
-    ##     row.style = row.style,
-    ##     col.style = col.style,
-    ##     col.bgcolor = col.bgcolor,
-    ##     ## row.names = row.names,
-    ##     ## col.names = col.names,
-    ##     row.bgcolor = row.bgcolor,
-    ##     table.frame = 'void',
-    ##     table.style = 'margin-left: 30px; margin-top: 30px',
-    ##     br = TRUE)
-    w = wij(DT::datatable(
-        tab,
-        escape = FALSE,
-        filter = 'top',
-        options = list(
-            pageLength = 10
-        ),
-        rownames = row.names
-    ),
-    "",
-    embed = TRUE)
-    w
-}
-```
-<br>
 
 
 ***
@@ -224,49 +205,65 @@ fusion events which are in frame fusions, which link 2 or more genes.
 ## headers <- gsub(".*-","",gsub(".png","", dir("fusions/")))
 if (file.exists(paste0(params$outdir, "/fusions.rds"))){
     fu = readRDS(paste0(params$outdir, "/fusions.rds"))
-    
-    plotsToSVG <- lapply(seq_along(fu), function(i){
+    fu$set(fp = "")
+    fusToSVG <- lapply(seq_along(fu), function(i){
         svglite::xmlSVG(
             code = {
-                fname = fu$dt[i, name] %>% gsub(pattern = ",", replacement = "--")
-                fp = grbind(
-                    pge %Q% (gene_name %in% strsplit(fu[i]$dt$genes, ",")[[1]]),
-                    fu[i]$footprint,
-                    fu$graph$edges[fu[i]$dt$sedge.id[[1]]][type=="ALT"]$junctions$breakpoints
-                ) + 1e5                
+                fname = fu$dt[i, genes] %>% gsub(pattern = ",", replacement = "--")
+                ## fpi = grbind(
+                ##     pge %Q% (gene_name %in% strsplit(fu[i]$dt$genes, ",")[[1]]),
+                ##     fu[i]$footprint,
+                ##     fu$graph$edges[fu[i]$dt$sedge.id[[1]]][type=="ALT"]$junctions$breakpoints
+                ## ) + 1e5
+                fpi = fu[i]$footprint + 2e5
+                tmp = fu$dt$fp
+                tmp[i] = paste(gr.string(fpi), collapse = "%20|%20")
+                fu$set(fp = tmp)
                 ## fpw = median(width(fp))
                 ## plot(c(bands.gt, cvgt, gg$gt), fp + fpw/2, legend.params = list(plot = FALSE))
                 ## plot(c(cvgt, gg$gt), fp + fpw/2, legend.params = list(plot = FALSE))
-                plot(c(cvgt, gg$gt, fu$gtrack(name = )), fp, legend.params = list(plot = FALSE))
+                plot(c(cvgt, gg$gt, fu$gtrack(name = fname), gt.ge), fpi, legend.params = list(plot = FALSE),
+                     y0 = 0)
                 title(fname)
+                message(fname)
             },
             standalone = TRUE)
     })
+    fu$set(js = paste0(
+               params$server,
+               "index.html?file=",
+               opt$pair,
+               ".json&location=",
+               fu$dt$fp,
+               "&view="))
+    saveRDS(fu, paste0(params$outdir, "/fusions.rds"))
+    
     ## if (et[ett]>1){
     slick_up <- slickR(
-        plotsToSVG, height = 500, width = "95%",
-        objLinks = this.ev[, ev.js]) +
+        fusToSVG, height = 500, width = "95%",
+        objLinks = fu$dt$js) +
         settings(slidesToShow = 1, slidesToScroll = 1)
-    slick_down <- slickR(plotsToSVG, height = 100, width = "95%") +
+    slick_down <- slickR(
+        fusToSVG, height = 100, width = "95%") +
         settings(slidesToScroll = 1,  slidesToShow = 3,
                  centerMode = TRUE, focusOnSelect = TRUE)
     slick_up %synch% slick_down
     
-    for (i in seq_along(fu)){
-        cat("###", fu[i]$dt$name, '<br>', '\n')
-        ## plot.new()
-        ## this.png = try(readPNG(paste0("fusions/",files[n])))
-        ## try(grid::grid.raster(this.png,width = 1.0))
-        this.win = grbind(
-            pge %Q% (gene_name %in% strsplit(fu[i]$dt$genes, ",")[[1]]),
-            fu[i]$footprint,
-            fu$graph$edges[fu[i]$dt$sedge.id[[1]]][type=="ALT"]$junctions$breakpoints
-        ) + 1e5
-        ## TODO: add the RNA supporting reads!!
-        plot(c(cvgt, gg$gtrack(height = 30), fu[i]$gt, gt.ge), this.win,
-             y0 = 0, y.pretty = 2)
-        cat('\n', '<br>', '\n\n')
-    }
+    ## for (i in seq_along(fu)){
+    ##     cat("###", fu[i]$dt$name, '<br>', '\n')
+    ##     ## plot.new()
+    ##     ## this.png = try(readPNG(paste0("fusions/",files[n])))
+    ##     ## try(grid::grid.raster(this.png,width = 1.0))
+    ##     this.win = grbind(
+    ##         pge %Q% (gene_name %in% strsplit(fu[i]$dt$genes, ",")[[1]]),
+    ##         fu[i]$footprint,
+    ##         fu$graph$edges[fu[i]$dt$sedge.id[[1]]][type=="ALT"]$junctions$breakpoints
+    ##     ) + 1e5
+    ##     ## TODO: add the RNA supporting reads!!
+    ##     plot(c(cvgt, gg$gtrack(height = 30), fu[i]$gt, gt.ge), this.win,
+    ##          y0 = 0, y.pretty = 2)
+    ##     cat('\n', '<br>', '\n\n')
+    ## }
 }
 
 ```
@@ -276,8 +273,8 @@ if (file.exists(paste0(params$outdir, "/fusions.rds"))){
 # Variant Patterns
 ## Structural Events {.tabset .tabset-fade .tabset-pills}
 ```{r, SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
-ev = readRDS(paste0(params$outdir, "/events.rds"))
-if (nrow(ev)){
+if (file.exists(paste0(params$outdir, "/events.rds"))){
+    ev = readRDS(paste0(params$outdir, "/events.rds"))
     ## TODO: expand view range
     ## TODO: simplify X ticks
     ## TODO: build one carousel for one type of SVs
@@ -345,6 +342,140 @@ if (nrow(ev)){
     ## }
 }
 ```
+
+<!-- *** -->
+<!-- # Other Somatic Nonsynonymous Mutations and INDELs {.tabset .tabset-fade .tabset-pills} -->
+<!-- <\!-- Multiple databases of actionable events exist.  These are either known drivers, -\-> -->
+<!-- <\!-- druggable targets, or variants with prognostic significance.  This report uses -\-> -->
+<!-- <\!-- [CIVIC](https://civicdb.org/home) as a resource.  The CIVIC database has been -\-> -->
+<!-- <\!-- cross referenced with all of the discovered genomic alterations in this case. -\-> -->
+
+<!-- ```{r, coding mutations, message = FALSE, echo = FALSE,results='asis'} -->
+<!-- ## if(file.exists("CIVIC.hits.rds")){ -->
+<!-- ##     y = try(readRDS("CIVIC.hits.rds")) -->
+<!-- ##     y = y[ ,c(1,4,5,6)] -->
+<!-- ##     names(y) = c("Alteration", "gene", "CIVIC ID", "Number of Publications") -->
+<!-- ##     y = y[!duplicated(y$Alteration), ] -->
+<!-- ##     knitr::kable(y, padding = 200, format = "html") -->
+<!-- ## } -->
+<!-- if (file.exists(paste0(params$outdir, "/somatic.mutations.rds"))){ -->
+<!--     ## cat( -->
+<!--     ##     kbl(som.dt[, .(seqnames, pos = start, REF, ALT, gene, vartype, annotation, impact, variant.g, variant.c, variant.p)]) %>% -->
+<!--     ##     kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = FALSE) -->
+<!--     ## ) -->
+<!--     som.dt = readRDS(paste0(params$outdir, "/somatic.mutations.rds")) -->
+<!--     tab = som.dt[!duplicated(variant.g)][ -->
+<!--       , .(seqnames, pos = start, REF, ALT, gene, variant.p, vartype, annotation, impact)][ -->
+<!--         order(impact)] -->
+<!--     ## row.colors = c('lightgray', 'white') -->
+<!--     ## row.bgcolor = as.list(as.character( -->
+<!--     ##     gplots::col2hex(row.colors)[(seq_len(nrow(tab))) %% length(row.colors)+1] -->
+<!--     ## )); -->
+<!--     ## names(row.bgcolor) = rownames(tab) -->
+<!--     ## ## if (!is.null(highlight)) -->
+<!--     ## ##     row.bgcolor[rownames(tab[highlight,, drop = FALSE])] = list(gplots::col2hex(high.color)); -->
+<!--     ## header.colors = c('#4A4A4A', 'white') -->
+<!--     ## row.bgcolor = c(gplots::col2hex(header.colors[1]), row.bgcolor) -->
+<!--     ## col.bgcolor = gplots::col2hex(header.colors[1]) -->
+<!--     ## data.size = 15 -->
+<!--     ## title.size = 15 -->
+<!--     ## footer.size = 20 -->
+<!--     ## header.size = round(1.1*data.size) -->
+<!--     ## col.style = sprintf('font-weight:bold; font-size:%spx; color:%s; text-align:center', -->
+<!--     ##                     header.size, gplots::col2hex(header.colors[2])); -->
+<!--     ## row.style = rep(sprintf('font-size:%spx; text-align:center', data.size), nrow(tab)) -->
+<!--     ## names(row.style) = rownames(tab) -->
+<!--     ## row.style = c(list(sprintf('font-weight:bold; font-size:%spx; color:%s; text-align:center', header.size, gplots::col2hex(header.colors[2]))), row.style) -->
+<!--     ## hwriter::hwrite( -->
+<!--     ##     tab, -->
+<!--     ##     row.style = row.style, -->
+<!--     ##     col.style = col.style, -->
+<!--     ##     col.bgcolor = col.bgcolor, -->
+<!--     ##     ## row.names = row.names, -->
+<!--     ##     ## col.names = col.names, -->
+<!--     ##     row.bgcolor = row.bgcolor, -->
+<!--     ##     table.frame = 'void', -->
+<!--     ##     table.style = 'margin-left: 30px; margin-top: 30px', -->
+<!--     ##     br = TRUE) -->
+<!--     w = wij(DT::datatable( -->
+<!--         tab, -->
+<!--         escape = FALSE, -->
+<!--         filter = 'top', -->
+<!--         options = list( -->
+<!--             pageLength = 10 -->
+<!--         ), -->
+<!--         rownames = row.names -->
+<!--     ), -->
+<!--     "", -->
+<!--     embed = TRUE) -->
+<!--     w -->
+<!-- } -->
+<!-- ``` -->
+<!-- <br> -->
+
+<!-- # Other Germline high-impact Mutations and INDELs {.tabset .tabset-fade .tabset-pills} -->
+<!-- ```{r, germline mutations, message = FALSE, echo = FALSE,results='asis'} -->
+<!-- ## if(file.exists("CIVIC.hits.rds")){ -->
+<!-- ##     y = try(readRDS("CIVIC.hits.rds")) -->
+<!-- ##     y = y[ ,c(1,4,5,6)] -->
+<!-- ##     names(y) = c("Alteration", "gene", "CIVIC ID", "Number of Publications") -->
+<!-- ##     y = y[!duplicated(y$Alteration), ] -->
+<!-- ##     knitr::kable(y, padding = 200, format = "html") -->
+<!-- ## } -->
+<!-- if (file.exists(paste0(params$outdir, "/germline.mutations.rds"))){ -->
+<!--     ## cat( -->
+<!--     ##     kbl(som.dt[, .(seqnames, pos = start, REF, ALT, gene, vartype, annotation, impact, variant.g, variant.c, variant.p)]) %>% -->
+<!--     ##     kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = FALSE) -->
+<!--     ## ) -->
+<!--     ger.dt = readRDS(paste0(params$outdir, "/germline.mutations.rds")) -->
+<!--     tab = ger.dt[!duplicated(variant.g)][ -->
+<!--       , .(seqnames, pos = start, REF, ALT, gene, variant.p, vartype, annotation, impact)][ -->
+<!--         order(impact)] -->
+<!--     ## row.colors = c('lightgray', 'white') -->
+<!--     ## row.bgcolor = as.list(as.character( -->
+<!--     ##     gplots::col2hex(row.colors)[(seq_len(nrow(tab))) %% length(row.colors)+1] -->
+<!--     ## )); -->
+<!--     ## names(row.bgcolor) = rownames(tab) -->
+<!--     ## ## if (!is.null(highlight)) -->
+<!--     ## ##     row.bgcolor[rownames(tab[highlight,, drop = FALSE])] = list(gplots::col2hex(high.color)); -->
+<!--     ## header.colors = c('#4A4A4A', 'white') -->
+<!--     ## row.bgcolor = c(gplots::col2hex(header.colors[1]), row.bgcolor) -->
+<!--     ## col.bgcolor = gplots::col2hex(header.colors[1]) -->
+<!--     ## data.size = 15 -->
+<!--     ## title.size = 15 -->
+<!--     ## footer.size = 20 -->
+<!--     ## header.size = round(1.1*data.size) -->
+<!--     ## col.style = sprintf('font-weight:bold; font-size:%spx; color:%s; text-align:center', -->
+<!--     ##                     header.size, gplots::col2hex(header.colors[2])); -->
+<!--     ## row.style = rep(sprintf('font-size:%spx; text-align:center', data.size), nrow(tab)) -->
+<!--     ## names(row.style) = rownames(tab) -->
+<!--     ## row.style = c(list(sprintf('font-weight:bold; font-size:%spx; color:%s; text-align:center', header.size, gplots::col2hex(header.colors[2]))), row.style) -->
+<!--     ## hwriter::hwrite( -->
+<!--     ##     tab, -->
+<!--     ##     row.style = row.style, -->
+<!--     ##     col.style = col.style, -->
+<!--     ##     col.bgcolor = col.bgcolor, -->
+<!--     ##     ## row.names = row.names, -->
+<!--     ##     ## col.names = col.names, -->
+<!--     ##     row.bgcolor = row.bgcolor, -->
+<!--     ##     table.frame = 'void', -->
+<!--     ##     table.style = 'margin-left: 30px; margin-top: 30px', -->
+<!--     ##     br = TRUE) -->
+<!--     w = wij(DT::datatable( -->
+<!--         tab, -->
+<!--         escape = FALSE, -->
+<!--         filter = 'top', -->
+<!--         options = list( -->
+<!--             pageLength = 10 -->
+<!--         ), -->
+<!--         rownames = row.names -->
+<!--     ), -->
+<!--     "", -->
+<!--     embed = TRUE) -->
+<!--     w -->
+<!-- } -->
+<!-- ``` -->
+<!-- <br> -->
 
 <!-- ### Simple Structural Events {.tabset .tabset-fade .tabset-pills} -->
 
