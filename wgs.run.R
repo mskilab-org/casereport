@@ -52,6 +52,24 @@ suppressMessages(expr = {
 
 if (!opt$knit_only){
     message("Preparing data and plots")
+
+    message("Returning Purity, Ploidy, and run 'events' if not already provided")
+    jabba = readRDS(opt$jabba_rds)
+    if (file.exists(opt$complex) & file.size(opt$complex)>0){
+        file.copy(opt$complex, paste0(opt$outdir, "/complex.rds"))
+        gg = readRDS(opt$complex)
+    } else {
+        gg = events(gG(jabba = jabba))
+        saveRDS(gg, paste0(opt$outdir, "/complex.rds"))
+    }
+
+    message("Prepare coverage plots")
+    if (!file.exists(paste0(opt$outdir, "/coverage.gtrack.rds"))){
+        cvgt = covcbs(opt$cbs_cov_rds, purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3)
+        saveRDS(cvgt, paste0(opt$outdir, "/coverage.gtrack.rds"))
+    } else {
+        cvgt = readRDS(paste0(opt$outdir, "/coverage.gtrack.rds"))
+    }
     
 }
 

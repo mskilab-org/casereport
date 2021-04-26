@@ -66,7 +66,6 @@ gt.ge$ywid = 0.2
 gt.ge$height = 30
 message("Loaded Gencode genes")
 
-jabba
 gg = readRDS(paste0(params$outdir, "/complex.rds"))
 cvgt = readRDS(paste0(params$outdir, "/coverage.gtrack.rds"))
 jj = gg$junctions[type=="ALT"]
@@ -81,10 +80,10 @@ sample is xx. Estimated purity is
 `r format(gg$meta$purity, digits = 2)` 
 and ploidy `r format(gg$meta$ploidy, digits = 2)`. This sample has likely
 undergone whole genome doubling (WGD) xx time(s). xx percent of the
-genome shows copy number alterations (CNA, < `r params$del_thresh` or
->= ``) Over the whole
-genome, the number of somatic SNV/INDEL is xx, or Tumor Mutation
-Burden (TMB) of xx per Mbp. The total junction burden is xx.
+genome shows copy number alterations (CNA, defined as CN < `r params$del_thresh` or
+>= `r params$amp_thresh` times the ploidy). 
+
+Over the whole genome, the number of somatic SNV/INDEL is xx, or Tumor Mutation Burden (TMB) of xx per Mbp. The total junction burden is `r length(jj)`.
 
 ***
 # Whole genome view {.tabset .tabset-fade .tabset-pills}
