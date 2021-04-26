@@ -72,6 +72,19 @@ if (!opt$knit_only){
     
 }
 
+message("Preparing SV gallery")
+sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
+                               background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
+                               cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
+                               server = opt$server,
+                               pair = opt$pair,
+                               pad = 5e5,
+                               height = 500,
+                               width = 500,
+                               outdir = opt$outdir)
+
+fwrite(sv.slickr.dt, file.path(opt$outdir, "sv.gallery.txt"))
+
 message("Start knitting")
 rmarkdown::render(
     input = paste0(opt$libdir, "/wgs.report.rmd"),

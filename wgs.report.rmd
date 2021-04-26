@@ -110,6 +110,14 @@ Among the
 
 ## Gallery of events
 
+```
+## read data table with plot png/URL
+sv.slickr.dt = fread(opt$outdir, "sv.gallery.txt")
+slick_up = slickR(obj = sv.slickr.dt$plot.fname, height = 500, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1)
+slick_down = slickR(obj = sv.slickr.dt$plot.fname, height = 500, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
+slick_up %synch% slick_down
+```
+
 # SNV signatures
 
 # HRDetect prediction (homologous recombination deficiency)
