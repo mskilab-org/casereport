@@ -1,0 +1,128 @@
+---
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
+    theme: flatly
+params:
+  set_title: "My Title!"
+  pair: "pair.id"
+  outdir: "./"
+  tumor_type: "UNKNOWN"
+  server: "https://mskilab.com/gGraph/"
+  del_thresh: 0.5
+  amp_thresh: 4
+---
+
+<style>
+  .superbigimage{
+  overflow-x:scroll;
+  white-space: nowrap;
+  }
+  
+  .superbigimage img{
+  max-width: none;
+  }
+</style>
+
+---
+title: Whole genome/transcriptome sequencing of `r params$pair`, `r
+ifelse(grepl("^[aeiou]", ignore.case = T), "an", "a")` `r params$tumor_type`
+---
+
+```{r, setup, include = FALSE, echo = FALSE, message = TRUE}
+## global code chunk option
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    fig.width = 8,
+    fig.height = 8,
+    message = FALSE,
+    warning = FALSE,
+    echo = FALSE)
+
+## hopefully make skidb standard asap
+library(gGnome)
+library(gTrack)
+library(skidb)
+library(ggplot2)
+library(ggforce)
+library(kableExtra)
+library(hwriter)
+library(htmlwidgets)
+library(svglite)
+library(slickR)
+library(plotly)
+message("Loaded Packages")
+
+sl = readRDS(paste0(params$outdir, "/sl.rds"))
+hg = readRDS(paste0(params$outdir, "/hg.rds"))
+message("Loaded reference genome coordinates.")
+
+pge = readRDS(paste0(params$outdir, "/pge.rds"))
+gt.ge = readRDS(paste0(params$outdir, "/gt.ge.rds"))
+gt.ge$name = "GENCODE"
+gt.ge$ywid = 0.2
+gt.ge$height = 30
+message("Loaded Gencode genes")
+
+jabba
+gg = readRDS(paste0(params$outdir, "/complex.rds"))
+cvgt = readRDS(paste0(params$outdir, "/coverage.gtrack.rds"))
+jj = gg$junctions[type=="ALT"]
+message("Loaded gGraph")
+```
+
+***
+# Synopsis
+
+This is a `r params$tumor_type` sample. Average read depth for the tumor
+sample is xx. Estimated purity is 
+`r format(gg$meta$purity, digits = 2)` 
+and ploidy `r format(gg$meta$ploidy, digits = 2)`. This sample has likely
+undergone whole genome doubling (WGD) xx time(s). xx percent of the
+genome shows copy number alterations (CNA, < `r params$del_thresh` or
+>= ``) Over the whole
+genome, the number of somatic SNV/INDEL is xx, or Tumor Mutation
+Burden (TMB) of xx per Mbp. The total junction burden is xx.
+
+***
+# Whole genome view {.tabset .tabset-fade .tabset-pills}
+## gTrack 
+add gTrack
+
+## circos
+add circos
+
+***
+# Driver events (CNAs and fusions) {.tabset .tabset-fade .tabset-pills}
+This sample shows the following known structural drivers:
+
+add onc amp, tsg homdel, and known fusions
+
+# Other in-frame, non-silent fusion genes
+## other fusion genes
+## altered transcripts
+
+***
+# SV event classifications
+## Burdens of event types
+Among the 
+
+## Gallery of events
+
+# SNV signatures
+
+# HRDetect prediction (homologous recombination deficiency)
+
+***
+# Proximity to enhancers
+
+
+***
+# Loose ends
+There are xx high quality loose ends in this sample.
+
+***
+# Junction read support
+Below we show the junction supporting reads.

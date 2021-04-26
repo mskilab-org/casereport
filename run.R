@@ -666,3 +666,5 @@ rmarkdown::render(
                   tumor_type = opt$tumor_type,
                   server = opt$server),
     quiet = FALSE)
+
+
