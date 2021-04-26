@@ -38,6 +38,7 @@ suppressMessages(expr = {
         library(tidyr)
         library(dplyr)
         library(ggforce)
+        library(ggridges)
         library(httr)
         library(jsonlite)
         library(knitr)
