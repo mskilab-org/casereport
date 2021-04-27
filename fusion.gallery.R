@@ -1,6 +1,56 @@
 #' zchoo Tuesday, Apr 27, 2021 10:49:13 AM
 #' this is to generate data tables and plots for fusions
 
+#' @name fusion.wrapper
+#' @title fusion.wrapper
+#'
+#' @description
+#'
+#' Wrapper for fusions
+#'
+#' @param fusions.fname (character)
+#' @param complex.fname (character)
+#' @param cvgt.fname (character)
+#' @param gngt.fname (character)
+#' @param cgc.fname (character)
+#' @param ev.types (character)
+#' @param pad (numeric)
+#' @param height (numeric)
+#' @param width (numeric)
+#' @param outdir (character)
+#'
+#' @return data.table
+fusion.wrapper = function(fusions.fname = NULL,
+                          complex.fname = NULL,
+                          cvgt.fname = NULL,
+                          gngt.fname = NULL,
+                          cgc.fname = "/data/cgc.tsv",
+                          ev.types = c("qrp", "qpdup", "qrdel",
+                                       "tic", "bfb", "dm", "chromoplexy",
+                                       "chromothripsis", "tyfonas", "rigma", "pyrgo"),
+                          height = 1000,
+                          width = 1000,
+                          pad = 1e5,
+                          outdir = "./") {
+
+    filtered.fusions = fusion.table(fusions.fname = fusions.fname,
+                                    complex.fname = complex.fname,
+                                    cgc.fname = cgc.fname,
+                                    ev.types = ev.types,
+                                    outdir = outdir)
+
+    filtered.fusions = fusion.plot(fs = filtered.fusions,
+                                   complex.fname = complex.fname,
+                                   cvgt.fname = cvgt.fname,
+                                   gngt.fname = gngt.fname,
+                                   pad = pad,
+                                   height = height,
+                                   width = width,
+                                   outdir = outdir)
+
+    return (filtered.fusions$dt)
+}
+
 #' @name fusion.table
 #' @title fusion.table
 #'
@@ -42,7 +92,7 @@ fusion.table = function(fusions.fname = NULL,
 
     ## filter to include only in-frame non-silent
     this.fusions = readRDS(fusions.fname) ## gWalk object
-    filtered.fusions = this.fusions[in.frame == TRUE & silent == FALSE]
+    filtered.fusions = this.fusions[in.frame == TRUE & silent == FALSE & numgenes > 1]
 
     ## compute total number of amino acids and mark
     n.aa = sapply(filtered.fusions$dt$gene.pc, function(pc) { sum(width(parse.grl(pc))) })
@@ -99,6 +149,7 @@ fusion.table = function(fusions.fname = NULL,
 #' Create .png files for each fusion
 #'
 #' @param fs (gWalk) gWalk object containing filtered fusions
+#' @param complex.fname (character)
 #' @param cvgt.fname (character) coverage gTrack file name
 #' @param gngt.fname (character) gencode gTrack file name
 #' @param pad (numeric) gWalk pad for plotting default 1e5
@@ -106,13 +157,47 @@ fusion.table = function(fusions.fname = NULL,
 #' @param width (numeric) plot width default 1e3
 #' @param outdir (character) output directory
 #'
-#' @return data.table with columns walk.id, plot.fname (input to slickR)
-fusion.plot = function(fusions.fname = NULL,
+#' @return gWalk with additional columns plot.fname (input to slickR)
+fusion.plot = function(fs = NULL,
+                       complex.fname = NULL,
                        cvgt.fname = NULL,
                        gngt.fname = "/data/gt.ge.hg19.rds",
                        pad = 1e5,
                        height = 1e3,
                        width = 1e3,
                        outdir = "./") {
-    return()
+
+    if (!file.exists(cvgt.fname)) {
+        stop("cvgt.fname does not exist")
+    }
+    if (!file.exists(gngt.fname)) {
+        stop("gngt.fname does not exist")
+    }
+    if (!file.exists(complex.fname)) {
+        stop("complex.fname does not exist")
+    }
+
+    fs = fs$copy
+
+    ## read gTracks
+    cvgt = readRDS(cvgt.fname)
+    gngt = readRDS(gngt.fname)
+    this.complex.gt = readRDS(complex.fname)$gt
+    
+    plot.fnames = sapply(seq_along(fs),
+                         function (ix) {
+                             fn = file.path(outdir, "fusions", paste0("walk", fs$dt$walk.id[ix], ".png"))
+                             fs.gt = fs[ix]$gt
+                             fs.gt$name = "gWalk"
+                             ppng(plot(c(gngt, cvgt, this.complex.gt, fs.gt),
+                                       fs[ix]$footprint + pad,
+                                       legend.params = list(plot = FALSE)),
+                                  title = paste(fs$dt$name[ix], "|", "walk", fs$dt$walk.id[ix]),
+                                  filename = fn,
+                                  height = height,
+                                  width = width)
+                             return(fn)
+                         })
+    fs$set(plot.fname = plot.fnames)
+    return(fs)
 }
