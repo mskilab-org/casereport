@@ -48,6 +48,7 @@ suppressMessages(expr = {
         source(paste0(opt$libdir, "/utils.R"))
         source(paste0(opt$libdir, "/config.R"))
         source(file.path(opt$libdir, "sv.gallery.R"))
+        source(file.path(opt$libdir, "fusion.gallery.R"))
     })
 })
 
@@ -73,6 +74,22 @@ if (!opt$knit_only){
     } else {
         cvgt = readRDS(paste0(opt$outdir, "/coverage.gtrack.rds"))
     }
+
+    message("Preparing fusion genes report")
+    fusions.slickr.dt = fusion.wrapper(fusions.fname = opt$fusions,
+                                        complex.fname = opt$complex,
+                                        cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
+                                        cgc.fname = file.path(opt$libdir, "data", "cgc.tsv"),
+                                        file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                        pad = 1e5,
+                                        height = 1000,
+                                        width = 1000,
+                                        outdir = opt$outdir)
+
+    ## save data table for drivers and non-drivers separately
+    fwrite(fusions.slickr.dt[driver == TRUE,], file.path(opt$outdir, "fusions.driver.txt"))
+    fwrite(fusions.slickr.dt[driver == FALSE,], file.path(opt$outdir, "fusions.other.txt"))
+                                        
 
     message("Preparing SV gallery")
     sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
