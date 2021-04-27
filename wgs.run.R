@@ -42,6 +42,7 @@ suppressMessages(expr = {
         library(httr)
         library(jsonlite)
         library(knitr)
+        library(kableExtra)
         library(rmarkdown)
         library(wesanderson)
         message("Loading critical dependencies from KevUtils")
@@ -52,7 +53,7 @@ suppressMessages(expr = {
     })
 })
 
-if (!opt$knit_only){
+if (!opt$knit_only) {
     message("Preparing data and plots")
 
     message("Returning Purity, Ploidy, and run 'events' if not already provided")
@@ -103,7 +104,6 @@ if (!opt$knit_only){
                                    outdir = opt$outdir)
 
     fwrite(sv.slickr.dt, file.path(opt$outdir, "sv.gallery.txt"))
-    
 }
 
 
