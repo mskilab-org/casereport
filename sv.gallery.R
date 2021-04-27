@@ -34,6 +34,9 @@ gallery.wrapper = function(complex.fname = NULL,
     ## generate ridge plot
     ridgeplot.fname = ridge.plot(complex.fname = complex.fname,
                                  background.fname = background.fname,
+                                 ev.types = ev.types,
+                                 height = height,
+                                 width = width,
                                  outdir = outdir)
 
     svplot.dt = sv.plot(complex.fname = complex.fname,
@@ -132,9 +135,17 @@ sv.plot = function(complex.fname = NULL,
 #'
 #' @param complex.fname (character) output from complex event caller
 #' @param background.fname (character) text file with event burdens (default sv.burden.txt)
+#' @param ev.types (character)
+#' @param height (numeric) height of png default 1e3
+#' @param width (numeric) width of png default 1e3
 #' @param outdir (character) ridge plot output directory 
 ridge.plot = function(complex.fname = NULL,
                       background.fname = "/data/sv.burden.txt",
+                      ev.types = c("qrp", "tic", "qpdup", "qrdel",
+                                   "bfb", "dm", "chromoplexy", "chromothripsis",
+                                   "tyfonas", "rigma", "pyrgo"),
+                      height = 1000,
+                      width = 1000,
                       outdir = "./") {
     if (!file.exists(complex.fname)) {
         stop("complex.fname does not exist")
@@ -148,7 +159,7 @@ ridge.plot = function(complex.fname = NULL,
 
     ## read background distribution of events and extract event types
     sv.burden.dt = fread(background.fname)
-    ev.types = unique(sv.burden.dt$type)
+    ev.types = intersect(unique(sv.burden.dt$type), ev.types)
 
     if (is.null(this.complex$meta$events) || nrow(this.complex$meta$events) == 0) {
         warning("No detected SVs! Plotting background distribution only.")
@@ -183,6 +194,6 @@ ridge.plot = function(complex.fname = NULL,
 
     ## save plot
     out.fname = file.path(outdir, "ridgeplot.png")
-    ppng(print(pt), filename = out.fname)
+    ppng(print(pt), filename = out.fname, height = height, width = width)
     return(out.fname)
 }

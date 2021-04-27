@@ -55,16 +55,16 @@ library(slickR)
 library(plotly)
 message("Loaded Packages")
 
-sl = readRDS(paste0(params$outdir, "/sl.rds"))
-hg = readRDS(paste0(params$outdir, "/hg.rds"))
-message("Loaded reference genome coordinates.")
+# # sl = readRDS(paste0(params$outdir, "/sl.rds"))
+# # hg = readRDS(paste0(params$outdir, "/hg.rds"))
+# # message("Loaded reference genome coordinates.")
 
-pge = readRDS(paste0(params$outdir, "/pge.rds"))
-gt.ge = readRDS(paste0(params$outdir, "/gt.ge.rds"))
-gt.ge$name = "GENCODE"
-gt.ge$ywid = 0.2
-gt.ge$height = 30
-message("Loaded Gencode genes")
+# # pge = readRDS(paste0(params$outdir, "/pge.rds"))
+# # gt.ge = readRDS(paste0(params$outdir, "/gt.ge.rds"))
+# # gt.ge$name = "GENCODE"
+# # gt.ge$ywid = 0.2
+# # gt.ge$height = 30
+# # message("Loaded Gencode genes")
 
 gg = readRDS(paste0(params$outdir, "/complex.rds"))
 cvgt = readRDS(paste0(params$outdir, "/coverage.gtrack.rds"))
@@ -110,11 +110,11 @@ Among the
 
 ## Gallery of events
 
-```
+```{r, SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 ## read data table with plot png/URL
-sv.slickr.dt = fread(opt$outdir, "sv.gallery.txt")
+sv.slickr.dt = fread(file.path(opt$outdir, "sv.gallery.txt"))
 slick_up = slickR(obj = sv.slickr.dt$plot.fname, height = 500, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1)
-slick_down = slickR(obj = sv.slickr.dt$plot.fname, height = 500, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
+slick_down = slickR(obj = sv.slickr.dt$plot.fname, height = 100, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
 slick_up %synch% slick_down
 ```
 

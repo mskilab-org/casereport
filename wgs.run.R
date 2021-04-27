@@ -43,9 +43,11 @@ suppressMessages(expr = {
         library(jsonlite)
         library(knitr)
         library(rmarkdown)
+        library(wesanderson)
         message("Loading critical dependencies from KevUtils")
         source(paste0(opt$libdir, "/utils.R"))
         source(paste0(opt$libdir, "/config.R"))
+        source(file.path(opt$libdir, "sv.gallery.R"))
     })
 })
 
@@ -64,26 +66,30 @@ if (!opt$knit_only){
 
     message("Prepare coverage plots")
     if (!file.exists(paste0(opt$outdir, "/coverage.gtrack.rds"))){
-        cvgt = covcbs(opt$cbs_cov_rds, purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3)
+        ## pull coverage file from jabba_rds
+        cov.file = readRDS(file.path(dirname(opt$jabba_rds), "cmd.args.rds"))$coverage
+        cvgt = covcbs(cov.file, purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3)
         saveRDS(cvgt, paste0(opt$outdir, "/coverage.gtrack.rds"))
     } else {
         cvgt = readRDS(paste0(opt$outdir, "/coverage.gtrack.rds"))
     }
+
+    message("Preparing SV gallery")
+    sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
+                                   background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
+                                   cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
+                                   server = opt$server,
+                                   pair = opt$pair,
+                                   pad = 5e5,
+                                   height = 1000, ## png image height
+                                   width = 1000, ## png image width
+                                   outdir = opt$outdir)
+
+    fwrite(sv.slickr.dt, file.path(opt$outdir, "sv.gallery.txt"))
     
 }
 
-message("Preparing SV gallery")
-sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
-                               background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
-                               cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
-                               server = opt$server,
-                               pair = opt$pair,
-                               pad = 5e5,
-                               height = 500,
-                               width = 500,
-                               outdir = opt$outdir)
 
-fwrite(sv.slickr.dt, file.path(opt$outdir, "sv.gallery.txt"))
 
 message("Start knitting")
 rmarkdown::render(
