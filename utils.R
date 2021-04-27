@@ -527,3 +527,35 @@ circos = function(junctions = jJ(), cov = NULL, ncov = NULL, segs = NULL, win = 
     }
     circlize::circos.clear()
 }
+
+
+get_oncogenes_with_amp = function(oncotable){
+    amplified_oncogenes = oncotable[grepl('ONC', role)][type == 'amp']
+    strout = 'There are no oncogenes with copy number amplifications.'
+    if (amplified_oncogenes[, .N] > 0){
+        # TODO: we can later add the CN for each of these genes
+        strout = paste0(paste(unique(amplified_oncogenes$gene), collapse = ', '), '.')
+    }
+    return(strout)
+}
+
+get_TSG_with_homdels = function(oncotable){
+    homdel_tsgs = oncotable[grepl('TSG', role)][type == 'homdel']
+    strout = 'There are no tumor suppressor genes with homozygous deletions.'
+    if (homdel_tsgs[, .N] > 0){
+        # TODO: we can later add the CN for each of these genes
+        strout = paste0(paste(unique(homdel_tsgs$gene), collapse = ', '), '.')
+    }
+    return(strout)
+}
+
+check_file = function(fn, overwrite = FALSE, verbose = TRUE){
+    if (file.exists(fn) & file.size(fn) > 0 & !overwrite){
+        if (verbose){
+            message('Found ', fn, ' so reading it. If you wish to regenerate, please repeat with "overwrite = TRUE".')
+        }
+        return(TRUE)
+    }
+        return(FALSE)
+}
+
