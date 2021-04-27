@@ -10,10 +10,11 @@
 #'
 #' @param fusions.fname (character) file name containing fusion gWalks
 #' @param complex.fname (character) file name to events
-#' @param ccg.fname (character) cancer gene census file name
+#' @param cgc.fname (character) cancer gene census file name
+#' @param ev.types (character) event types
 #' @param outdir (character) output directory
 #'
-#' @return data.table with columns:
+#' @return gWalk (filtered) with metadata columns:
 #' - walk.id
 #' - name (e.g. involved genes)
 #' - num.aa (total number of aminos)
@@ -23,7 +24,10 @@
 #' - ev.type (complex event type overlapping with walk)
 fusion.table = function(fusions.fname = NULL,
                         complex.fname = NULL,
-                        ccg.fname = "/data/ccg.txt",
+                        cgc.fname = "/data/cgc.tsv",
+                        ev.types = c("qrp", "qpdup", "qrdel",
+                                     "tic", "bfb", "dm", "chromoplexy",
+                                     "chromothripsis", "tyfonas", "rigma", "pyrgo"),
                         outdir = "./") {
 
     if (!file.exists(fusions.fname)) {
@@ -31,6 +35,9 @@ fusion.table = function(fusions.fname = NULL,
     }
     if (!file.exists(complex.fname)) {
         stop("complex.fname does not exist")
+    }
+    if (!file.exists(cgc.fname)) {
+        stop("cgc.fname does not exist")
     }
 
     ## filter to include only in-frame non-silent
@@ -45,7 +52,43 @@ fusion.table = function(fusions.fname = NULL,
     filtered.fusions = filtered.fusions[order(n.aa, decreasing = TRUE)]
     filtered.fusions = filtered.fusions[which(!duplicated(filtered.fusions$dt$name))]
 
-    ## then 
+    ## Cancer Gene Census genes
+    cgc.gene.symbols = fread(cgc.fname)[["Gene Symbol"]]
+
+    ## annotate genes if they are in cgc
+    cgc.gene = sapply(filtered.fusions$dt$name, function (gns) {any(unlist(strsplit(gns, ",")) %in% cgc.gene.symbols)})
+
+    filtered.fusions$set(driver = cgc.gene)
+
+    ## grab GRanges for each walk
+    fs.grl = filtered.fusions$grl
+    values(fs.grl) = filtered.fusions$dt[, .(walk.id)]
+    fs.gr = stack(fs.grl)
+    ## fs.dt = as.data.table(filtered.fusions$grl) ## adds column group
+    ## fs.dt[, ":="(walk.id = filtered.fusions$dt$walk.id[group])]
+
+    ## overlap with complex events
+    this.ev = readRDS(complex.fname)$meta$events[type %in% ev.types,]
+    ev.grl = parse.grl(this.ev$footprint)
+    values(ev.grl) = this.ev
+    ev.gr = stack(ev.grl)
+    ## ev.footprints = as.data.table(parse.grl(this.ev$footprint))
+    ## ev.footprints[, ":="(ev.id = this.ev$ev.id[group], type = this.ev$type[group])]
+
+    ov = gr.findoverlaps(fs.gr, ev.gr,
+                         qcol = c("walk.id"),
+                         scol = c("ev.id", "type"),
+                         return.type = "data.table")
+    
+    ov = ov[, .(ev.id = paste(unique(ev.id), sep = ","), type = paste(unique(type), sep = ",")), by = walk.id]
+
+    dt = merge(filtered.fusions$dt, ov, by = "walk.id", all.x = TRUE)
+
+    ## add ev.id and type to  metadata 
+    filtered.fusions$set(ev.id = dt$ev.id)
+    filtered.fusions$set(ev.type = dt$type)
+    
+    return(filtered.fusions)
 }
 
 #' @name fusion.plot
@@ -55,8 +98,9 @@ fusion.table = function(fusions.fname = NULL,
 #'
 #' Create .png files for each fusion
 #'
-#' @param fusions.fname (character) file name containing fusion gWalks
+#' @param fs (gWalk) gWalk object containing filtered fusions
 #' @param cvgt.fname (character) coverage gTrack file name
+#' @param gngt.fname (character) gencode gTrack file name
 #' @param pad (numeric) gWalk pad for plotting default 1e5
 #' @param height (numeric) plot height default 1e3
 #' @param width (numeric) plot width default 1e3
@@ -65,6 +109,7 @@ fusion.table = function(fusions.fname = NULL,
 #' @return data.table with columns walk.id, plot.fname (input to slickR)
 fusion.plot = function(fusions.fname = NULL,
                        cvgt.fname = NULL,
+                       gngt.fname = "/data/gt.ge.hg19.rds",
                        pad = 1e5,
                        height = 1e3,
                        width = 1e3,
