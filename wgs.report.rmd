@@ -28,7 +28,8 @@ params:
 
 ---
 title: Whole genome/transcriptome sequencing of `r params$pair`, `r
-ifelse(grepl("^[aeiou]", ignore.case = T), "an", "a")` `r params$tumor_type`
+paste(ifelse(grepl("^[aeiou]", params$tumor_type, ignore.case = T),
+"an", "a"), params$tumor_type)`
 ---
 
 ```{r, setup, include = FALSE, echo = FALSE, message = TRUE}
@@ -88,16 +89,20 @@ Over the whole genome, the number of somatic SNV/INDEL is xx, or Tumor Mutation 
 ***
 # Whole genome view {.tabset .tabset-fade .tabset-pills}
 ## gTrack 
-add gTrack
+
+<div class="superbigimage">
+```{r genome-wide gTrack, out.width="100%"}
+knitr::include_graphics(paste0(params$outdir, "/genome.wide.gtrack.png"))
+```
+</div>
 
 ## circos
 add circos
 
 ***
 # Driver events (CNAs and fusions) {.tabset .tabset-fade .tabset-pills}
-This sample shows the following known structural drivers:
-
 add onc amp, tsg homdel, and known fusions
+
 
 # Other in-frame, non-silent fusion genes
 ## other fusion genes
