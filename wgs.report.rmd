@@ -29,7 +29,8 @@ params:
 
 ---
 title: Whole genome/transcriptome sequencing of `r params$pair`, `r
-ifelse(grepl("^[aeiou]", ignore.case = T), "an", "a")` `r params$tumor_type`
+paste(ifelse(grepl("^[aeiou]", params$tumor_type, ignore.case = T),
+"an", "a"), params$tumor_type)`
 ---
 
 ```{r, setup, include = FALSE, echo = FALSE, message = TRUE}
@@ -79,10 +80,11 @@ Over the whole genome, the number of somatic SNV/INDEL is xx, or Tumor Mutation 
 ***
 # Whole genome view {.tabset .tabset-fade .tabset-pills}
 ## gTrack 
-
+<div class="superbigimage">
 ```{r, wgs-gtrack, out.width = "95%", results = "asis", echo = FALSE, fig.align = "center"}
 knitr::include_graphics(file.path(params$outdir, "wgs.gtrack.png"))
 ```
+</div>
 
 ## circos
 
@@ -91,8 +93,6 @@ knitr::include_graphics(file.path(params$outdir, "wgs.circos.png"))
 ```
 ***
 # Driver events (CNAs and fusions) {.tabset .tabset-fade .tabset-pills}
-This sample shows the following known structural drivers:
-
 add onc amp, tsg homdel, and known fusions
 
 # Known fusions
@@ -127,6 +127,7 @@ slick_up = slickR(obj = other.fusions.dt$plot.fname, height = 500, width = "95%"
 slick_down = slickR(obj = other.fusions.dt$plot.fname, height = 100, width = "95%") + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
 slick_up %synch% slick_down
 ```
+
 
 ## altered transcripts
 
