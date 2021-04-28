@@ -41,6 +41,7 @@ if (!exists('opt'))
         make_option(c("--server"), type = "character", default = "https://mskilab.com/gGraph/", help = "URL of the gGnome.js browser"),
         make_option(c("--tumor_type"), type = "character", default = "", help = "tumor type"),
         make_option(c("--somatic_snv_cn"), type = "character", help = "MLE somatic SNV CN estimate from snv_multiplicity2 module"),
+        make_option(c("--oncokb_token"), default = '~/keys/oncokb.token', type = "character", help = "a token to use when querying OncoKB. If you don't have a token, you must first obtain one from: https://www.oncokb.org/apiAccess. By default looking for the key in '~/keys/oncokb.token'. If no valid key is provided then OncoKB annotations will be skipped.")
         make_option(c("--germline_snv_cn"), type = "character", help = "MLE germline SNV CN estimate from snv_multiplicity2 module"),
         make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir")
     )
@@ -627,10 +628,23 @@ if(opt$knit_only == FALSE){
     ##     saveRDS(hits3, paste0(opt$outdir,"/","CIVIC.hits.rds"))
     ## }
 
-    
     ## ######################
     ## match up with OncoKB
     ## ######################
+    oncokb.token = opt$oncokb_token
+    if (file.exists(oncokb.token)){
+        message('Querying OncoKB to annotate genomic alterations')
+        oncokb = get_oncokb_response(som.dt, oncokb.token = oncokb.token)
+        oncokb_annotations = get_oncokb_annotations(oncokb)
+        oncokb_annotations[, key_for_merging := .I]
+        som.dt[, key_for_merging := .I]
+        som.dt = merge(som.dt, oncokb_annotations, by = 'key_for_merging')
+        som.dt$key_for_merging = NULL
+        som.dt$onco_kb_entry_url = get_oncokb_gene_entry_url(oncokb)
+    } else {
+        message('No OncoKB token was provided so skipping OncoKB annotations')
+    }
+
     ## build one query
     ## oncokb = "https://www.oncokb.org/api/v1/annotate"
     ## oncokb.token = readLines("~/keys/oncokb.token")
