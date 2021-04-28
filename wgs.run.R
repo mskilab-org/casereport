@@ -45,7 +45,7 @@ suppressMessages(expr = {
         library(jsonlite)
         library(knitr)
         library(rmarkdown)
-        library(wesanderson)
+        ## library(wesanderson)
         message("Loading critical dependencies from KevUtils")
         source(paste0(opt$libdir, "/utils.R"))
         source(paste0(opt$libdir, "/config.R"))

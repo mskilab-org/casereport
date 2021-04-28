@@ -1,12 +1,12 @@
 message("Setting system color palettes")
-pal1 = wes_palette("Royal1") #length 4
-pal2 = wes_palette("Zissou1") #length 5
-pal3 = wes_palette("IsleofDogs1") #length 6
-pal4 = wes_palette("Darjeeling1") #length 5
-pal5 = wes_palette("Moonrise1") #length 4
-pal6 = wes_palette("BottleRocket2") #length 5
-pal7 = wes_palette("Moonrise2") #length 4
-all.pal = c(pal1,pal2,pal3,pal4,pal5,pal6,pal7)
+## pal1 = wes_palette("Royal1") #length 4
+## pal2 = wes_palette("Zissou1") #length 5
+## pal3 = wes_palette("IsleofDogs1") #length 6
+## pal4 = wes_palette("Darjeeling1") #length 5
+## pal5 = wes_palette("Moonrise1") #length 4
+## pal6 = wes_palette("BottleRocket2") #length 5
+## pal7 = wes_palette("Moonrise2") #length 4
+## all.pal = c(pal1,pal2,pal3,pal4,pal5,pal6,pal7)
 
 ## xtYao's colors, not all will be used
 etypes = c("del", "dup", "inv", "tra", "tic", "pyrgo", "bfb", "dm", "cpxdm",
