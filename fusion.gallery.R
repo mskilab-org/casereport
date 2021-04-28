@@ -444,3 +444,4 @@ fusion.plot = function(fs = NULL,
     fs$set(plot.fname = plot.fnames)
     return(fs)
 }
+

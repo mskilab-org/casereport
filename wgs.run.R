@@ -109,7 +109,8 @@ if (!opt$knit_only) {
                     cov = cvgt@data[[1]],
                     field = "cn",
                     link.h.ratio = 0.1,
-                    cex.points = 0.1),
+                    cex.points = 0.1,
+                    cytoband.path = file.path(opt$libdir, "data", "hg19.cytoband.txt")),
              filename = wgs.circos.fname,
              height = 1000,
              width = 1000)
