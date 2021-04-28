@@ -43,7 +43,6 @@ suppressMessages(expr = {
         library(httr)
         library(jsonlite)
         library(knitr)
-        library(kableExtra)
         library(rmarkdown)
         library(wesanderson)
         message("Loading critical dependencies from KevUtils")
@@ -77,6 +76,7 @@ if (!opt$knit_only) {
         cvgt = readRDS(paste0(opt$outdir, "/coverage.gtrack.rds"))
     }
 
+    ## xtYao legacy code
     ## if (!file.exists(paste0(opt$outdir, "/hets.gtrack.rds"))){
     ##     hgt = covcbs(opt$het_pileups_wgs,
     ##                  purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3)
@@ -84,42 +84,74 @@ if (!opt$knit_only) {
     ## } else {
     ##     cvgt = readRDS(paste0(opt$outdir, "/coverage.gtrack.rds"))
     ## }
+    ## message("Generate full genome gTrack plot")
+    ## gts = c(cvgt, gg$gtrack(name = opt$pair, height = 30))
+    ## png(filename = paste0(opt$outdir, "/genome.wide.gtrack.png"), width = 2700, height = 900)
+    ## plot(gts, hg, gap = 1e7, y0 = 0, cex.label = 2, yaxis.cex = 0.5)
+    ## dev.off()
 
-    message("Generate full genome gTrack plot")
-    gts = c(cvgt, gg$gtrack(name = opt$pair, height = 30))
+    wgs.gtrack.fname = file.path(opt$outdir, "wgs.gtrack.png")
+    wgs.circos.fname = file.path(opt$outdir, "wgs.circos.png")
+    if (opt$overwrite | !file.exists(wgs.gtrack.fname)) {
+        message("Generating whole-genome gTrack plots")
+        ppng(plot(c(cvgt, gg$gt), c(as.character(1:22), "X", "Y")),
+             filename  = wgs.gtrack.fname,
+             height = 1000,
+             width = 3000)
+    } else {
+        message("Whole genome gTracks already exist")
+    }
 
-    png(filename = paste0(opt$outdir, "/genome.wide.gtrack.png"), width = 2700, height = 900)
-    plot(gts, hg, gap = 1e7, y0 = 0, cex.label = 2, yaxis.cex = 0.5)
-    dev.off()
+    if (opt$overwrite | !file.exists(wgs.circos.fname)) {
+        message("Generating whole-genome circos plot")
+        ppng(circos(junctions = gg$junctions[type == "ALT"],
+                    cov = cvgt@data[[1]],
+                    field = "cn",
+                    link.h.ratio = 0.1,
+                    cex.points = 0.1),
+             filename = wgs.circos.fname,
+             height = 1000,
+             width = 1000)
+    } else {
+        message("Whole genome circos plot already exists")
+    }
+    
+    if (opt$overwrite | !file.exists(file.path(opt$outdir, "fusions.driver.txt"))) {
+        message("Preparing fusion genes report")
+        fusions.slickr.dt = fusion.wrapper(fusions.fname = opt$fusions,
+                                           complex.fname = opt$complex,
+                                           cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
+                                           cgc.fname = file.path(opt$libdir, "data", "cgc.tsv"),
+                                           file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                           pad = 1e5,
+                                           height = 1000,
+                                           width = 1000,
+                                           outdir = opt$outdir)
 
-    message("Preparing fusion genes report")
-    fusions.slickr.dt = fusion.wrapper(fusions.fname = opt$fusions,
-                                        complex.fname = opt$complex,
-                                        cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
-                                        cgc.fname = file.path(opt$libdir, "data", "cgc.tsv"),
-                                        file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
-                                        pad = 1e5,
-                                        height = 1000,
-                                        width = 1000,
-                                        outdir = opt$outdir)
-
-    ## save data table for drivers and non-drivers separately
-    fwrite(fusions.slickr.dt[driver == TRUE,], file.path(opt$outdir, "fusions.driver.txt"))
-    fwrite(fusions.slickr.dt[driver == FALSE,], file.path(opt$outdir, "fusions.other.txt"))
+        ## save data table for drivers and non-drivers separately
+        fwrite(fusions.slickr.dt[driver == TRUE,], file.path(opt$outdir, "fusions.driver.txt"))
+        fwrite(fusions.slickr.dt[driver == FALSE,], file.path(opt$outdir, "fusions.other.txt"))
+    } else {
+        message("Fusion files already exist")
+    }
                                         
 
-    message("Preparing SV gallery")
-    sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
-                                   background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
-                                   cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
-                                   server = opt$server,
-                                   pair = opt$pair,
-                                   pad = 5e5,
-                                   height = 1000, ## png image height
-                                   width = 1000, ## png image width
-                                   outdir = opt$outdir)
+    if (opt$overwrite | !file.exists(file.path(opt$outdir, "sv.gallery.txt"))) {
+        message("Preparing SV gallery")
+        sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
+                                       background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
+                                       cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
+                                       server = opt$server,
+                                       pair = opt$pair,
+                                       pad = 5e5,
+                                       height = 1000, ## png image height
+                                       width = 1000, ## png image width
+                                       outdir = opt$outdir)
 
-    fwrite(sv.slickr.dt, file.path(opt$outdir, "sv.gallery.txt"))
+        fwrite(sv.slickr.dt, file.path(opt$outdir, "sv.gallery.txt"))
+    } else {
+        message("SV gallery files already exist")
+    }
 }
 
 
@@ -132,6 +164,7 @@ rmarkdown::render(
     knit_root_dir = opt$outdir,
     params = list(set_title = paste0(opt$pair),
                   pair = opt$pair,
+                  jabba_rds = normalizePath(opt$jabba_rds),
                   outdir = normalizePath(opt$outdir),
                   tumor_type = opt$tumor_type,
                   server = opt$server),
