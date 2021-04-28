@@ -56,16 +56,16 @@ library(slickR)
 library(plotly)
 message("Loaded Packages")
 
-sl = readRDS(paste0(params$outdir, "/sl.rds"))
-hg = readRDS(paste0(params$outdir, "/hg.rds"))
-message("Loaded reference genome coordinates.")
+# # sl = readRDS(paste0(params$outdir, "/sl.rds"))
+# # hg = readRDS(paste0(params$outdir, "/hg.rds"))
+# # message("Loaded reference genome coordinates.")
 
-pge = readRDS(paste0(params$outdir, "/pge.rds"))
-gt.ge = readRDS(paste0(params$outdir, "/gt.ge.rds"))
-gt.ge$name = "GENCODE"
-gt.ge$ywid = 0.2
-gt.ge$height = 30
-message("Loaded Gencode genes")
+# # pge = readRDS(paste0(params$outdir, "/pge.rds"))
+# # gt.ge = readRDS(paste0(params$outdir, "/gt.ge.rds"))
+# # gt.ge$name = "GENCODE"
+# # gt.ge$ywid = 0.2
+# # gt.ge$height = 30
+# # message("Loaded Gencode genes")
 
 gg = readRDS(paste0(params$outdir, "/complex.rds"))
 cvgt = readRDS(paste0(params$outdir, "/coverage.gtrack.rds"))
@@ -103,17 +103,60 @@ add circos
 # Driver events (CNAs and fusions) {.tabset .tabset-fade .tabset-pills}
 add onc amp, tsg homdel, and known fusions
 
+# Known fusions
+Fusions in which at least one involved gene is an oncogene or tumor suppressor.
 
-# Other in-frame, non-silent fusion genes
-## other fusion genes
+```{r, driver-fusions-table, results = "asis", out.width= "100%"}
+driver.fusions.dt = fread(file.path(opt$outdir, "fusions.driver.txt"))
+driver.fusions.dt[, .(name, walk.id, numchr, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling()
+```
+
+## Gallery
+
+```{r, driver-fusions-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+driver.fusions.dt = fread(file.path(opt$outdir, "fusions.driver.txt"))
+slick_up = slickR(obj = driver.fusions.dt$plot.fname, height = 500, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1)
+slick_down = slickR(obj = driver.fusions.dt$plot.fname, height = 100, width = "95%") + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
+slick_up %synch% slick_down
+```
+
+# Other in-frame, non-silent gene fusions
+
+```{r, other-fusions-table, results = "asis", out.width= "100%"}
+other.fusions.dt = fread(file.path(opt$outdir, "fusions.other.txt"))
+other.fusions.dt[, .(name, walk.id, numchr, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling()
+```
+
+## Gallery
+
+```{r, other-fusions-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+other.fusions.dt = fread(file.path(opt$outdir, "fusions.other.txt"))
+slick_up = slickR(obj = other.fusions.dt$plot.fname, height = 500, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1)
+slick_down = slickR(obj = other.fusions.dt$plot.fname, height = 100, width = "95%") + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
+slick_up %synch% slick_down
+```
+
+
 ## altered transcripts
 
 ***
 # SV event classifications
 ## Burdens of event types
-Among the 
+Count of complex events against background distribution from Cell cohort.
+
+```{r, sv-burden, fig.align = "center", out.width = "100%"}
+knitr::include_graphics(file.path(opt$outdir, "ridgeplot.png"))
+```
 
 ## Gallery of events
+
+```{r, SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## read data table with plot png/URL
+sv.slickr.dt = fread(file.path(opt$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+slick_up = slickR(obj = sv.slickr.dt$plot.fname, height = 500, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1)
+slick_down = slickR(obj = sv.slickr.dt$plot.fname, height = 100, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
+slick_up %synch% slick_down
+```
 
 # SNV signatures
 

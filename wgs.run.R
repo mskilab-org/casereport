@@ -39,17 +39,22 @@ suppressMessages(expr = {
         library(tidyr)
         library(dplyr)
         library(ggforce)
+        library(ggridges)
         library(httr)
         library(jsonlite)
         library(knitr)
+        library(kableExtra)
         library(rmarkdown)
+        library(wesanderson)
         message("Loading critical dependencies from KevUtils")
         source(paste0(opt$libdir, "/utils.R"))
         source(paste0(opt$libdir, "/config.R"))
+        source(file.path(opt$libdir, "sv.gallery.R"))
+        source(file.path(opt$libdir, "fusion.gallery.R"))
     })
 })
 
-if (!opt$knit_only){
+if (!opt$knit_only) {
     message("Preparing data and plots")
 
     message("Returning Purity, Ploidy, and run 'events' if not already provided")
@@ -64,18 +69,21 @@ if (!opt$knit_only){
 
     message("Prepare coverage data")
     if (!file.exists(paste0(opt$outdir, "/coverage.gtrack.rds"))){
-        cvgt = covcbs(opt$cbs_cov_rds, purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3)
+        ## pull coverage file from jabba_rds
+        cov.file = readRDS(file.path(dirname(opt$jabba_rds), "cmd.args.rds"))$coverage
+        cvgt = covcbs(cov.file, purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3)
         saveRDS(cvgt, paste0(opt$outdir, "/coverage.gtrack.rds"))
     } else {
         cvgt = readRDS(paste0(opt$outdir, "/coverage.gtrack.rds"))
     }
 
-    if (!file.exists(paste0(opt$outdir, "/hets.gtrack.rds"))){
-        hgt = covcbs(opt$cbs_cov_rds, purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3)
-        saveRDS(cvgt, paste0(opt$outdir, "/coverage.gtrack.rds"))
-    } else {
-        cvgt = readRDS(paste0(opt$outdir, "/coverage.gtrack.rds"))
-    }
+    ## if (!file.exists(paste0(opt$outdir, "/hets.gtrack.rds"))){
+    ##     hgt = covcbs(opt$het_pileups_wgs,
+    ##                  purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3)
+    ##     saveRDS(cvgt, paste0(opt$outdir, "/coverage.gtrack.rds"))
+    ## } else {
+    ##     cvgt = readRDS(paste0(opt$outdir, "/coverage.gtrack.rds"))
+    ## }
 
     message("Generate full genome gTrack plot")
     gts = c(cvgt, gg$gtrack(name = opt$pair, height = 30))
@@ -83,7 +91,38 @@ if (!opt$knit_only){
     png(filename = paste0(opt$outdir, "/genome.wide.gtrack.png"), width = 2700, height = 900)
     plot(gts, hg, gap = 1e7, y0 = 0, cex.label = 2, yaxis.cex = 0.5)
     dev.off()
+
+    message("Preparing fusion genes report")
+    fusions.slickr.dt = fusion.wrapper(fusions.fname = opt$fusions,
+                                        complex.fname = opt$complex,
+                                        cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
+                                        cgc.fname = file.path(opt$libdir, "data", "cgc.tsv"),
+                                        file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                        pad = 1e5,
+                                        height = 1000,
+                                        width = 1000,
+                                        outdir = opt$outdir)
+
+    ## save data table for drivers and non-drivers separately
+    fwrite(fusions.slickr.dt[driver == TRUE,], file.path(opt$outdir, "fusions.driver.txt"))
+    fwrite(fusions.slickr.dt[driver == FALSE,], file.path(opt$outdir, "fusions.other.txt"))
+                                        
+
+    message("Preparing SV gallery")
+    sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
+                                   background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
+                                   cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
+                                   server = opt$server,
+                                   pair = opt$pair,
+                                   pad = 5e5,
+                                   height = 1000, ## png image height
+                                   width = 1000, ## png image width
+                                   outdir = opt$outdir)
+
+    fwrite(sv.slickr.dt, file.path(opt$outdir, "sv.gallery.txt"))
 }
+
+
 
 message("Start knitting")
 rmarkdown::render(
