@@ -1,0 +1,15 @@
+#Module casereport ("<libdir>run.sh <libdir>wgs.run.R --libdir <libdir> --pair <pair> --jabba_rds <jabba_rds> --cbs_cov_r...")
+/gpfs/commons/groups/imielinski_lab/home/yaox-934/git/casereport
+input	pair	 pair  value
+input	jabba_rds	 jabba_rds  path
+input	complex	 complex  path	    /dev/null
+input	fusions	fusions	path	/dev/null
+input	proximity	proximity	path	/dev/null
+input	cbs_cov_rds	 cbs_cov_rds  path	/dev/null
+input	het_pileups_wgs	het_pileups_wgs	path	/dev/null
+input	deconstruct_sigs	 deconstruct_sigs  path	/dev/null
+input	server	server	value		"https://mskilab.com/gGraph/"
+input	tumor_type	tumor_type	value "unknown"
+input	flags	flags	value		""
+output	wgs_casereport	*wgs.report.html$
+

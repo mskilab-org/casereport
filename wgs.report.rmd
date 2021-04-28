@@ -1,0 +1,167 @@
+---
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
+    theme: flatly
+params:
+  set_title: "My Title!"
+  pair: "pair.id"
+  jabba_rds: "./jabba.simple.rds"
+  outdir: "./"
+  tumor_type: "UNKNOWN"
+  server: "https://mskilab.com/gGraph/"
+  del_thresh: 0.5
+  amp_thresh: 4
+---
+
+<style>
+  .superbigimage{
+  overflow-x:scroll;
+  white-space: nowrap;
+  }
+  
+  .superbigimage img{
+  max-width: none;
+  }
+</style>
+
+---
+title: Whole genome/transcriptome sequencing of `r params$pair`, `r
+paste(ifelse(grepl("^[aeiou]", params$tumor_type, ignore.case = T),
+"an", "a"), params$tumor_type)`
+---
+
+```{r, setup, include = FALSE, echo = FALSE, message = TRUE}
+## global code chunk option
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    fig.width = 8,
+    fig.height = 8,
+    message = FALSE,
+    warning = FALSE,
+    echo = FALSE)
+
+## hopefully make skidb standard asap
+library(gGnome)
+library(gTrack)
+library(skidb)
+library(ggplot2)
+library(ggforce)
+library(kableExtra)
+library(hwriter)
+library(htmlwidgets)
+library(svglite)
+library(slickR)
+library(plotly)
+message("Loaded Packages")
+
+gg = readRDS(paste0(params$outdir, "/complex.rds"))
+jb = readRDS(params$jabba_rds)
+cvgt = readRDS(paste0(params$outdir, "/coverage.gtrack.rds"))
+jj = gg$junctions[type=="ALT"]
+message("Loaded gGraph")
+```
+
+***
+# Synopsis
+
+This is a `r params$tumor_type` sample. Average read depth for the tumor
+sample is xx. Estimated purity is 
+`r format(jb$purity, digits = 2)` 
+and ploidy `r format(jb$ploidy, digits = 2)`. This sample has likely
+undergone whole genome doubling (WGD) xx time(s). xx percent of the
+genome shows copy number alterations (CNA, defined as CN < `r params$del_thresh` or
+>= `r params$amp_thresh` times the ploidy). 
+
+Over the whole genome, the number of somatic SNV/INDEL is xx, or Tumor Mutation Burden (TMB) of xx per Mbp. The total junction burden is `r length(jj)`.
+
+***
+# Whole genome view {.tabset .tabset-fade .tabset-pills}
+## gTrack 
+<div class="superbigimage">
+```{r, wgs-gtrack, out.width = "95%", results = "asis", echo = FALSE, fig.align = "center"}
+knitr::include_graphics(file.path(params$outdir, "wgs.gtrack.png"))
+```
+</div>
+
+## circos
+
+```{r, wgs-circos, out.width = "95%", results = "asis", echo = FALSE, fig.align = "center"}
+knitr::include_graphics(file.path(params$outdir, "wgs.circos.png"))
+```
+***
+# Driver events (CNAs and fusions) {.tabset .tabset-fade .tabset-pills}
+add onc amp, tsg homdel, and known fusions
+
+# Known fusions
+Fusions in which at least one involved gene is an oncogene or tumor suppressor.
+
+```{r, driver-fusions-table, results = "asis", out.width= "100%"}
+driver.fusions.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
+driver.fusions.dt[, .(name, walk.id, numchr, maxcn, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling()
+```
+
+## Gallery
+
+```{r, driver-fusions-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+driver.fusions.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
+slick_up = slickR(obj = driver.fusions.dt$plot.fname, height = 500, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1)
+slick_down = slickR(obj = driver.fusions.dt$plot.fname, height = 100, width = "95%") + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
+slick_up %synch% slick_down
+```
+
+# Other in-frame, non-silent gene fusions
+
+```{r, other-fusions-table, results = "asis", out.width= "100%"}
+other.fusions.dt = fread(file.path(params$outdir, "fusions.other.txt"))
+other.fusions.dt[, .(name, walk.id, numchr, maxcn, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling()
+```
+
+## Gallery
+
+```{r, other-fusions-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+other.fusions.dt = fread(file.path(params$outdir, "fusions.other.txt"))
+slick_up = slickR(obj = other.fusions.dt$plot.fname, height = 500, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1)
+slick_down = slickR(obj = other.fusions.dt$plot.fname, height = 100, width = "95%") + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
+slick_up %synch% slick_down
+```
+
+
+## altered transcripts
+
+***
+# SV event classifications
+## Burdens of event types
+Count of complex events against background distribution from Cell cohort.
+
+```{r, sv-burden, fig.align = "center", out.width = "100%"}
+knitr::include_graphics(file.path(params$outdir, "ridgeplot.png"))
+```
+
+## Gallery of events
+
+```{r, SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## read data table with plot png/URL
+sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+slick_up = slickR(obj = sv.slickr.dt$plot.fname, height = 500, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1)
+slick_down = slickR(obj = sv.slickr.dt$plot.fname, height = 100, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
+slick_up %synch% slick_down
+```
+
+# SNV signatures
+
+# HRDetect prediction (homologous recombination deficiency)
+
+***
+# Proximity to enhancers
+
+
+***
+# Loose ends
+There are xx high quality loose ends in this sample.
+
+***
+# Junction read support
+Below we show the junction supporting reads.
