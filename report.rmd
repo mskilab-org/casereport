@@ -115,6 +115,10 @@ WGS-based estimation of TMB (number per Mb): `r out[track=="tmb" & type=="densit
  
 WGS-based estimation of junction burden: `r length(gg$junctions[type=="ALT"])`
 
+Oncogenes with copy number amplifications: `r get_oncogenes_with_amp(out)`
+
+Ttumor suppressor genes with homozygous deletions: `r get_TSG_with_homdels(out)`
+
 *** 
 # SV overview {.tabset .tabset-fade .tabset-pills}
 ```{r, overview, message = FALSE, echo = FALSE, results = "asis", out.width = "100%"}

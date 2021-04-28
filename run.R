@@ -101,43 +101,51 @@ if(opt$knit_only == FALSE){
     Sys.setenv(DEFAULT_BSGENOME = opt$chrom_sizes)
 
     message("Loading reference genome")
-    sl = hg_seqlengths(chr = opt$chr)
-    saveRDS(sl, paste0(opt$outdir, "/sl.rds"))
-    hg = si2gr(sl) %>% gr.stripstrand %>% unname
-    saveRDS(hg, paste0(opt$outdir, "/hg.rds"))
-    ## bands.gt = gTrack::karyogram(height = 2.5)
-    ## bands = grl.unlist(bands.gt@data[[1]])
-    ## bands = bands[, "band"]
-    ## values(bands)$arm = gsub("^(.*)([pq])(.*)$", "\\1\\2", values(bands)$band)
-    ## arm = gr.reduce(bands, by = "arm")
+    sl_fn = paste0(opt$outdir, "/sl.rds")
+    if (file.exists(sl_fn) & file.size(sl_fn) > 0 & !opt$overwrite){
+        sl = readRDS(sl_fn)
+    } else {
+        sl = hg_seqlengths(chr = opt$chr)
+        saveRDS(sl, sl_fn)
+    }
+    hg_fn = paste0(opt$outdir, "/hg.rds")
+    if (file.exists(hg_fn) & file.size(hg_fn) > 0 & !opt$overwrite){
+        hg = readRDS(hg_fn)
+    } else {
+        hg = si2gr(sl) %>% gr.stripstrand %>% unname
+        saveRDS(hg, hg_fn)
+    }
 
     message("Loading Gencode genes")
     ## gff = readRDS(gzcon(url('http://mskilab.com/gGnome/hg19/gencode.v19.annotation.gtf.gr.rds')))
-    gff = skidb::read_gencode(fn = opt$gencode)
-    if (file.exists(paste0(opt$outdir, "/pge.rds"))){
-        pge = readRDS(paste0(opt$outdir, "/pge.rds"))
+    gff = NA # we assign NA here so that we can later only load it when needed (for example for fusions calls below)
+    pge_fn = paste0(opt$outdir, "/pge.rds")
+    if (check_file(pge_fn, overwrite = opt$overwrite)){
+        pge = readRDS(pge_fn)
     } else {
+        gff = skidb::read_gencode(fn = opt$gencode)
         pge = gff %Q% (type=="gene") %Q% (gene_type=="protein_coding")
-        saveRDS(pge, paste0(opt$outdir, "/pge.rds"))
+        saveRDS(pge, pge_fn)
     }
     ## ge = readRDS(paste0(opt$libdir,"/db/ge.rds"))
     ## pge = readRDS(paste0(opt$libdir,"/db/pge.rds"))
     ## ug = readRDS(paste0(opt$libdir,"/db/ug.rds"))
     ## gco2 = split(gff, gff$gene_name)
     ## gco = readRDS("~/DB/GENCODE/hg19//gencode.composite.collapsed.rds")
-    if (file.exists(paste0(opt$outdir, "/gt.ge.rds"))){
-        gt.ge = readRDS(paste0(opt$outdir, "/gt.ge.rds"))
+    gt.ge.fn = paste0(opt$outdir, "/gt.ge.rds")
+    if (file.exists(gt.ge.fn) & !opt$overwrite){
+        gt.ge = readRDS(gt.ge.fn)
     } else {
         gt.ge = track.gencode(gencode = opt$gencode, cached = FALSE)
-        saveRDS(gt.ge, paste0(opt$outdir, "/gt.ge.rds"))
+        saveRDS(gt.ge, gt.ge.fn)
     }
     ## gt.ge = readRDS(paste0(opt$libdir,"/db/gt.ge.rds"))
 
     message("Loading gene lists")
     cgc = fready(paste0(opt$libdir,"/db/CGC.txt"))
-    tsg = readRDS(paste0(opt$libdir, "db/tsg.rds"))
-    onc = readRDS(paste0(opt$libdir, "db/onc.rds"))
-    ddr = readRDS(paste0(opt$libdir, "db/prl2015.rds"))
+    tsg = readRDS(paste0(opt$libdir, "/db/tsg.rds"))
+    onc = readRDS(paste0(opt$libdir, "/db/onc.rds"))
+    ddr = readRDS(paste0(opt$libdir, "/db/prl2015.rds"))
     
     ## cgc$onc = cgc$Significant_across_any_tumor_type_lineage_if_gain_ == 'Yes'
     ## cgc$tsg = cgc$Significant_across_any_tumor_type_lineage_if_lost_ == 'Yes'
@@ -148,19 +156,26 @@ if(opt$knit_only == FALSE){
 
     message("Returning Purity, Ploidy, and Coverage Variance \nAlso returning bam qc stats")
     jabba = readRDS(opt$jabba_rds)
+    gg_fn = paste0(opt$outdir, "/complex.rds")
     if (file.exists(opt$complex) & file.size(opt$complex)>0){
         file.copy(opt$complex, paste0(opt$outdir, "/complex.rds"))
         gg = readRDS(opt$complex)
     } else {
-        gg = events(gG(jabba = jabba))
-        saveRDS(gg, paste0(opt$outdir, "/complex.rds"))
+        if (!(file.exists(gg_fn) & file.size(gg_fn) > 0) | opt$overwrite){
+            gg = events(gG(jabba = jabba))
+            # TODO: there is another instance in which we override this file later. Seems redundant
+            saveRDS(gg, gg_fn)
+        } else {
+            gg = readRDS(gg_fn)
+        }
     }
 
-    if (!file.exists(paste0(opt$outdir, "/coverage.gtrack.rds"))){
+    cvgt_fn = paste0(opt$outdir, "/coverage.gtrack.rds")
+    if (!file.exists(cvgt_fn) | opt$overwrite){
         cvgt = covcbs(opt$cbs_cov_rds, purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3)
-        saveRDS(cvgt, paste0(opt$outdir, "/coverage.gtrack.rds"))
+        saveRDS(cvgt, cvgt_fn)
     } else {
-        cvgt = readRDS(paste0(opt$outdir, "/coverage.gtrack.rds"))
+        cvgt = readRDS(cvgt_fn)
     }
 
     if (!file.exists(paste0(opt$outdir, "/oncotable.rds")) | opt$overwrite){
@@ -176,14 +191,20 @@ if(opt$knit_only == FALSE){
         ## TMB
         ## ##########################
         message("Calculating TMB")
-        bcf = khtools::parsesnpeff(opt$annotated_vcf, filterpass = TRUE, coding_alt_only = FALSE, geno = "GT", altpipe = FALSE)
-        ## bcf = grok_vcf(opt$annotated_vcf, label = opt$pair, long = TRUE, snpeff.ontology = paste0(opt$libdir, "/db/snpeff_ontology.rds"))
-        ## bcf = bcf %Q% (FILTER=="PASS")
-        genome.size = sum(seqlengths(bcf), na.rm = T)/1e6
-        nmut = data.table(as.character(seqnames(bcf)), start(bcf), end(bcf), bcf$REF, bcf$ALT) %>% unique %>% nrow
-        mut.density = data.table(
-            id = opt$pair, value = c(nmut, nmut/genome.size), type = c('count', 'density'),
-            track = 'tmb', source = 'annotated_bcf')
+        mut.density.fn = paste0(opt$outdir, '/mut.density.rds')
+        if (check_file(mut.density.fn, overwrite = opt$overwrite)){
+            mut.density = readRDS(mut.density.fn)
+        } else {
+            bcf = khtools::parsesnpeff(opt$annotated_vcf, filterpass = TRUE, coding_alt_only = FALSE, geno = "GT", altpipe = FALSE)
+            ## bcf = grok_vcf(opt$annotated_vcf, label = opt$pair, long = TRUE, snpeff.ontology = paste0(opt$libdir, "/db/snpeff_ontology.rds"))
+            ## bcf = bcf %Q% (FILTER=="PASS")
+            genome.size = sum(seqlengths(bcf), na.rm = T)/1e6
+            nmut = data.table(as.character(seqnames(bcf)), start(bcf), end(bcf), bcf$REF, bcf$ALT) %>% unique %>% nrow
+            mut.density = data.table(
+                id = opt$pair, value = c(nmut, nmut/genome.size), type = c('count', 'density'),
+                track = 'tmb', source = 'annotated_bcf')
+            saveRDS(mut.density, mut.density.fn)
+        }
         out = rbind(out, mut.density, fill = TRUE, use.names = TRUE)
 
         ## TODO add overall TMB background distribution
@@ -275,29 +296,36 @@ if(opt$knit_only == FALSE){
         ## #####################
         message("Returning Windows of complex variants")
         ## SV events
-        ev = gg$meta$event
-        if (nrow(ev)>0){
-            ev[, ev.ix := seq_len(.N), by = type]
-            ev[, ev.id := paste(type, ev.ix, sep = "_")]
-            ev.fp = ev[, gr.stripstrand(parse.gr(footprint)) + 1e4]
-            ev.fp$ev.id = ev$ev.id[ev.fp$grl.ix]
-            ev.fp = split(ev.fp, ev.fp$ev.id)
+        ev_fn = paste0(opt$outdir, "/events.rds")
+        if (file.exists(ev_fn) & file.size(ev_fn) >0 & !opt$overwrite){
+            ev = readRDS(ev_fn)
+        } else {
+            ev = gg$meta$event
+            if (nrow(ev)>0){
+                ev[, ev.ix := seq_len(.N), by = type]
+                ev[, ev.id := paste(type, ev.ix, sep = "_")]
+                ev.fp = ev[, gr.stripstrand(parse.gr(footprint)) + 1e4]
+                ev.fp$ev.id = ev$ev.id[ev.fp$grl.ix]
+                ev.fp = split(ev.fp, ev.fp$ev.id)
 
-            ## ev[, ev.png := paste0(opt$outdir,"/sv_events/",opt$pair,"_",ev.id,".png")]
-            ## ev[, ev.js.range := str_replace(gsub("+|-", "", footprint), ",", "%20")]
-            ev[, ev.js.range := {
-                gr = gr.reduce(gr.stripstrand(parse.gr(footprint)) + 1e4)
-                paste(gr.string(gr), collapse = "%20|%20")
-            }, by = ev.id]
-            ev[, ev.js := paste0(
-                     opt$server,
-                     "index.html?file=",
-                     opt$pair,
-                     ".json&location=",
-                     ev.js.range,
-                     "&view=")]
-            saveRDS(ev, paste0(opt$outdir, "/events.rds"))
-            
+                ## ev[, ev.png := paste0(opt$outdir,"/sv_events/",opt$pair,"_",ev.id,".png")]
+                ## ev[, ev.js.range := str_replace(gsub("+|-", "", footprint), ",", "%20")]
+                ev[, ev.js.range := {
+                    gr = gr.reduce(gr.stripstrand(parse.gr(footprint)) + 1e4)
+                    paste(gr.string(gr), collapse = "%20|%20")
+                }, by = ev.id]
+                ev[, ev.js := paste0(
+                         opt$server,
+                         "index.html?file=",
+                         opt$pair,
+                         ".json&location=",
+                         ev.js.range,
+                         "&view=")]
+                saveRDS(ev, ev_fn)
+
+            }
+        }
+        if (nrow(ev) > 0){
             ## TODO: also add burden
             ## only save the count in oncotable
             sv = ev[, .(value = .N), by = type][, id := opt$pair][
@@ -344,51 +372,61 @@ if(opt$knit_only == FALSE){
         ## mutations with some effect
         ## WARNING: not working with KH update Thursday, Mar 25, 2021 09:44:55 AM
         ## som = khtools::parsesnpeff(tmp.path, filterpass = TRUE, coding_alt_only = TRUE, geno = "GT", altpipe = FALSE)
-        som = bcf %Q% (grepl('chromosome_number_variation|exon_loss_variant|rare_amino_acid|stop_lost|transcript_ablation|coding_sequence|regulatory_region_ablation|TFBS|exon_loss|truncation|start_lost|missense|splice|stop_gained|frame', annotation))
+        som.dt.fn = paste0(opt$outdir, "/somatic.mutations.rds")
+        if (file.exists(som.dt.fn) & file.size(som.dt.fn) > 0 & !opt$overwrite){
+            som.dt = readRDS(som.dt.fn)
+        } else {
+            som = bcf %Q% (grepl('chromosome_number_variation|exon_loss_variant|rare_amino_acid|stop_lost|transcript_ablation|coding_sequence|regulatory_region_ablation|TFBS|exon_loss|truncation|start_lost|missense|splice|stop_gained|frame', annotation))
 
-        ## NOTE: mutations can be in multiple lines as it affects different transcripts!!
+            ## NOTE: mutations can be in multiple lines as it affects different transcripts!!
 
-        ## annotate copy numbers
-        som.cn = readRDS(opt$somatic_snv_cn)
-        som = som %$% dt2gr(som.cn[!is.na(cn)])[, c("cn", "est_cn_ll")]
-        som$variant.g = paste0(seqnames(som), ':', start(som), '-', end(som), ' ', som$REF, '>', som$ALT)
-        ## deduplicate!!!!!!!!!!
-        som = som %Q% (!duplicated(variant.g))
-        ## variant.g = paste(gr.string(som), paste0(som$REF, ">", som$ALT))
-        som$type = "short"
-        som$track = "variants"
-        som$source = "annotated_bcf"
-        som.dt = gr2dt(som)
-        ## som.dt[, factor(impact, levels = rev(c("LOW", "MODERATE", "HIGH")))]
-        ## som.dt = som.dt[order(impact)]
+            ## annotate copy numbers
+            som.cn = readRDS(opt$somatic_snv_cn)
+            som = som %$% dt2gr(som.cn[!is.na(cn)])[, c("cn", "est_cn_ll")]
+            som$variant.g = paste0(seqnames(som), ':', start(som), '-', end(som), ' ', som$REF, '>', som$ALT)
+            ## deduplicate!!!!!!!!!!
+            som = som %Q% (!duplicated(variant.g))
+            ## variant.g = paste(gr.string(som), paste0(som$REF, ">", som$ALT))
+            som$type = "short"
+            som$track = "variants"
+            som$source = "annotated_bcf"
+            som.dt = gr2dt(som)
+            ## som.dt[, factor(impact, levels = rev(c("LOW", "MODERATE", "HIGH")))]
+            ## som.dt = som.dt[order(impact)]
+            saveRDS(som.dt, som.dt.fn)
+        }
         vars = som.dt[, .(id = opt$pair, gene, vartype, variant.g, variant.p, distance, annotation, type = "short", track = 'variants', source = 'annotated_bcf', vcn = est_cn_ll)] %>% unique
         out = rbind(out, vars, fill = TRUE, use.names = TRUE)
-        saveRDS(som.dt, paste0(opt$outdir, "/somatic.mutations.rds"))
 
         ## annotate cool.ge with overlapping functional somatic short variants
         ## cool.ge %*%
 
         ## GERMLINE mutations
         message("Loading germline pathogenic mutations")
-        ger = khtools::parsesnpeff(opt$annotated_vcf_germline, filterpass = TRUE, coding_alt_only = TRUE, geno = "GT", altpipe = FALSE)
-        ## TOO many, only select for really impactful ones
-        ger = ger %Q% (impact=="HIGH")
-        ger.cn = readRDS(opt$germline_snv_cn)
-        ger.cn = dt2gr(ger.cn[, .(seqnames, start, end, REF, ALT, cn, est_cn_ll)])
-        ger = ger %$% ger.cn[, c("cn", "est_cn_ll")]
-        ger$variant.g = paste0(seqnames(ger), ':', start(ger), '-', end(ger), ' ', ger$REF, '>', ger$ALT)
-        ger = ger %Q% (!duplicated(variant.g))
-        ## variant.g = paste(gr.string(ger), paste0(ger$REF, ">", ger$ALT))
-        ger$type = "short_germline"
-        ger$track = "variants"
-        ger$source = "annotated_vcf_germline"
-        ger.dt = gr2dt(ger)
-        ## ger.dt[, factor(impact, levels = rev(c("LOW", "MODERATE", "HIGH")))]
-        ## ger.dt = ger.dt[order(impact)]
+        ger.dt.fn = paste0(opt$outdir, "/germline.mutations.rds")
+        if (file.exists(ger.dt.fn) & file.size(ger.dt.fn) > 0 & !opt$overwrite){
+            ger.dt = readRDS(ger.dt.fn)
+        } else {
+            ger = khtools::parsesnpeff(opt$annotated_vcf_germline, filterpass = TRUE, coding_alt_only = TRUE, geno = "GT", altpipe = FALSE)
+            ## TOO many, only select for really impactful ones
+            ger = ger %Q% (impact=="HIGH")
+            ger.cn = readRDS(opt$germline_snv_cn)
+            ger.cn = dt2gr(ger.cn[, .(seqnames, start, end, REF, ALT, cn, est_cn_ll)])
+            ger = ger %$% ger.cn[, c("cn", "est_cn_ll")]
+            ger$variant.g = paste0(seqnames(ger), ':', start(ger), '-', end(ger), ' ', ger$REF, '>', ger$ALT)
+            ger = ger %Q% (!duplicated(variant.g))
+            ## variant.g = paste(gr.string(ger), paste0(ger$REF, ">", ger$ALT))
+            ger$type = "short_germline"
+            ger$track = "variants"
+            ger$source = "annotated_vcf_germline"
+            ger.dt = gr2dt(ger)
+            ## ger.dt[, factor(impact, levels = rev(c("LOW", "MODERATE", "HIGH")))]
+            ## ger.dt = ger.dt[order(impact)]
+            saveRDS(ger.dt, ger.dt.fn)
+        }
         gvars = ger.dt[, .(id = opt$pair, gene, vartype, variant.g, variant.p, distance, annotation, type, track = 'variants', source, vcn = est_cn_ll)] %>% unique
         out = rbind(out, gvars, fill = TRUE, use.names = TRUE)
-        saveRDS(ger.dt, paste0(opt$outdir, "/germline.mutations.rds"))
-        
+
         ## ##################
         ## FUNCTIONAL CNA EVENTS
         ## ##################
@@ -396,32 +434,36 @@ if(opt$knit_only == FALSE){
         pl = gg$nodes$dt[seqnames %in% names(sl)][, sum(cn * width, na.rm = TRUE)/sum(width, na.rm = TRUE)]
         gg$set(ploidy = pl)
         gg$set(purity = jabba$purity)
+        ## FIXME: we already save gg to this file earlier so let's get rid of one of these.
         saveRDS(gg, paste0(opt$outdir, "/complex.rds"))
 
-        ## TODO:  ## infer CNAs
-        scna = rbind(
-            gg$nodes$dt[
-                cn>=opt$amp_thresh * jabba$ploidy, ][, type := 'amp'],
-            gg$nodes$dt[
-                !seqnames %in% c("X", "Y")][
-                    (cn == 1) | (cn < opt$del_thresh * jabba$ploidy), ][
-              , type := 'hetdel'],
-            gg$nodes$dt[
-                !seqnames %in% c("X", "Y")][cn == 0, ][, type := 'homdel']
-        )
+      # get the ncn data from jabba
+      kag = readRDS(gsub("jabba.simple.rds", "karyograph.rds", opt$jabba_rds))
+      nseg = NULL
+      if ('ncn' %in% names(mcols(kag$segstats))){
+          nseg = kag$segstats[,c('ncn')]
+      }
 
-        if (nrow(scna))
-        {
-            scna.gr = gr.reduce(dt2gr(scna, seqlengths = seqlengths(gg)), by = "type")[, "type"]
-            scna.gr$col = case_when(
-                scna.gr$type == "homdel" ~ "#2166ac",
-                scna.gr$type == "hetdel" ~ "#92c5de",
-                scna.gr$type == "amp" ~ "#b2182b",
-                TRUE ~ NA_character_
-            )
-            saveRDS(scna.gr, paste0(opt$outdir, "/scna.gr.rds"))
-            ## TODO: ignore X/Y chromosome for now
-            cool.scna = scna.gr %*% (pge[, 'gene_name'] %Q% (gene_name %in% c(onc, tsg, ddr))) %>% gr2dt
+      scna.fn = paste0(opt$outdir, '/scna.rds')
+      if (check_file(scna.fn, overwrite = opt$overwrite)){
+          scna = readRDS(scna.fn)
+      } else {
+          scna = skitools::get_gene_ampdels_from_jabba(jabba, amp.thresh = opt$amp_thresh,
+                                         del.thresh = opt$del_thresh, pge = pge, nseg = nseg)
+
+            if (nrow(scna))
+            {
+                scna$col = case_when(
+                    scna$type == "homdel" ~ "#2166ac",
+                    scna$type == "hetdel" ~ "#92c5de",
+                    scna$type == "amp" ~ "#b2182b",
+                    TRUE ~ NA_character_
+                )
+                saveRDS(scna, scna.fn)
+            }
+      }
+      if (scna[, .N] > 0){
+            cool.scna = scna[gene_name %in% c(onc, tsg, ddr)]
             ## cool.scna = rbind(
             ##     scna[(gene_name %in% union(tsg, ddr)) & grepl("del", type)],
             ##     scna[(gene_name %in% onc) & grepl("amp", type)]
@@ -429,6 +471,7 @@ if(opt$knit_only == FALSE){
             if (nrow(cool.scna))
             {
                 cool.scna[, track := 'variants'][, source := 'jabba_rds'][, vartype := 'scna']
+                # FIXME: why only save the oncogenes and TSGs to the oncotable? let's save all gene CNVs and wherever we need, we will subset according to the type of gene
                 out = rbind(out,
                             cool.scna[, .(id = opt$pair, value = type, type, track, gene = gene_name)],
                             fill = TRUE, use.names = TRUE)
@@ -438,32 +481,39 @@ if(opt$knit_only == FALSE){
         ## ##################
         ## FUSION GENES
         ## ##################
-        message("Returning Fusion Calls, only multi gene, in frame fusions")
+        message("Returning Fusion Calls, only multi gene, in-frame fusions")
         ## gg = gg ## gG(jabba = opt$jabba_rds)
-        if (file.exists(opt$fusions) & file.size(opt$fusions)>0){
-            fu = readRDS(opt$fusions)
-        } else {
-            fu = fusions(gg, gff)
-        }
+        fu.fn = paste0(opt$outdir, "/fusions.rds")
+        if (check_file(fu.fn, overwrite = opt$overwrite)){
+            if (file.exists(opt$fusions) & file.size(opt$fusions)>0){
+                fu = readRDS(opt$fusions)
+            } else {
+                if (is.na(gff)){
+                    gff = skidb::read_gencode(fn = opt$gencode)
+                }
+                fu = fusions(gg, gff)
+            }
 
-        fu$set(og.wid = fu$dt$walk.id)
-        fus <- fu$meta
-        fix = fus[silent == FALSE, ][!duplicated(genes), walk.id]
-        if (length(fix)>0){
-            fu = fu[fix]
-            fus = fu$meta
-            ## save into the oncotable
-            fus[, vartype := ifelse(in.frame == TRUE, 'fusion', 'outframe_fusion')] # annotate out of frame fusions
-            fus = fus[, .(gene = strsplit(genes, ',') %>% unlist,
-                          vartype = rep(vartype, sapply(strsplit(genes, ','), length)))][
-              , id := opt$pair][, track := 'variants'][, type := vartype][, source := 'fusions']
-            out = rbind(out, fus, fill = TRUE, use.names = TRUE)
-            fu.fn = paste0(opt$outdir, "/fusions.rds")
-            saveRDS(fu, fu.fn)
-            ## TODO: Let's pull out the DNA junctions supporting reads
-            ## TODO: Let's pull out the RNA fusion transcripts
-            ## if (file.exists(opt$star_bam)){}
+            fu$set(og.wid = fu$dt$walk.id)
+            fus <- fu$meta
+            fix = fus[silent == FALSE, ][!duplicated(genes), walk.id]
+            if (length(fix)>0){
+                fu = fu[fix]
+                saveRDS(fu, fu.fn)
+                ## TODO: Let's pull out the DNA junctions supporting reads
+                ## TODO: Let's pull out the RNA fusion transcripts
+                ## if (file.exists(opt$star_bam)){}
+            }
+        } else {
+            fu = readRDS(fu.fn)
         }
+        fus = fu$meta
+        ## save into the oncotable
+        fus[, vartype := ifelse(in.frame == TRUE, 'fusion', 'outframe_fusion')] # annotate out of frame fusions
+        fus = fus[, .(gene = strsplit(genes, ',') %>% unlist,
+                      vartype = rep(vartype, sapply(strsplit(genes, ','), length)))][
+          , id := opt$pair][, track := 'variants'][, type := vartype][, source := 'fusions']
+        out = rbind(out, fus, fill = TRUE, use.names = TRUE)
 
         ## ###################
         ## OVEREXPRESSION of ONCs
@@ -507,7 +557,7 @@ if(opt$knit_only == FALSE){
             ##     !cool.ge$gene_name %in% tsg & cool.ge$gene_name %in% ddr ~ "DDR",
             ##     TRUE ~ "none"
             ## )
-            saveRDS(gs, "cool.ge.rds")
+            saveRDS(gs, paste0(opt$outdir, "cool.ge.rds"))
         }
     }
     message("Everything ready, now knit")
@@ -666,5 +716,4 @@ rmarkdown::render(
                   tumor_type = opt$tumor_type,
                   server = opt$server),
     quiet = FALSE)
-
 
