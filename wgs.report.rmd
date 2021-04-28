@@ -85,8 +85,10 @@ knitr::include_graphics(file.path(params$outdir, "wgs.gtrack.png"))
 ```
 
 ## circos
-add circos
 
+```{r, wgs-circos, out.width = "95%", results = "asis", echo = FALSE, fig.align = "center"}
+knitr::include_graphics(file.path(params$outdir, "wgs.circos.png"))
+```
 ***
 # Driver events (CNAs and fusions) {.tabset .tabset-fade .tabset-pills}
 This sample shows the following known structural drivers:

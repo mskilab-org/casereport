@@ -86,6 +86,22 @@ if (!opt$knit_only) {
     } else {
         message("Whole genome gTracks already exist")
     }
+
+    if (opt$overwrite | !file.exists(wgs.circos.fname)) {
+        message("Generating whole-genome circos plot")
+        ppng(circos(junctions = gg$junctions[type == "ALT"],
+                    cov = cvgt@data[[1]],
+                    field = "cn",
+                    link.h.ratio = 0.1,
+                    cex.points = 0.1),
+             filename = wgs.circos.fname,
+             height = 1000,
+             width = 1000)
+    } else {
+        message("Whole genome circos plot already exists")
+    }
+
+            
     
     if (opt$overwrite | !file.exists(file.path(opt$outdir, "fusions.driver.txt"))) {
         message("Preparing fusion genes report")
