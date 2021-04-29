@@ -46,6 +46,7 @@ suppressMessages(expr = {
         library(jsonlite)
         library(knitr)
         library(rmarkdown)
+        library(ComplexHeatmap)
         library(wesanderson)
         message("Loading critical dependencies from KevUtils")
         source(paste0(opt$libdir, "/utils.R"))
@@ -98,8 +99,8 @@ if (!opt$knit_only) {
         message("Generating whole-genome gTrack plots")
         ppng(plot(c(cvgt, gg$gt), c(as.character(1:22), "X", "Y")),
              filename  = wgs.gtrack.fname,
-             height = 1000,
-             width = 3000)
+             height = 2000,
+             width = 5000)
     } else {
         message("Whole genome gTracks already exist")
     }
@@ -131,7 +132,7 @@ if (!opt$knit_only) {
                                            cgc.fname = cgc.fname,
                                            file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
                                            pad = 1e5,
-                                           height = 1000,
+                                           height = 2000,
                                            width = 1000,
                                            outdir = opt$outdir)
 
