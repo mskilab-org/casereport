@@ -407,24 +407,29 @@ fusion.table = function(fusions.fname = NULL,
 
     filtered.fusions$set(driver = cgc.dt$driver, driver.name = cgc.dt$driver.name)
 
-    ## cgc.gene = sapply(filtered.fusions$dt$name, function (gns) {any(unlist(strsplit(gns, ",")) %in% cgc.gene.symbols)})
+    ## get chromosomes touched by each
+    fs.chroms = sapply(1:length(filtered.fusions),
+                       function(ix) {
+                           ix.seqnames = seqnames(filtered.fusions[ix]$grl[[1]]) %>% as.character
+                           ix.split.seqnames = split(ix.seqnames,
+                                                     cumsum(c(1, abs(diff(as.numeric(as.factor(ix.seqnames)))))))
+                           out = lapply(1:length(ix.split.seqnames),
+                                        function(j) {unique(ix.split.seqnames[[j]])})
+                           return(paste(out, collapse = "->"))
+                       })
 
-    ## filtered.fusions$set(driver = cgc.gene)
+    filtered.fusions$set(chroms = fs.chroms)
 
     ## grab GRanges for each walk
     fs.grl = filtered.fusions$grl
     values(fs.grl) = filtered.fusions$dt[, .(walk.id)]
     fs.gr = stack(fs.grl)
-    ## fs.dt = as.data.table(filtered.fusions$grl) ## adds column group
-    ## fs.dt[, ":="(walk.id = filtered.fusions$dt$walk.id[group])]
 
     ## overlap with complex events
     this.ev = readRDS(complex.fname)$meta$events[type %in% ev.types,]
     ev.grl = parse.grl(this.ev$footprint)
     values(ev.grl) = this.ev
     ev.gr = stack(ev.grl)
-    ## ev.footprints = as.data.table(parse.grl(this.ev$footprint))
-    ## ev.footprints[, ":="(ev.id = this.ev$ev.id[group], type = this.ev$type[group])]
 
     ov = gr.findoverlaps(fs.gr, ev.gr,
                          qcol = c("walk.id"),
