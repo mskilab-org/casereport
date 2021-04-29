@@ -13,6 +13,7 @@ if (!exists("opt")){
         make_option(c("--proximity"), type = "character", help = "proximity module output, RDS"),
         make_option(c("--deconstruct_sigs"), type = "character", help = "deconstruct_sigs module output, RDS"),    
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
+        make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
         make_option(c("--chrom_sizes"), type = "character", default = "~/DB/UCSC/hg19.broad.chrom.sizes", help = "chrom.sizes file of the reference genome"),
         make_option(c("--knit_only"), type = "logical", default = FALSE, action = "store_true", help = "if true, skip module and just knit"),
         make_option(c("--amp_thresh"), type = "numeric", default = 4,
@@ -117,13 +118,17 @@ if (!opt$knit_only) {
     } else {
         message("Whole genome circos plot already exists")
     }
-    
-    if (opt$overwrite | !file.exists(file.path(opt$outdir, "fusions.driver.txt"))) {
+
+    fusions.driver.fname = file.path(opt$outdir, "fusions.driver.txt")
+    fusions.other.fname = file.path(opt$outdir, "fusions.other.txt")
+    if (opt$overwrite | !file.exists(fusions.driver.fname) | !file.exists(fusions.other.fname)) {
         message("Preparing fusion genes report")
+        ## grab name of driver genes file
+        cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers), file.path(opt$libdir, "data", "cgc.tsv"), opt$drivers)
         fusions.slickr.dt = fusion.wrapper(fusions.fname = opt$fusions,
                                            complex.fname = opt$complex,
                                            cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
-                                           cgc.fname = file.path(opt$libdir, "data", "cgc.tsv"),
+                                           cgc.fname = cgc.fname,
                                            file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
                                            pad = 1e5,
                                            height = 1000,
@@ -131,8 +136,9 @@ if (!opt$knit_only) {
                                            outdir = opt$outdir)
 
         ## save data table for drivers and non-drivers separately
-        fwrite(fusions.slickr.dt[driver == TRUE,], file.path(opt$outdir, "fusions.driver.txt"))
-        fwrite(fusions.slickr.dt[driver == FALSE,], file.path(opt$outdir, "fusions.other.txt"))
+        fwrite(fusions.slickr.dt[driver == TRUE,], fusions.driver.fname)
+        fwrite(fusions.slickr.dt[driver == FALSE,], fusions.other.fname)
+        
     } else {
         message("Fusion files already exist")
     }

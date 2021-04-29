@@ -279,8 +279,7 @@ fusion.wrapper = function(fusions.fname = NULL,
     filtered.fusions = fusion.table(fusions.fname = fusions.fname,
                                     complex.fname = complex.fname,
                                     cgc.fname = cgc.fname,
-                                    ev.types = ev.types,
-                                    outdir = outdir)
+                                    ev.types = ev.types)
 
     filtered.fusions = fusion.plot(fs = filtered.fusions,
                                    complex.fname = complex.fname,
@@ -305,7 +304,6 @@ fusion.wrapper = function(fusions.fname = NULL,
 #' @param complex.fname (character) file name to events
 #' @param cgc.fname (character) cancer gene census file name
 #' @param ev.types (character) event types
-#' @param outdir (character) output directory
 #'
 #' @return gWalk (filtered) with metadata columns:
 #' - walk.id
@@ -320,9 +318,8 @@ fusion.table = function(fusions.fname = NULL,
                         cgc.fname = "/data/cgc.tsv",
                         ev.types = c("qrp", "qpdup", "qrdel",
                                      "tic", "bfb", "dm", "chromoplexy",
-                                     "chromothripsis", "tyfonas", "rigma", "pyrgo"),
-                        outdir = "./") {
-
+                                     "chromothripsis", "tyfonas", "rigma", "pyrgo"))
+{
     if (!file.exists(fusions.fname)) {
         stop("fusions.fname does not exist")
     }
@@ -349,9 +346,22 @@ fusion.table = function(fusions.fname = NULL,
     cgc.gene.symbols = fread(cgc.fname)[["Gene Symbol"]]
 
     ## annotate genes if they are in cgc
-    cgc.gene = sapply(filtered.fusions$dt$name, function (gns) {any(unlist(strsplit(gns, ",")) %in% cgc.gene.symbols)})
+    cgc.dt = rbindlist(
+        lapply(1:length(filtered.fusions),
+               function(ix) {
+                   gns = unlist(strsplit(filtered.fusions$dt$name[ix], ","))
+                   gene.in.cgc = any(gns %in% cgc.gene.symbols)
+                   gns.filtered = gns[which(gns %in% cgc.gene.symbols)]
+                   cgc.names = paste(gns.filtered, collapse = ", ")
+                   return(data.table(driver = gene.in.cgc, driver.name = cgc.names))
+               }),
+        fill = TRUE)
 
-    filtered.fusions$set(driver = cgc.gene)
+    filtered.fusions$set(driver = cgc.dt$driver, driver.name = cgc.dt$driver.name)
+
+    ## cgc.gene = sapply(filtered.fusions$dt$name, function (gns) {any(unlist(strsplit(gns, ",")) %in% cgc.gene.symbols)})
+
+    ## filtered.fusions$set(driver = cgc.gene)
 
     ## grab GRanges for each walk
     fs.grl = filtered.fusions$grl
