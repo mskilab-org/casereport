@@ -96,10 +96,10 @@ circos = function(junctions = jJ(),
 
     ## mark with colors by class
     col.dt = data.table(class = c("INV-like", "TRA-like", "DUP-like", "DEL-like"),
-                        col = c(alpha("purple", 0.2),
-                                alpha("red", 0.2),
-                                alpha("green", 0.2),
-                                alpha("blue", 0.2)))
+                        col = c(alpha("purple", 0.5),
+                                alpha("green", 0.5),
+                                alpha("red", 0.5),
+                                alpha("blue", 0.5)))
     bpdt = junctions$dt
     bpdt[, col := col.dt$col[match(bpdt$class, col.dt$class)]]
     
@@ -240,7 +240,7 @@ circos = function(junctions = jJ(),
         if (is.null(bpdt$lwd))
             bpdt$lwd = NA_integer_
 
-        bpdt[is.na(lwd), lwd := 1]
+        bpdt[is.na(lwd), lwd := 2]
 
         if (is.null(bpdt$col))
             bpdt$col = NA_character_
@@ -275,11 +275,19 @@ circos = function(junctions = jJ(),
     lgd_links = ComplexHeatmap::Legend(
         at = col.dt$class,
         type = "lines",
-        legend_gp = gpar(col = col.dt$col, lwd = 2),
+        legend_gp = gpar(col = col.dt$col, lwd = 5),
         title_position = "topleft",
-        title = "Junctions")
+        title = "Junctions",
+        labels_gp = gpar(col = "black", fontsize = 15),
+        title_gp = gpar(col = "black", fontsize = 25),
+        grid_width = unit(10, "mm"))
+
     
-    draw(lgd_links, x = unit(1, "npc") - unit(2, "mm"), y = unit(4, "mm"), just = c("right", "bottom"))
+    draw(lgd_links,
+         x = unit(1, "npc") - unit(4, "mm"),
+         y = unit(4, "mm"),
+         just = c("right", "bottom"))
+
     
     circlize::circos.clear()
 }
