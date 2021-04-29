@@ -11,7 +11,9 @@ if (!exists("opt")){
         make_option(c("--complex"), type = "character", help = "complex event caller, RDS"),
         make_option(c("--fusions"), type = "character", help = "fusions module output, RDS"),
         make_option(c("--proximity"), type = "character", help = "proximity module output, RDS"),
-        make_option(c("--deconstruct_sigs"), type = "character", help = "deconstruct_sigs module output, RDS"),    
+        make_option(c("--deconstruct_sigs"), type = "character", default = NA_character_, help = "deconstruct_sigs module output, RDS"),
+        make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample"),
+        make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
         make_option(c("--chrom_sizes"), type = "character", default = "~/DB/UCSC/hg19.broad.chrom.sizes", help = "chrom.sizes file of the reference genome"),
@@ -60,13 +62,16 @@ if (!opt$knit_only) {
 
     message("Returning Purity, Ploidy, and run 'events' if not already provided")
     jabba = readRDS(opt$jabba_rds)
-    if (file.exists(opt$complex) & file.size(opt$complex)>0){
+    if (file.exists(paste0(opt$outdir, "/complex.rds"))){
+        gg = readRDS(paste0(opt$outdir, "/complex.rds"))
+    } else if (file.exists(opt$complex) & file.size(opt$complex)>0){
         file.copy(opt$complex, paste0(opt$outdir, "/complex.rds"))
         gg = readRDS(opt$complex)
     } else {
         gg = events(gG(jabba = jabba))
         saveRDS(gg, paste0(opt$outdir, "/complex.rds"))
     }
+    opt$complex = paste0(opt$outdir, "/complex.rds")
 
     message("Prepare coverage data")
     if (!file.exists(paste0(opt$outdir, "/coverage.gtrack.rds"))){
@@ -91,6 +96,11 @@ if (!opt$knit_only) {
     ## png(filename = paste0(opt$outdir, "/genome.wide.gtrack.png"), width = 2700, height = 900)
     ## plot(gts, hg, gap = 1e7, y0 = 0, cex.label = 2, yaxis.cex = 0.5)
     ## dev.off()
+
+    ## TODO: make this generic
+    ## cgc = fread(paste0(opt$libdir, "/data/cgc.tsv"))
+    onc = readRDS(paste0(opt$libdir, "/data/onc.rds"))
+    tsg = readRDS(paste0(opt$libdir, "/data/tsg.rds"))
 
     wgs.gtrack.fname = file.path(opt$outdir, "wgs.gtrack.png")
     wgs.circos.fname = file.path(opt$outdir, "wgs.circos.png")
@@ -122,6 +132,20 @@ if (!opt$knit_only) {
     fusions.driver.fname = file.path(opt$outdir, "fusions.driver.txt")
     fusions.other.fname = file.path(opt$outdir, "fusions.other.txt")
     if (opt$overwrite | !file.exists(fusions.driver.fname) | !file.exists(fusions.other.fname)) {
+        ## if opt$fusions not available, run it
+        if (!file.exists(opt$fusions) | file.size(opt$fusions)==0){
+            if (file.exists(paste0(opt$outdir, "/fusions.rds"))){
+                opt$fusions = paste0(opt$outdir, "/fusions.rds")
+            } else {
+                if (!exists("gff")){
+                    gff = skidb::read_gencode(fn = opt$gencode)
+                }
+                fu = fusions(gg, gff)
+                saveRDS(fu, paste0(opt$outdir, "/fusions.rds"))
+                opt$fusions = paste0(opt$outdir, "/fusions.rds")
+                saveRDS(opt, "cmd.args.rds")
+            }
+        }
         message("Preparing fusion genes report")
         ## grab name of driver genes file
         cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers), file.path(opt$libdir, "data", "cgc.tsv"), opt$drivers)
@@ -159,6 +183,63 @@ if (!opt$knit_only) {
         fwrite(sv.slickr.dt, file.path(opt$outdir, "sv.gallery.txt"))
     } else {
         message("SV gallery files already exist")
+    }
+
+
+    ## generate histograms of RNA expression level over a cohort
+    if (file.good(opt$tpm_cohort)){
+        tpm_cohort = fread(opt$tpm_cohort, header = TRUE)
+        if (is.element(opt$pair, colnames(tpm_cohort))){
+            message("Found this sample in the cohort expression matrix")
+            if (file.good(opt$tpm)){
+                tpm = fread(opt$tpm, header = TRUE)
+                message("Found this sample's input expression matrix, overwriting...")
+                tpm_cohort[[opt$pair]] = NULL
+                tpm_cohort = data.table::merge.data.table(
+                    tpm_cohort, tpm, by = "gene", all.x = TRUE)
+            }
+        }
+        ## limit to annotated ONC/TSG
+        tpm_cohort = tpm_cohort[gene %in% c(onc, tsg)]
+        tpm_cohort[, role := case_when(gene %in% onc ~ "ONC",
+                                      gene %in% tsg ~ "TSG",
+                                      TRUE ~ NA_character_)]
+        ## melt to analyze
+        mexp = data.table::melt(tpm_cohort, id.vars = c("gene", "role"),
+                                variable.name = "pair")
+        mexp[, ":="(qt = rank(as.double(.SD$value))/.N), by = gene]
+        ## TODO: make the quantile threshold adjustable
+        cool.exp = mexp[pair==opt$pair][(role=="TSG" & qt<0.05) | (role=="ONC" & qt>0.95)]
+        ## cool.exp[order(qt)]
+        if (nrow(cool.exp)>0){
+            cool.exp[, direction := ifelse(qt>0.95, "over", "under")]
+            cool.exp[, gf := paste0(opt$outdir, "/", gene, ".", direction, ".expr.png")]
+            setkey(cool.exp, "gene")
+            for (g in cool.exp$gene){
+                if (!file.good(cool.exp[g, gf])){
+                    png(filename = cool.exp[g, gf], width = 1600, height = 900)
+                    d = mexp[gene==g][!is.na(value)]
+                    message(g)
+                    ## ppng({
+                    p = ggplot(d, aes(x = value, y = gene)) +
+                        geom_density_ridges2() +
+                        geom_vline(
+                            xintercept = cool.exp[g, value],
+                            color = ifelse(cool.exp[g, direction]=="over", "red", "blue"),
+                            lty = "dashed", lwd = 3) +
+                        scale_x_continuous(trans = "log1p",
+                                           breaks = c(1, 10, 100, 1000, 10000)) +
+                        ## scale_y_continuous(expand = c(0, 0)) +
+                        theme_pub(48) +
+                        theme(axis.text.x = element_text(angle = 45, vjust = 1)) +
+                        labs(x = "TPM")
+                    print(p)
+                    ## }, width = 1600, height = 900)
+                    dev.off()
+                }
+            }
+            saveRDS(cool.exp, paste0(opt$outdir, "/cool.expr.rds"))
+        }
     }
 }
 

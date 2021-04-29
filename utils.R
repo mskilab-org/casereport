@@ -732,3 +732,37 @@ check_file = function(fn, overwrite = FALSE, verbose = TRUE){
         return(FALSE)
 }
 
+file.good = function(f){
+    file.exists(f) & (file.size(f)>0)
+}
+
+
+
+theme_pub = function(base_size=14, base_family="Helvetica") {
+    (ggthemes::theme_foundation(base_size=base_size, base_family=base_family)
+        + theme(plot.title = element_text(
+                    face = "plain",
+                    size = rel(1.2),
+                    hjust = 0.5),
+                text = element_text(face = "plain"),
+                panel.background = element_rect(colour = NA),
+                plot.background = element_rect(colour = NA),
+                panel.border = element_rect(colour = "black", size = 0.5),
+                panel.spacing = unit(0.1, "inch"),
+                axis.title = element_text(face = "plain",size = rel(1)),
+                axis.title.y = element_text(angle=90,vjust =2),
+                axis.title.x = element_text(vjust = -0.2),
+                axis.text = element_text(),
+                axis.line = element_line(colour="black", size = 0.01),
+                axis.ticks = element_line(size = 0.05),
+                axis.ticks.length = grid::unit(0.02, "inch"),
+                panel.grid.major = element_blank(),
+                panel.grid.minor = element_blank(),
+                legend.position = "bottom",
+                legend.direction = "horizontal",
+                legend.key.size= grid::unit(0.1, "inch"),
+                legend.background = element_blank(),
+                plot.margin = grid::unit(c(0.2,0.2,0.2,0.2),"inch"),
+                strip.background=element_blank()
+                ))
+}
