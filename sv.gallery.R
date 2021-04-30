@@ -117,13 +117,11 @@ sv.plot = function(complex.fname = NULL,
     cvgt$name = "cov"
     cvgt$yaxis.pretty = 3
     cvgt$xaxis.chronly = TRUE
-    cvgt$xaxis.nticks = 0
 
     this.complex.gt$ylab = "CN"
     this.complex.gt$name = "JaBbA"
     this.complex.gt$yaxis.pretty = 3
-    this.complex.gt$chronly = TRUE
-    this.complex.gt$xaxis.nticks = 0
+    this.complex.gt$xaxis.chronly = TRUE
     
     gt = c(cvgt, this.complex.gt)
 
