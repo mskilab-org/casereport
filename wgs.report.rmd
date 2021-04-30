@@ -94,15 +94,18 @@ knitr::include_graphics(file.path(params$outdir, "wgs.circos.png"))
 
 ***
 
-# Driver events (CNAs and fusions) {.tabset .tabset-fade .tabset-pills}
+# Driver events (CNAs and fusions)
+
+## Copy number variants
 Copy number variations (CNVs) in oncogenes and tumor suppressor genes.
 
 ```{r, driver-cnv-table, results = "asis", out.width= "100%"}
 driver.genes.cnv = fread(file.path(params$outdir, "driver.genes.cnv.txt"))
-driver.genes.cnv[cnv != ''] %>% kbl() %>% kable_styling()
+driver.genes.cnv[cnv != ''] %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
+
 ```
 
-# Known fusions
+## Known fusions
 Fusions in which at least one involved gene is an oncogene or tumor suppressor.
 
 ```{r, driver-fusions-table, results = "asis", out.width= "100%"}
@@ -110,7 +113,7 @@ driver.fusions.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
 driver.fusions.dt[, .(name, walk.id, driver.name, chroms, maxcn, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling()
 ```
 
-## Gallery
+### Gallery
 
 ```{r, driver-fusions-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 driver.fusions.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
@@ -120,14 +123,14 @@ slick_up
 ## slick_up %synch% slick_down
 ```
 
-# Other in-frame, non-silent gene fusions
+## Other in-frame, non-silent gene fusions
 
 ```{r, other-fusions-table, results = "asis", out.width= "100%"}
 other.fusions.dt = fread(file.path(params$outdir, "fusions.other.txt"))
 other.fusions.dt[, .(name, walk.id, chroms, maxcn, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
 ```
 
-## Gallery
+### Gallery
 
 ```{r, other-fusions-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 other.fusions.dt = fread(file.path(params$outdir, "fusions.other.txt"))
@@ -138,7 +141,8 @@ slick_up
 ```
 
 
-## altered transcripts
+## Altered transcripts
+Coming soon
 
 ***
 # SV event classifications
