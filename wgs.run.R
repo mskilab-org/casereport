@@ -131,7 +131,7 @@ if (!opt$knit_only) {
                                            cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
                                            cgc.fname = cgc.fname,
                                            file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
-                                           pad = 1e5,
+                                           pad = 0.5,
                                            height = 2000,
                                            width = 1000,
                                            outdir = opt$outdir)
@@ -152,7 +152,7 @@ if (!opt$knit_only) {
                                        cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
                                        server = opt$server,
                                        pair = opt$pair,
-                                       pad = 5e5,
+                                       pad = 0.5,
                                        height = 1500, ## png image height
                                        width = 1000, ## png image width
                                        outdir = opt$outdir)
