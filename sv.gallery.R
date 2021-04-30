@@ -206,7 +206,11 @@ ridge.plot = function(complex.fname = NULL,
     })
     
     this.burden.dt[, ntile := nt]
-    this.burden.dt[, ntile.label := paste(format(ntile * 100, digits = 4), "%")]
+    this.burden.dt[, ntile.label := paste("Percentile:", format(ntile * 100, digits = 4), "%")]
+    this.burden.dt[, count.label := paste("Count:", burden)]
+    this.burden.dt[, final.label := ifelse(burden > 0,
+                                           paste(count.label, ntile.label, sep = "\n"),
+                                           count.label)]
 
     ## synchronizeg factor levels
     sv.burden.dt[, type := factor(type, levels = ev.types)]
@@ -223,8 +227,12 @@ ridge.plot = function(complex.fname = NULL,
                      aes(x = burden, xend = burden, y = as.numeric(type), yend = as.numeric(type) + 0.9),
                      color = color, size = lwd) +
         geom_label(data = this.burden.dt[type %in% ev.types],
-                   aes(x = burden, y = as.numeric(type) + 0.8, label = ntile.label),
-                   nudge_x = 0.2) + 
+                   aes(x = burden, y = as.numeric(type) + 0.5, label = final.label),
+                   nudge_x = 0.2,
+                   hjust = "left",
+                   color = "black",
+                   label.size = 0,
+                   alpha = 0.5) + 
         scale_x_continuous(trans = "log1p", breaks = c(0, 1, 10, 100)) +
         labs(x = "Event Burden", y = "") +
         theme_ridges(center = TRUE) +
