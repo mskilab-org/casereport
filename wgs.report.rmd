@@ -138,7 +138,7 @@ slick_up
 ## Burdens of event types
 Count of complex events against background distribution from Cell cohort.
 
-```{r, sv-burden, fig.align = "center", out.width = "100%"}
+```{r, sv-burden, fig.align = "center", out.width = "80"}
 knitr::include_graphics(file.path(params$outdir, "ridgeplot.png"))
 ```
 
