@@ -132,7 +132,7 @@ if (!opt$knit_only) {
                                            complex.fname = opt$complex,
                                            cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
                                            cgc.fname = cgc.fname,
-                                           file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                           gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
                                            pad = 0.5,
                                            height = 1500,
                                            width = 1000,

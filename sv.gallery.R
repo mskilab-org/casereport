@@ -9,6 +9,7 @@
 #' wrapper function to prep input for SlickR
 #' @param complex.fname (character)
 #' @param cvgt.fname
+#' @param gngt.fname
 #' @param background.fname
 #' @param server
 #' @param pair
@@ -22,6 +23,7 @@
 gallery.wrapper = function(complex.fname = NULL,
                            background.fname = "/data/sv.burden.txt",
                            cvgt.fname = "./coverage.gtrack.rds",
+                           gngt.fname = "./data/gt.ge.hg19.rds",
                            server = "",
                            pair = "",
                            ev.types = c("qrp", "tic", "qpdup", "qrdel",
@@ -41,6 +43,7 @@ gallery.wrapper = function(complex.fname = NULL,
 
     svplot.dt = sv.plot(complex.fname = complex.fname,
                         cvgt.fname = cvgt.fname,
+                        gngt.fname = gngt.fname,
                         server = server,
                         pair = pair,
                         ev.types = ev.types,
@@ -66,7 +69,8 @@ gallery.wrapper = function(complex.fname = NULL,
 #' Creates .png files corresponding to gTrack plots for each complex SV pattern
 #'
 #' @param complex.fname (character) output from complex event caller
-#' @param cvgt.fname (character) coverage gTrack
+#' @param cvgt.fname (character) coverage gTrack file path
+#' @param gngt.fname (character) gencode gTrack file path
 #' @param server (character) server url
 #' @param pair (character) pair id
 #' @param ev.types (character) complex event types
@@ -78,14 +82,15 @@ gallery.wrapper = function(complex.fname = NULL,
 #' @return data.table with columns id, plot.fname, and plot.link
 sv.plot = function(complex.fname = NULL,
                    cvgt.fname = "./coverage.gtrack.rds",
+                   gngt.fname = "./data/gt.ge.hg19.rds",
                    server = "",
                    pair = "",
                    ev.types = c("qrp", "tic", "qpdup", "qrdel",
                                 "bfb", "dm", "chromoplexy", "chromothripsis",
                                 "tyfonas", "rigma", "pyrgo"),
                    pad = 5e5,
-                   height = 500,
-                   width = 500,
+                   height = 1000,
+                   width = 1000,
                    outdir = "./") {
     if (!file.exists(complex.fname)) {
         stop("complex.fname does not exist")
@@ -97,7 +102,8 @@ sv.plot = function(complex.fname = NULL,
     ## grab complex and coverage gTracks
     this.complex = readRDS(complex.fname)
     this.complex.gt = this.complex$gt
-    cvgt = readRDS(cvgt.fname)
+    cvgt = readRDS(cvgt.fname) ## coverage
+    gngt = readRDS(gngt.fname) ## gencode gTrack
 
     ## extract just complex events
     complex.ev = this.complex$meta$events[type %in% ev.types,]
@@ -123,8 +129,15 @@ sv.plot = function(complex.fname = NULL,
     this.complex.gt$name = "JaBbA"
     this.complex.gt$yaxis.pretty = 3
     this.complex.gt$xaxis.chronly = TRUE
-    
-    gt = c(cvgt, this.complex.gt)
+
+    gngt$cex.label = 0.2
+    gngt$xaxis.chronly = TRUE
+    gngt$name = "genes"
+    gngt$ywid = 0.1
+    gngt$height = 2
+    gngt$yaxis.cex = 0.8
+        
+    gt = c(gngt, cvgt, this.complex.gt)
 
     ## save plots
     pts = lapply(1:nrow(complex.ev),
@@ -137,7 +150,7 @@ sv.plot = function(complex.fname = NULL,
                      } else {
                          win = GenomicRanges::trim(win + pad)
                      }
-                     ppng(plot(gt, win),
+                     ppng(plot(gt, win, legend.params = list(plot = FALSE)),
                           title = complex.ev$plot.title[ix],
                           filename = complex.ev$plot.fname[ix],
                           height = height,
