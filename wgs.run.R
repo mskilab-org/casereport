@@ -153,7 +153,7 @@ if (!opt$knit_only) {
                                        server = opt$server,
                                        pair = opt$pair,
                                        pad = 5e5,
-                                       height = 1000, ## png image height
+                                       height = 1500, ## png image height
                                        width = 1000, ## png image width
                                        outdir = opt$outdir)
 
