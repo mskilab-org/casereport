@@ -49,12 +49,13 @@ gallery.wrapper = function(complex.fname = NULL,
                         width = width,
                         outdir = outdir)
 
-    out = rbind(data.table(plot.fname = ridgeplot.fname),
-                svplot.dt,
-                fill = TRUE,
-                use.names = TRUE)
+    ## out = rbind(data.table(plot.fname = ridgeplot.fname),
+    ##             svplot.dt,
+    ##             fill = TRUE,
+    ##             use.names = TRUE)
     
-    return (out)
+    ## return (out)
+    return(svplot.dt)
 }
                            
 #' @name sv.plot
