@@ -112,10 +112,33 @@ sv.plot = function(complex.fname = NULL,
     }, by = ev.id]
     complex.ev[, plot.link := paste0(server, "index.html?file=", pair, ".json&location=", ev.js.range, "&view=")]
 
+    ## gTrack formatting
+    cvgt$ylab = "CN"
+    cvgt$name = "cov"
+    cvgt$yaxis.pretty = 3
+    cvgt$xaxis.chronly = TRUE
+    cvgt$xaxis.nticks = 0
+
+    this.complex.gt$ylab = "CN"
+    this.complex.gt$name = "JaBbA"
+    this.complex.gt$yaxis.pretty = 3
+    this.complex.gt$chronly = TRUE
+    this.complex.gt$xaxis.nticks = 0
+    
+    gt = c(cvgt, this.complex.gt)
+
     ## save plots
     pts = lapply(1:nrow(complex.ev),
                  function(ix) {
-                     ppng(plot(c(cvgt, this.complex.gt), parse.grl(complex.ev$footprint[ix]) + pad),
+                     ## prepare window
+                     win = parse.grl(complex.ev$footprint[[ix]]) %>% unlist
+                     if (pad > 0 & pad <= 1) {
+                         adjust = pmax(1e5, pad * width(win))
+                         win = GenomicRanges::trim(win + adjust)
+                     } else {
+                         win = GenomicRanges::trim(win + pad)
+                     }
+                     ppng(plot(gt, win),
                           title = complex.ev$plot.title[ix],
                           filename = complex.ev$plot.fname[ix],
                           height = height,
