@@ -1,6 +1,8 @@
 #' zchoo Tuesday, Apr 27, 2021 10:49:13 AM
 #' this is to generate data tables and plots for fusions
 
+#' @name wgs.gtrack.plot
+
 #' @name circos
 #' @title circos
 #'
@@ -489,14 +491,47 @@ fusion.plot = function(fs = NULL,
     cvgt = readRDS(cvgt.fname)
     gngt = readRDS(gngt.fname)
     this.complex.gt = readRDS(complex.fname)$gt
+
+    ## format gTracks
+    cvgt$ylab = "CN"
+    cvgt$name = "cov"
+    cvgt$yaxis.pretty = 3
+    cvgt$xaxis.chronly = TRUE
+
+    this.complex.gt$ylab = "CN"
+    this.complex.gt$name = "JaBbA"
+    this.complex.gt$yaxis.pretty = 3
+    this.complex.gt$chronly = TRUE
+
+    gngt$xaxis.chronly = TRUE
+    gngt$name = "genes"
     
     plot.fnames = sapply(seq_along(fs),
                          function (ix) {
                              fn = file.path(outdir, "fusions", paste0("walk", fs$dt$walk.id[ix], ".png"))
                              fs.gt = fs[ix]$gt
+
+                             ## formatting
                              fs.gt$name = "gWalk"
-                             ppng(plot(c(gngt, cvgt, this.complex.gt, fs.gt),
-                                       fs[ix]$footprint + pad,
+                             fs.gt$labels.suppress = TRUE
+                             fs.gt$labels.suppress.grl = TRUE
+                             fs.gt$xaxis.chronly = TRUE
+
+                             gt = c(gngt, cvgt, this.complex.gt, fs.gt)
+                             gt$xaxis.chronly = TRUE
+
+                             ## format window
+                             win = fs[ix]$footprint
+                             
+                             if (pad > 0 & pad <= 1) {
+                                 adjust = pmax(1e5, pad * width(win))
+                                 win = GenomicRanges::trim(win + adjust)
+                             } else {
+                                 win = GenomicRanges::trim(win + pad)
+                             }
+                             
+                             ppng(plot(gt,
+                                       win,
                                        legend.params = list(plot = FALSE)),
                                   title = paste(fs$dt$name[ix], "|", "walk", fs$dt$walk.id[ix]),
                                   filename = fn,
@@ -504,6 +539,7 @@ fusion.plot = function(fs = NULL,
                                   width = width)
                              return(fn)
                          })
+    
     fs$set(plot.fname = plot.fnames)
     return(fs)
 }

@@ -131,9 +131,11 @@ if (!opt$knit_only) {
     wgs.circos.fname = file.path(opt$outdir, "wgs.circos.png")
     if (opt$overwrite | !file.exists(wgs.gtrack.fname)) {
         message("Generating whole-genome gTrack plots")
+        ## formatting gTrack
+        cvgt$xaxis.chronly = TRUE
         ppng(plot(c(cvgt, gg$gt), c(as.character(1:22), "X", "Y")),
              filename  = wgs.gtrack.fname,
-             height = 2000,
+             height = 1000,
              width = 5000)
     } else {
         message("Whole genome gTracks already exist")
@@ -165,8 +167,8 @@ if (!opt$knit_only) {
                                            cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
                                            cgc.fname = cgc.fname,
                                            file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
-                                           pad = 1e5,
-                                           height = 2000,
+                                           pad = 0.5,
+                                           height = 1500,
                                            width = 1000,
                                            outdir = opt$outdir)
 
@@ -186,8 +188,8 @@ if (!opt$knit_only) {
                                        cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
                                        server = opt$server,
                                        pair = opt$pair,
-                                       pad = 5e5,
-                                       height = 1000, ## png image height
+                                       pad = 0.5,
+                                       height = 1200, ## png image height
                                        width = 1000, ## png image width
                                        outdir = opt$outdir)
 

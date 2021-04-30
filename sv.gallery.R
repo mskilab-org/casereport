@@ -49,12 +49,13 @@ gallery.wrapper = function(complex.fname = NULL,
                         width = width,
                         outdir = outdir)
 
-    out = rbind(data.table(plot.fname = ridgeplot.fname),
-                svplot.dt,
-                fill = TRUE,
-                use.names = TRUE)
+    ## out = rbind(data.table(plot.fname = ridgeplot.fname),
+    ##             svplot.dt,
+    ##             fill = TRUE,
+    ##             use.names = TRUE)
     
-    return (out)
+    ## return (out)
+    return(svplot.dt)
 }
                            
 #' @name sv.plot
@@ -112,10 +113,31 @@ sv.plot = function(complex.fname = NULL,
     }, by = ev.id]
     complex.ev[, plot.link := paste0(server, "index.html?file=", pair, ".json&location=", ev.js.range, "&view=")]
 
+    ## gTrack formatting
+    cvgt$ylab = "CN"
+    cvgt$name = "cov"
+    cvgt$yaxis.pretty = 3
+    cvgt$xaxis.chronly = TRUE
+
+    this.complex.gt$ylab = "CN"
+    this.complex.gt$name = "JaBbA"
+    this.complex.gt$yaxis.pretty = 3
+    this.complex.gt$xaxis.chronly = TRUE
+    
+    gt = c(cvgt, this.complex.gt)
+
     ## save plots
     pts = lapply(1:nrow(complex.ev),
                  function(ix) {
-                     ppng(plot(c(cvgt, this.complex.gt), parse.grl(complex.ev$footprint[ix]) + pad),
+                     ## prepare window
+                     win = parse.grl(complex.ev$footprint[[ix]]) %>% unlist
+                     if (pad > 0 & pad <= 1) {
+                         adjust = pmax(1e5, pad * width(win))
+                         win = GenomicRanges::trim(win + adjust)
+                     } else {
+                         win = GenomicRanges::trim(win + pad)
+                     }
+                     ppng(plot(gt, win),
                           title = complex.ev$plot.title[ix],
                           filename = complex.ev$plot.fname[ix],
                           height = height,
@@ -184,7 +206,11 @@ ridge.plot = function(complex.fname = NULL,
     })
     
     this.burden.dt[, ntile := nt]
-    this.burden.dt[, ntile.label := paste(format(ntile * 100, digits = 4), "%")]
+    this.burden.dt[, ntile.label := paste("Percentile:", format(ntile * 100, digits = 4), "%")]
+    this.burden.dt[, count.label := paste("Count:", burden)]
+    this.burden.dt[, final.label := ifelse(burden > 0,
+                                           paste(count.label, ntile.label, sep = "\n"),
+                                           count.label)]
 
     ## synchronizeg factor levels
     sv.burden.dt[, type := factor(type, levels = ev.types)]
@@ -201,8 +227,12 @@ ridge.plot = function(complex.fname = NULL,
                      aes(x = burden, xend = burden, y = as.numeric(type), yend = as.numeric(type) + 0.9),
                      color = color, size = lwd) +
         geom_label(data = this.burden.dt[type %in% ev.types],
-                   aes(x = burden, y = as.numeric(type) + 0.8, label = ntile.label),
-                   nudge_x = 0.2) + 
+                   aes(x = burden, y = as.numeric(type) + 0.5, label = final.label),
+                   nudge_x = 0.2,
+                   hjust = "left",
+                   color = "black",
+                   label.size = 0,
+                   alpha = 0.5) + 
         scale_x_continuous(trans = "log1p", breaks = c(0, 1, 10, 100)) +
         labs(x = "Event Burden", y = "") +
         theme_ridges(center = TRUE) +
