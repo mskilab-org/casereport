@@ -55,7 +55,6 @@ library(htmlwidgets)
 library(svglite)
 library(slickR)
 library(plotly)
-library(png)
 message("Loaded Packages")
 
 gg = readRDS(paste0(params$outdir, "/complex.rds"))
@@ -66,7 +65,7 @@ message("Loaded gGraph")
 ```
 
 ***
-# Synopsis
+# `r paste(params$pair, params$tumor_type, sep = ", ")`
 
 This is a `r params$tumor_type` sample. Average read depth for the tumor
 sample is xx. Estimated purity is 
