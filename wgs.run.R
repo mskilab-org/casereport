@@ -12,6 +12,7 @@ if (!exists("opt")){
         make_option(c("--fusions"), type = "character", help = "fusions module output, RDS"),
         make_option(c("--proximity"), type = "character", help = "proximity module output, RDS"),
         make_option(c("--deconstruct_sigs"), type = "character", default = NA_character_, help = "deconstruct_sigs module output, RDS"),
+        make_option(c("--sigs_cohort"), type = "character", default = NA_character_, help = ""),
         make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample"),
         make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
@@ -49,6 +50,7 @@ suppressMessages(expr = {
         library(knitr)
         library(rmarkdown)
         library(ComplexHeatmap)
+        library(deconstructSigs)
         message("Loading critical dependencies from KevUtils")
         source(paste0(opt$libdir, "/utils.R"))
         source(paste0(opt$libdir, "/config.R"))
@@ -129,6 +131,9 @@ if (!opt$knit_only) {
         message("Whole genome circos plot already exists")
     }
 
+    ## ##################
+    ## Fusions
+    ## ##################
     fusions.driver.fname = file.path(opt$outdir, "fusions.driver.txt")
     fusions.other.fname = file.path(opt$outdir, "fusions.other.txt")
     if (opt$overwrite | !file.exists(fusions.driver.fname) | !file.exists(fusions.other.fname)) {
@@ -166,7 +171,7 @@ if (!opt$knit_only) {
     } else {
         message("Fusion files already exist")
     }
-                                        
+    
 
     if (opt$overwrite | !file.exists(file.path(opt$outdir, "sv.gallery.txt"))) {
         message("Preparing SV gallery")
@@ -185,8 +190,9 @@ if (!opt$knit_only) {
         message("SV gallery files already exist")
     }
 
-
-    ## generate histograms of RNA expression level over a cohort
+    ## ##################
+    ## RNA expression level over a cohort
+    ## ##################
     if (file.good(opt$tpm_cohort)){
         tpm_cohort = fread(opt$tpm_cohort, header = TRUE)
         if (is.element(opt$pair, colnames(tpm_cohort))){
@@ -202,8 +208,8 @@ if (!opt$knit_only) {
         ## limit to annotated ONC/TSG
         tpm_cohort = tpm_cohort[gene %in% c(onc, tsg)]
         tpm_cohort[, role := case_when(gene %in% onc ~ "ONC",
-                                      gene %in% tsg ~ "TSG",
-                                      TRUE ~ NA_character_)]
+                                       gene %in% tsg ~ "TSG",
+                                       TRUE ~ NA_character_)]
         ## melt to analyze
         mexp = data.table::melt(tpm_cohort, id.vars = c("gene", "role"),
                                 variable.name = "pair")
@@ -230,7 +236,7 @@ if (!opt$knit_only) {
                         scale_x_continuous(trans = "log1p",
                                            breaks = c(1, 10, 100, 1000, 10000)) +
                         ## scale_y_continuous(expand = c(0, 0)) +
-                        theme_pub(48) +
+                        theme_minimal(32) +
                         theme(axis.text.x = element_text(angle = 45, vjust = 1)) +
                         labs(x = "TPM")
                     print(p)
@@ -239,6 +245,87 @@ if (!opt$knit_only) {
                 }
             }
             saveRDS(cool.exp, paste0(opt$outdir, "/cool.expr.rds"))
+        }
+    }
+
+    ## ##################
+    ## SNV signatures
+    ## ##################
+    if (file.good(opt$deconstruct_sigs)){
+        sig = readRDS(opt$deconstruct_sigs)
+        sigd = sig$weights %>% data.table::melt(variable.name = "Signature", value.name = "Proportion") %>% data.table
+        sigd[, Signature := factor(Signature, levels = rev(levels(Signature)))]
+        sigd[, pair := opt$pair]
+
+        if (!file.exists(paste0(opt$outdir, "/deconstruct_sigs.png")) | opt$overwrite){
+            ## ppng({
+            png(filename = paste0(opt$outdir, "/deconstruct_sigs.png"), width = 1600, height = 1200)
+            deconstructSigs::plotSignatures(sig)
+            dev.off()
+            ## makePie(sig)
+            ## }, "deconstruct_sigs.png", width = 1600, height = 1200)
+        }
+
+        if (!file.exists(paste0(opt$outdir, "/sig.composition.png")) | opt$overwrite){
+            if (file.good(opt$sigs_cohort)){
+                ## make proportion relative to cohort plot
+                allsig = data.table::fread(opt$sigs_cohort)
+                allsig = data.table::melt(allsig, id.var = "pair", variable.name = "Signature", value.name = "Proportion")
+                allsig[, Signature := factor(Signature, levels = rev(levels(Signature)))]
+
+                if (opt$pair %in% allsig[, pair]){
+                    ## remove existing record from the cohort first
+                    allsig = allsig[pair!=opt$pair]
+                }
+
+                allsig = rbind(allsig, sigd)
+                ## calculate percentile
+                allsig[, perc := rank(Proportion)/.N, by = Signature]
+
+                png(filename = paste0(opt$outdir, "/sig.composition.png"), width = 1600, height= 900)
+                ## individual sample compositions
+                ## ppng({
+                sigbar = ggplot(allsig, aes(y = Signature, x = Proportion)) +
+                    geom_density_ridges(bandwidth = 0.1,
+                                        alpha = 0.5, scale = 0.9,
+                                        rel_min_height = 0.01,
+                                        color = NA,
+                                        jittered_points = TRUE,
+                                        position = position_points_jitter(width = 0.01, height = 0),
+                                        point_shape = '|',
+                                        point_size = 3,
+                                        point_alpha = 0.1,
+                                        point_colour = "black") +
+                    geom_segment(data = sigd,
+                                 aes(x = Proportion, xend = Proportion,
+                                     y = as.numeric(Signature), yend = as.numeric(Signature) + 0.9),
+                                 color = "red", size = 2, lty = "dashed") +
+                    geom_label(data = allsig[pair==opt$pair],
+                               aes(x = Proportion, y = as.numeric(Signature) + 0.8,
+                                   label = paste0("qt ", format(perc * 100, digits = 2), "%")),
+                               nudge_x = 0.2) + 
+                    theme_minimal() +
+                    theme(
+                        text = element_text(size = 32)
+                        ## axis.text.x = element_text(angle = 45, hjust = 1)
+                    )
+                print(sigbar)
+                ## }, width = 900, height = 1600)
+                dev.off()
+            } else {
+                png(filename = "sig.composition.png", width = 1600, height= 900)
+                ## individual sample compositions
+                sigbar = ggplot(
+                    sigd,
+                    aes(x = Signature, y = Proportion)) +
+                    geom_bar(stat = "identity") +
+                    theme_minimal() +
+                    theme(text = element_text(size = 32),
+                          axis.text.x = element_text(angle = 45, hjust = 1)) +
+                    coord_flip()
+                print(sigbar)
+                dev.off()
+            }
         }
     }
 }

@@ -182,7 +182,29 @@ slick_down = slickR(obj = sv.slickr.dt$plot.fname, height = 100, width = "95%", 
 slick_up %synch% slick_down
 ```
 
-# SNV signatures
+# SNV signatures {.tabset .tabset-fade .tabset-pills}
+Fitting COSMIC signatures to the whole genome mutation profiles of
+this sample we obtain the following active SNV mutation signatures:
+
+```{r, SNV signature, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+cat("\n")
+cat("## deconstructSigs: input profile, fitted, error")
+cat("\n")
+## knitr::include_graphics(paste0(params$outdir, "/deconstruct_sigs.png"))
+cat(
+    paste0("![](", paste0(params$outdir, "/deconstruct_sigs.png"),")"), "\n"
+)
+cat ("\n<br>\n")
+
+cat("\n")
+cat("## SNV signature composition")
+cat("\n")
+cat(
+    paste0("![](", paste0(params$outdir, "/sig.composition.png"),")"), "\n"
+)
+cat ("\n<br>\n")
+```
+
 
 # HRDetect prediction (homologous recombination deficiency)
 
