@@ -732,6 +732,7 @@ check_file = function(fn, overwrite = FALSE, verbose = TRUE){
         return(FALSE)
 }
 
+
 file.good = function(f){
     file.exists(f) & (file.size(f)>0)
 }
@@ -765,4 +766,12 @@ theme_pub = function(base_size=14, base_family="Helvetica") {
                 plot.margin = grid::unit(c(0.2,0.2,0.2,0.2),"inch"),
                 strip.background=element_blank()
                 ))
+
+get_gene_ampdel_annotations = function(genes_cn, amp.thresh, del.thresh){
+    genes_cn[, cnv := '']
+    genes_cn[min_normalized_cn >= amp.thresh, cnv := 'amp']
+    genes_cn[min_cn > 1 & min_normalized_cn <= del.thresh, cnv := 'del']
+    genes_cn[min_cn == 1 & min_cn < ncn, cnv := 'hetdel']
+    genes_cn[min_cn == 0, cnv := 'homdel']
+    return(genes_cn)
 }

@@ -81,7 +81,7 @@ Over the whole genome, the number of somatic SNV/INDEL is xx, or Tumor Mutation 
 # Whole genome view {.tabset .tabset-fade .tabset-pills}
 ## gTrack 
 <div class="superbigimage">
-```{r, wgs-gtrack, out.width = "95%", results = "asis", echo = FALSE, fig.align = "center"}
+```{r, wgs-gtrack, max.width = "95%", results = "asis", echo = FALSE, fig.align = "center"}
 knitr::include_graphics(file.path(params$outdir, "wgs.gtrack.png"))
 ```
 </div>
@@ -94,11 +94,21 @@ knitr::include_graphics(file.path(params$outdir, "wgs.circos.png"))
 
 <br>
 
-***
-# Driver events (CNAs and fusions) {.tabset .tabset-fade .tabset-pills}
-add onc amp, tsg homdel, and known fusions
 
-# Known fusions
+***
+
+# Driver events (CNAs and fusions)
+
+## Copy number variants
+Copy number variations (CNVs) in oncogenes and tumor suppressor genes.
+
+```{r, driver-cnv-table, results = "asis", out.width= "100%"}
+driver.genes.cnv = fread(file.path(params$outdir, "driver.genes.cnv.txt"))
+driver.genes.cnv[cnv != ''] %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
+
+```
+
+## Known fusions
 Fusions in which at least one involved gene is an oncogene or tumor suppressor.
 
 ```{r, driver-fusions-table, results = "asis", out.width= "100%"}
@@ -106,33 +116,36 @@ driver.fusions.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
 driver.fusions.dt[, .(name, walk.id, driver.name, chroms, maxcn, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling()
 ```
 
-## Gallery
+### Gallery
 
 ```{r, driver-fusions-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 driver.fusions.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
-slick_up = slickR(obj = driver.fusions.dt$plot.fname, height = 500, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1)
-slick_down = slickR(obj = driver.fusions.dt$plot.fname, height = 100, width = "95%") + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
-slick_up %synch% slick_down
+slick_up = slickR(obj = driver.fusions.dt$plot.fname, height = 500, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+slick_up
+## slick_down = slickR(obj = driver.fusions.dt$plot.fname, height = 100, width = "95%") + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
+## slick_up %synch% slick_down
 ```
 
-# Other in-frame, non-silent gene fusions
+## Other in-frame, non-silent gene fusions
 
 ```{r, other-fusions-table, results = "asis", out.width= "100%"}
 other.fusions.dt = fread(file.path(params$outdir, "fusions.other.txt"))
-other.fusions.dt[, .(name, walk.id, chroms, maxcn, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling()
+other.fusions.dt[, .(name, walk.id, chroms, maxcn, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
 ```
 
-## Gallery
+### Gallery
 
 ```{r, other-fusions-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 other.fusions.dt = fread(file.path(params$outdir, "fusions.other.txt"))
-slick_up = slickR(obj = other.fusions.dt$plot.fname, height = 500, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1)
-slick_down = slickR(obj = other.fusions.dt$plot.fname, height = 100, width = "95%") + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
-slick_up %synch% slick_down
+slick_up = slickR(obj = other.fusions.dt$plot.fname, height = 500, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+slick_up
+## slick_down = slickR(obj = other.fusions.dt$plot.fname, height = 100, width = "95%") + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
+## slick_up %synch% slick_down
 ```
 
 
-## altered transcripts
+## Altered transcripts
+Coming soon
 
 Under construction
 
@@ -168,7 +181,7 @@ if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
 ## Burdens of event types
 Count of complex events against background distribution from Cell cohort.
 
-```{r, sv-burden, fig.align = "center", out.width = "100%"}
+```{r, sv-burden, fig.align = "center", out.width = "80%"}
 knitr::include_graphics(file.path(params$outdir, "ridgeplot.png"))
 ```
 
@@ -177,9 +190,10 @@ knitr::include_graphics(file.path(params$outdir, "ridgeplot.png"))
 ```{r, SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 ## read data table with plot png/URL
 sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
-slick_up = slickR(obj = sv.slickr.dt$plot.fname, height = 500, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1)
-slick_down = slickR(obj = sv.slickr.dt$plot.fname, height = 100, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
-slick_up %synch% slick_down
+slick_up = slickR(obj = sv.slickr.dt$plot.fname, height = 500, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+slick_up
+## slick_down = slickR(obj = sv.slickr.dt$plot.fname, height = 100, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
+## slick_up %synch% slick_down
 ```
 
 # SNV signatures {.tabset .tabset-fade .tabset-pills}
