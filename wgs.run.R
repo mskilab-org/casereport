@@ -104,7 +104,10 @@ if (!opt$knit_only) {
             message('JaBbA karyograph was not found at the expected location (', kag_rds, ') so we will use CN = 2 for the normal copy number of all chromosomes.')
         }
 
-        genes_cn = get_gene_copy_numbers(gg, gene_ranges = opt$genes, nseg = nseg)
+        #' zchoo Monday, May 03, 2021 02:33:55 PM
+        #' add ploidy to avoid bug
+        #' simplify seqnames to avoid empty data tables
+        genes_cn = get_gene_copy_numbers(gg, gene_ranges = opt$genes, nseg = nseg, ploidy = kag$ploidy, simplify_seqnames = TRUE)
         genes_cn_annotated = get_gene_ampdel_annotations(genes_cn, amp.thresh = opt$amp_thresh,
                                        del.thresh = opt$del_thresh)
 
@@ -231,6 +234,7 @@ if (!opt$knit_only) {
         sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
                                        background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
                                        cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
+                                       gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
                                        server = opt$server,
                                        pair = opt$pair,
                                        pad = 0.5,

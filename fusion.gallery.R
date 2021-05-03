@@ -540,7 +540,7 @@ fusion.plot = function(fs = NULL,
                              ppng(plot(gt,
                                        win,
                                        legend.params = list(plot = FALSE)),
-                                  title = paste(fs$dt$name[ix], "|", "walk", fs$dt$walk.id[ix]),
+                                  title = paste(fs$dt$genes[ix], "|", "walk", fs$dt$walk.id[ix]),
                                   filename = fn,
                                   height = height,
                                   width = width)

@@ -766,8 +766,14 @@ theme_pub = function(base_size=14, base_family="Helvetica") {
                 plot.margin = grid::unit(c(0.2,0.2,0.2,0.2),"inch"),
                 strip.background=element_blank()
                 ))
+}
 
 get_gene_ampdel_annotations = function(genes_cn, amp.thresh, del.thresh){
+    #' zchoo Monday, May 03, 2021 02:42:51 PM
+    ## check that genes_cn is actually a data table
+    if (!is.data.table(genes_cn)) {
+        genes_cn = as.data.table(genes_cn)
+    }
     genes_cn[, cnv := '']
     genes_cn[min_normalized_cn >= amp.thresh, cnv := 'amp']
     genes_cn[min_cn > 1 & min_normalized_cn <= del.thresh, cnv := 'del']
@@ -775,6 +781,7 @@ get_gene_ampdel_annotations = function(genes_cn, amp.thresh, del.thresh){
     genes_cn[min_cn == 0, cnv := 'homdel']
     return(genes_cn)
 }
+    
 
 #' @title check_GRanges_compatibility
 #' @description
@@ -800,6 +807,7 @@ check_GRanges_compatibility = function(gr1, gr2, name1 = 'first', name2 = 'secon
       }
       return(TRUE)
 }
+    
 
 
 #' @title get_gene_copy_numbers
@@ -813,6 +821,7 @@ check_GRanges_compatibility = function(gr1, gr2, name1 = 'first', name2 = 'secon
 #' @param nseg GRanges with field "ncn" - the normal copy number (if not provided then ncn = 2 is used)
 #' @param gene_id_col the name of the column to be used in order to identify genes (must be unique for each gene, so usually "gene_name" is not the right choice).
 #' @param simplify_seqnames when set to TRUE, then gr.sub is ran on the seqnames of the gGraph segments and the genes GRanges
+#' @param ploidy tumor ploidy default 2
 #' @param mfields the metadata fields that the output should inherit from the genes GRanges
 #' @param output_type either GRanges or data.table
 #' @return GRanges or data.table with genes CN
@@ -821,7 +830,8 @@ check_GRanges_compatibility = function(gr1, gr2, name1 = 'first', name2 = 'secon
 get_gene_copy_numbers = function(gg, gene_ranges, nseg = NULL, gene_id_col = 'gene_id',
                                       simplify_seqnames = FALSE,
                                       mfields = c("gene_name", "source", "gene_id", "gene_type", "level", "hgnc_id", "havana_gene"),
-                                      output_type = 'data.table'){
+                                      output_type = 'data.table',
+                                 ploidy = 2){
     if (is.character(gg)){
       gg = readRDS(gg)
     }
@@ -854,7 +864,8 @@ get_gene_copy_numbers = function(gg, gene_ranges, nseg = NULL, gene_id_col = 'ge
     normal_ploidy = round(sum(seq_widths * ngr$ncn, na.rm = T) / sum(seq_widths, na.rm = T))
 
     # normalize the CN by ploidy and by local normal copy number
-    ndt[, normalized_cn := cn * normal_ploidy / (jab$ploidy * ncn)]
+    ## ndt[, normalized_cn := cn * normal_ploidy / (jab$ploidy * ncn)] ## error because jab does not exist!
+    ndt[, normalized_cn := cn * normal_ploidy / (ploidy * ncn)]
 
     # overlapping copy number segments with gene ranges
     gene_cn_segments = dt2gr(ndt, seqlengths = seqlengths(gg)) %*% gene_ranges %>% gr2dt
@@ -897,6 +908,7 @@ get_gene_copy_numbers = function(gg, gene_ranges, nseg = NULL, gene_id_col = 'ge
     }
     return(dt2gr(gene_cn_table, seqlengths = seqlengths(gene_ranges)))
 }
+    
 # This is under construction.
 # a helper function to reduce the gencode GRanges to a a reduced version
 reduce_gencode = function(gencode, gene_id_col = 'gene_id'){
