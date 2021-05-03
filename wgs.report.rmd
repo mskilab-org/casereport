@@ -65,7 +65,7 @@ message("Loaded gGraph")
 ```
 
 ***
-# Synopsis
+# `r paste(params$pair, params$tumor_type, sep = ", ")`
 
 This is a `r params$tumor_type` sample. Average read depth for the tumor
 sample is xx. Estimated purity is 
@@ -91,6 +91,9 @@ knitr::include_graphics(file.path(params$outdir, "wgs.gtrack.png"))
 ```{r, wgs-circos, out.width = "95%", results = "asis", echo = FALSE, fig.align = "center"}
 knitr::include_graphics(file.path(params$outdir, "wgs.circos.png"))
 ```
+
+<br>
+
 
 ***
 
@@ -144,6 +147,35 @@ slick_up
 ## Altered transcripts
 Coming soon
 
+Under construction
+
+***
+# Over/under-expression of oncogenes/TSGs {.tabset .tabset-fade .tabset-pills}
+
+```{r expression, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
+    cool.exp = readRDS(paste0(params$outdir, "/cool.expr.rds"))
+    cat("\n")
+    for (g in cool.exp[order(qt, decreasing = T), gene]){
+        cat("\n")
+        cat("##", cool.exp[g, paste0(gene, " (", direction, ")", "<br>", "\n")])
+        ## this.png = try(readPNG(file.path(
+        ##     params$outdir, cool.exp[g, paste0("/", gene, ".", direction, ".expr.png")]
+        ## )))
+        ## try(grid::grid.raster(this.png,width = 1.0, just = "center"))
+        cat(
+            paste0(
+                "![](",
+                params$outdir,
+                cool.exp[g, paste0("/", gene, ".", direction, ".expr.png")],
+                ")"),
+            "\n")
+        ## knitr::include_graphics()
+        cat('\n', '<br>', '\n\n')
+    }
+}
+```
+
 ***
 # SV event classifications
 ## Burdens of event types
@@ -164,7 +196,29 @@ slick_up
 ## slick_up %synch% slick_down
 ```
 
-# SNV signatures
+# SNV signatures {.tabset .tabset-fade .tabset-pills}
+Fitting COSMIC signatures to the whole genome mutation profiles of
+this sample we obtain the following active SNV mutation signatures:
+
+```{r, SNV signature, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+cat("\n")
+cat("## deconstructSigs: input profile, fitted, error")
+cat("\n")
+## knitr::include_graphics(paste0(params$outdir, "/deconstruct_sigs.png"))
+cat(
+    paste0("![](", paste0(params$outdir, "/deconstruct_sigs.png"),")"), "\n"
+)
+cat ("\n<br>\n")
+
+cat("\n")
+cat("## SNV signature composition")
+cat("\n")
+cat(
+    paste0("![](", paste0(params$outdir, "/sig.composition.png"),")"), "\n"
+)
+cat ("\n<br>\n")
+```
+
 
 # HRDetect prediction (homologous recombination deficiency)
 

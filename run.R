@@ -125,7 +125,7 @@ if(opt$knit_only == FALSE){
         pge = readRDS(pge_fn)
     } else {
         gff = skidb::read_gencode(fn = opt$gencode)
-        pge = gff %Q% (type=="gene") %Q% (gene_type=="protein_coding")
+        pge = gff %Q% (type=="gene") %Q% (gene_type=="protein_coding") %Q% (level<3)
         saveRDS(pge, pge_fn)
     }
     ## ge = readRDS(paste0(opt$libdir,"/db/ge.rds"))

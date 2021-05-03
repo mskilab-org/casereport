@@ -11,8 +11,12 @@ if (!exists("opt")){
         make_option(c("--complex"), type = "character", help = "complex event caller, RDS"),
         make_option(c("--fusions"), type = "character", help = "fusions module output, RDS"),
         make_option(c("--proximity"), type = "character", help = "proximity module output, RDS"),
-        make_option(c("--deconstruct_sigs"), type = "character", help = "deconstruct_sigs module output, RDS"),    
+        make_option(c("--deconstruct_sigs"), type = "character", default = NA_character_, help = "deconstruct_sigs module output, RDS"),
+        make_option(c("--sigs_cohort"), type = "character", default = NA_character_, help = ""),
+        make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample"),
+        make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
+        make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
         make_option(c("--chrom_sizes"), type = "character", default = "~/DB/UCSC/hg19.broad.chrom.sizes", help = "chrom.sizes file of the reference genome"),
         make_option(c("--knit_only"), type = "logical", default = FALSE, action = "store_true", help = "if true, skip module and just knit"),
@@ -47,7 +51,7 @@ suppressMessages(expr = {
         library(knitr)
         library(rmarkdown)
         library(ComplexHeatmap)
-        library(wesanderson)
+        library(deconstructSigs)
         message("Loading critical dependencies from KevUtils")
         source(paste0(opt$libdir, "/utils.R"))
         source(paste0(opt$libdir, "/config.R"))
@@ -61,9 +65,12 @@ if (!opt$knit_only) {
 
     message("Returning Purity, Ploidy, and run 'events' if not already provided")
     jabba = readRDS(opt$jabba_rds)
-    gg_fn = paste0(opt$outdir, "/complex.rds")
-    if (check_file(gg_fn, overwrite = opt$overwrite)){
-        gg = readRDS(gg_fn)
+
+    if (file.exists(paste0(opt$outdir, "/complex.rds"))){
+        gg = readRDS(paste0(opt$outdir, "/complex.rds"))
+    } else if (file.exists(opt$complex) & file.size(opt$complex)>0){
+        file.copy(opt$complex, paste0(opt$outdir, "/complex.rds"))
+        gg = readRDS(opt$complex)
     } else {
         if (file.exists(opt$complex) & file.size(opt$complex)>0){
             file.copy(opt$complex, paste0(opt$outdir, "/complex.rds"))
@@ -97,7 +104,7 @@ if (!opt$knit_only) {
             message('JaBbA karyograph was not found at the expected location (', kag_rds, ') so we will use CN = 2 for the normal copy number of all chromosomes.')
         }
 
-        genes_cn = get_gene_copy_numbers(gg, pge = pge, nseg = nseg)
+        genes_cn = get_gene_copy_numbers(gg, gene_ranges = opt$genes, nseg = nseg)
         genes_cn_annotated = get_gene_ampdel_annotations(genes_cn, amp.thresh = opt$amp_thresh,
                                        del.thresh = opt$del_thresh)
 
@@ -115,6 +122,7 @@ if (!opt$knit_only) {
             fwrite(driver.genes_cn[, ..fields], driver.genes.cnv.fn)
         }
     }
+    opt$complex = paste0(opt$outdir, "/complex.rds")
 
     message("Prepare coverage data")
     cvgt_fn = paste0(opt$outdir, "/coverage.gtrack.rds")
@@ -126,6 +134,26 @@ if (!opt$knit_only) {
         cvgt = covcbs(cov.file, purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3)
         saveRDS(cvgt, cvgt_fn)
     }
+
+
+    ## xtYao legacy code
+    ## if (!file.exists(paste0(opt$outdir, "/hets.gtrack.rds"))){
+    ##     hgt = covcbs(opt$het_pileups_wgs,
+    ##                  purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3)
+    ##     saveRDS(cvgt, paste0(opt$outdir, "/coverage.gtrack.rds"))
+    ## } else {
+    ##     cvgt = readRDS(paste0(opt$outdir, "/coverage.gtrack.rds"))
+    ## }
+    ## message("Generate full genome gTrack plot")
+    ## gts = c(cvgt, gg$gtrack(name = opt$pair, height = 30))
+    ## png(filename = paste0(opt$outdir, "/genome.wide.gtrack.png"), width = 2700, height = 900)
+    ## plot(gts, hg, gap = 1e7, y0 = 0, cex.label = 2, yaxis.cex = 0.5)
+    ## dev.off()
+
+    ## TODO: make this generic
+    ## cgc = fread(paste0(opt$libdir, "/data/cgc.tsv"))
+    onc = readRDS(paste0(opt$libdir, "/data/onc.rds"))
+    tsg = readRDS(paste0(opt$libdir, "/data/tsg.rds"))
 
     wgs.gtrack.fname = file.path(opt$outdir, "wgs.gtrack.png")
     wgs.circos.fname = file.path(opt$outdir, "wgs.circos.png")
@@ -156,9 +184,26 @@ if (!opt$knit_only) {
         message("Whole genome circos plot already exists")
     }
 
+    ## ##################
+    ## Fusions
+    ## ##################
     fusions.driver.fname = file.path(opt$outdir, "fusions.driver.txt")
     fusions.other.fname = file.path(opt$outdir, "fusions.other.txt")
     if (opt$overwrite | !file.exists(fusions.driver.fname) | !file.exists(fusions.other.fname)) {
+        ## if opt$fusions not available, run it
+        if (!file.exists(opt$fusions) | file.size(opt$fusions)==0){
+            if (file.exists(paste0(opt$outdir, "/fusions.rds"))){
+                opt$fusions = paste0(opt$outdir, "/fusions.rds")
+            } else {
+                if (!exists("gff")){
+                    gff = skidb::read_gencode(fn = opt$gencode)
+                }
+                fu = fusions(gg, gff)
+                saveRDS(fu, paste0(opt$outdir, "/fusions.rds"))
+                opt$fusions = paste0(opt$outdir, "/fusions.rds")
+                saveRDS(opt, "cmd.args.rds")
+            }
+        }
         message("Preparing fusion genes report")
         ## grab name of driver genes file
         cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers), file.path(opt$libdir, "data", "cgc.tsv"), opt$drivers)
@@ -179,7 +224,7 @@ if (!opt$knit_only) {
     } else {
         message("Fusion files already exist")
     }
-                                        
+    
 
     if (opt$overwrite | !file.exists(file.path(opt$outdir, "sv.gallery.txt"))) {
         message("Preparing SV gallery")
@@ -197,6 +242,145 @@ if (!opt$knit_only) {
         fwrite(sv.slickr.dt, file.path(opt$outdir, "sv.gallery.txt"))
     } else {
         message("SV gallery files already exist")
+    }
+
+    ## ##################
+    ## RNA expression level over a cohort
+    ## ##################
+    if (file.good(opt$tpm_cohort)){
+        tpm_cohort = fread(opt$tpm_cohort, header = TRUE)
+        if (is.element(opt$pair, colnames(tpm_cohort))){
+            message("Found this sample in the cohort expression matrix")
+            if (file.good(opt$tpm)){
+                tpm = fread(opt$tpm, header = TRUE)
+                message("Found this sample's input expression matrix, overwriting...")
+                tpm_cohort[[opt$pair]] = NULL
+                tpm_cohort = data.table::merge.data.table(
+                    tpm_cohort, tpm, by = "gene", all.x = TRUE)
+            }
+        }
+        ## limit to annotated ONC/TSG
+        tpm_cohort = tpm_cohort[gene %in% c(onc, tsg)]
+        tpm_cohort[, role := case_when(gene %in% onc ~ "ONC",
+                                       gene %in% tsg ~ "TSG",
+                                       TRUE ~ NA_character_)]
+        ## melt to analyze
+        mexp = data.table::melt(tpm_cohort, id.vars = c("gene", "role"),
+                                variable.name = "pair")
+        mexp[, ":="(qt = rank(as.double(.SD$value))/.N), by = gene]
+        ## TODO: make the quantile threshold adjustable
+        cool.exp = mexp[pair==opt$pair][(role=="TSG" & qt<0.05) | (role=="ONC" & qt>0.95)]
+        ## cool.exp[order(qt)]
+        if (nrow(cool.exp)>0){
+            cool.exp[, direction := ifelse(qt>0.95, "over", "under")]
+            cool.exp[, gf := paste0(opt$outdir, "/", gene, ".", direction, ".expr.png")]
+            setkey(cool.exp, "gene")
+            for (g in cool.exp$gene){
+                if (!file.good(cool.exp[g, gf])){
+                    png(filename = cool.exp[g, gf], width = 1600, height = 900)
+                    d = mexp[gene==g][!is.na(value)]
+                    message(g)
+                    ## ppng({
+                    p = ggplot(d, aes(x = value, y = gene)) +
+                        geom_density_ridges2() +
+                        geom_vline(
+                            xintercept = cool.exp[g, value],
+                            color = ifelse(cool.exp[g, direction]=="over", "red", "blue"),
+                            lty = "dashed", lwd = 3) +
+                        scale_x_continuous(trans = "log1p",
+                                           breaks = c(1, 10, 100, 1000, 10000)) +
+                        ## scale_y_continuous(expand = c(0, 0)) +
+                        theme_minimal(32) +
+                        theme(axis.text.x = element_text(angle = 45, vjust = 1)) +
+                        labs(x = "TPM")
+                    print(p)
+                    ## }, width = 1600, height = 900)
+                    dev.off()
+                }
+            }
+            saveRDS(cool.exp, paste0(opt$outdir, "/cool.expr.rds"))
+        }
+    }
+
+    ## ##################
+    ## SNV signatures
+    ## ##################
+    if (file.good(opt$deconstruct_sigs)){
+        sig = readRDS(opt$deconstruct_sigs)
+        sigd = sig$weights %>% data.table::melt(variable.name = "Signature", value.name = "Proportion") %>% data.table
+        sigd[, Signature := factor(Signature, levels = rev(levels(Signature)))]
+        sigd[, pair := opt$pair]
+
+        if (!file.exists(paste0(opt$outdir, "/deconstruct_sigs.png")) | opt$overwrite){
+            ## ppng({
+            png(filename = paste0(opt$outdir, "/deconstruct_sigs.png"), width = 1600, height = 1200)
+            deconstructSigs::plotSignatures(sig)
+            dev.off()
+            ## makePie(sig)
+            ## }, "deconstruct_sigs.png", width = 1600, height = 1200)
+        }
+
+        if (!file.exists(paste0(opt$outdir, "/sig.composition.png")) | opt$overwrite){
+            if (file.good(opt$sigs_cohort)){
+                ## make proportion relative to cohort plot
+                allsig = data.table::fread(opt$sigs_cohort)
+                allsig = data.table::melt(allsig, id.var = "pair", variable.name = "Signature", value.name = "Proportion")
+                allsig[, Signature := factor(Signature, levels = rev(levels(Signature)))]
+
+                if (opt$pair %in% allsig[, pair]){
+                    ## remove existing record from the cohort first
+                    allsig = allsig[pair!=opt$pair]
+                }
+
+                allsig = rbind(allsig, sigd)
+                ## calculate percentile
+                allsig[, perc := rank(Proportion)/.N, by = Signature]
+
+                png(filename = paste0(opt$outdir, "/sig.composition.png"), width = 1600, height= 900)
+                ## individual sample compositions
+                ## ppng({
+                sigbar = ggplot(allsig, aes(y = Signature, x = Proportion)) +
+                    geom_density_ridges(bandwidth = 0.1,
+                                        alpha = 0.5, scale = 0.9,
+                                        rel_min_height = 0.01,
+                                        color = NA,
+                                        jittered_points = TRUE,
+                                        position = position_points_jitter(width = 0.01, height = 0),
+                                        point_shape = '|',
+                                        point_size = 3,
+                                        point_alpha = 0.1,
+                                        point_colour = "black") +
+                    geom_segment(data = sigd,
+                                 aes(x = Proportion, xend = Proportion,
+                                     y = as.numeric(Signature), yend = as.numeric(Signature) + 0.9),
+                                 color = "red", size = 2, lty = "dashed") +
+                    geom_label(data = allsig[pair==opt$pair],
+                               aes(x = Proportion, y = as.numeric(Signature) + 0.8,
+                                   label = paste0("qt ", format(perc * 100, digits = 2), "%")),
+                               nudge_x = 0.2) + 
+                    theme_minimal() +
+                    theme(
+                        text = element_text(size = 32)
+                        ## axis.text.x = element_text(angle = 45, hjust = 1)
+                    )
+                print(sigbar)
+                ## }, width = 900, height = 1600)
+                dev.off()
+            } else {
+                png(filename = "sig.composition.png", width = 1600, height= 900)
+                ## individual sample compositions
+                sigbar = ggplot(
+                    sigd,
+                    aes(x = Signature, y = Proportion)) +
+                    geom_bar(stat = "identity") +
+                    theme_minimal() +
+                    theme(text = element_text(size = 32),
+                          axis.text.x = element_text(angle = 45, hjust = 1)) +
+                    coord_flip()
+                print(sigbar)
+                dev.off()
+            }
+        }
     }
 }
 

@@ -399,7 +399,10 @@ fusion.table = function(fusions.fname = NULL,
     cgc.dt = rbindlist(
         lapply(1:length(filtered.fusions),
                function(ix) {
-                   gns = unlist(strsplit(filtered.fusions$dt$name[ix], ","))
+                   ## xtYao: name seems to be integers in new gGnome??
+                   ## let's use "genes" moving forward
+                   ## gns = unlist(strsplit(filtered.fusions$dt$name[ix], ","))
+                   gns = unlist(strsplit(filtered.fusions$dt$genes[ix], ","))
                    gene.in.cgc = any(gns %in% cgc.gene.symbols)
                    gns.filtered = gns[which(gns %in% cgc.gene.symbols)]
                    cgc.names = paste(gns.filtered, collapse = ", ")
