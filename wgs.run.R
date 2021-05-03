@@ -186,6 +186,7 @@ if (!opt$knit_only) {
         sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
                                        background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
                                        cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
+                                       gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
                                        server = opt$server,
                                        pair = opt$pair,
                                        pad = 0.5,
