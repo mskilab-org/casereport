@@ -440,15 +440,19 @@ fusion.table = function(fusions.fname = NULL,
                          qcol = c("walk.id"),
                          scol = c("ev.id", "type"),
                          return.type = "data.table")
-    
-    ov = ov[, .(ev.id = paste(unique(ev.id), sep = ","), type = paste(unique(type), sep = ",")), by = walk.id]
 
-    dt = merge(filtered.fusions$dt, ov, by = "walk.id", all.x = TRUE)
 
-    ## add ev.id and type to  metadata 
-    filtered.fusions$set(ev.id = dt$ev.id)
-    filtered.fusions$set(ev.type = dt$type)
-    
+    if (ov[,.N] > 0){
+        ov = ov[, .(ev.id = paste(unique(ev.id), sep = ","), type = paste(unique(type), sep = ",")), by = walk.id]
+        dt = merge(filtered.fusions$dt, ov, by = "walk.id", all.x = TRUE)
+    } else {
+        dt = filtered.fusions$dt
+    }
+
+        ## add ev.id and type to  metadata
+        filtered.fusions$set(ev.id = dt$ev.id)
+        filtered.fusions$set(ev.type = dt$type)
+
     return(filtered.fusions)
 }
 
@@ -525,24 +529,24 @@ fusion.plot = function(fs = NULL,
 
                              ## format window
                              win = fs[ix]$footprint
-                             
+
                              if (pad > 0 & pad <= 1) {
                                  adjust = pmax(1e5, pad * width(win))
                                  win = GenomicRanges::trim(win + adjust)
                              } else {
                                  win = GenomicRanges::trim(win + pad)
                              }
-                             
+
                              ppng(plot(gt,
                                        win,
                                        legend.params = list(plot = FALSE)),
-                                  title = paste(fs$dt$name[ix], "|", "walk", fs$dt$walk.id[ix]),
+                                  title = paste(fs$dt$genes[ix], "|", "walk", fs$dt$walk.id[ix]),
                                   filename = fn,
                                   height = height,
                                   width = width)
                              return(fn)
                          })
-    
+
     fs$set(plot.fname = plot.fnames)
     return(fs)
 }

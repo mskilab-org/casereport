@@ -113,7 +113,7 @@ Fusions in which at least one involved gene is an oncogene or tumor suppressor.
 
 ```{r, driver-fusions-table, results = "asis", out.width= "100%"}
 driver.fusions.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
-driver.fusions.dt[, .(name, walk.id, driver.name, chroms, maxcn, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling()
+driver.fusions.dt[, .(genes, walk.id, driver.name, chroms, maxcn, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling()
 ```
 
 ### Gallery
@@ -130,7 +130,7 @@ slick_up
 
 ```{r, other-fusions-table, results = "asis", out.width= "100%"}
 other.fusions.dt = fread(file.path(params$outdir, "fusions.other.txt"))
-other.fusions.dt[, .(name, walk.id, chroms, maxcn, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
+other.fusions.dt[, .(genes, walk.id, chroms, maxcn, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
 ```
 
 ### Gallery

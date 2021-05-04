@@ -16,6 +16,7 @@ if (!exists("opt")){
         make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample"),
         make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
+        make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
         make_option(c("--chrom_sizes"), type = "character", default = "~/DB/UCSC/hg19.broad.chrom.sizes", help = "chrom.sizes file of the reference genome"),
         make_option(c("--knit_only"), type = "logical", default = FALSE, action = "store_true", help = "if true, skip module and just knit"),
@@ -103,7 +104,10 @@ if (!opt$knit_only){
             message('JaBbA karyograph was not found at the expected location (', kag_rds, ') so we will use CN = 2 for the normal copy number of all chromosomes.')
         }
 
-        genes_cn = get_gene_copy_numbers(gg, pge = pge, nseg = nseg)
+        #' zchoo Monday, May 03, 2021 02:33:55 PM
+        #' add ploidy to avoid bug
+        #' simplify seqnames to avoid empty data tables
+        genes_cn = get_gene_copy_numbers(gg, gene_ranges = opt$genes, nseg = nseg, ploidy = kag$ploidy, simplify_seqnames = TRUE)
         genes_cn_annotated = get_gene_ampdel_annotations(genes_cn, amp.thresh = opt$amp_thresh,
                                        del.thresh = opt$del_thresh)
 
@@ -230,6 +234,7 @@ if (!opt$knit_only){
         sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
                                        background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
                                        cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
+                                       gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
                                        server = opt$server,
                                        pair = opt$pair,
                                        pad = 0.5,
