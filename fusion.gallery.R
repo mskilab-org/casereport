@@ -1,6 +1,33 @@
 #' zchoo Tuesday, Apr 27, 2021 10:49:13 AM
 #' this is to generate data tables and plots for fusions
 
+#' @name star2grl
+#' @title star2grl
+#'
+#' Quick utility function to convert star-fusion breakpoints to GRangesList
+#'
+#' @param fname (character) name of star-fusion output file
+#' @param mc.cores (numeric) default 16
+star2grl = function(fname, mc.cores = 16) {
+    dt = fread(fname)
+    grl = mclapply(1:nrow(dt),
+                   function(ix) {
+                       left.bp.str = strsplit(dt[ix, LeftBreakpoint], ":")[[1]]
+                       right.bp.str = strsplit(dt[ix, RightBreakpoint], ":")[[1]]
+                       gr = GRanges(seqnames = c(left.bp.str[1], right.bp.str[1]),
+                                    ranges = IRanges(start = as.numeric(c(left.bp.str[2],
+                                                                          right.bp.str[2])),
+                                                     width = 1),
+                                    ## reverse strands to match our strand designation for junctions
+                                    strand = c(ifelse(left.bp.str[3] == "+", "-", "+"),
+                                               ifelse(right.bp.str[3] == "+", "-", "+"))
+                                    )
+                       return (gr)
+                   }, mc.cores = mc.cores) %>% GRangesList
+    values(grl) = dt
+    return(grl)
+}
+
 #' @name wgs.gtrack.plot
 
 #' @name circos
