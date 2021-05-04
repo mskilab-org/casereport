@@ -59,7 +59,7 @@ suppressMessages(expr = {
     })
 })
 
-if (!opt$knit_only) {
+if (!opt$knit_only){
     message("Preparing data and plots")
 
     message("Returning Purity, Ploidy, and run 'events' if not already provided")
