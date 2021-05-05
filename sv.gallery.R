@@ -39,6 +39,7 @@ cgc.gtrack = function(cgc.fname = "./data/cgc.tsv",
 #' @param cvgt.fname
 #' @param gngt.fname
 #' @param cgcgt.fname CGC gene gTrack
+#' @param agt.fname allele gTrack path
 #' @param background.fname
 #' @param server
 #' @param pair
@@ -54,6 +55,7 @@ gallery.wrapper = function(complex.fname = NULL,
                            cvgt.fname = "./coverage.gtrack.rds",
                            gngt.fname = "./data/gt.ge.hg19.rds",
                            cgcgt.fname = NULL,
+                           agt.fname = NULL,
                            server = "",
                            pair = "",
                            ev.types = c("qrp", "tic", "qpdup", "qrdel",
@@ -76,6 +78,7 @@ gallery.wrapper = function(complex.fname = NULL,
                         cvgt.fname = cvgt.fname,
                         gngt.fname = gngt.fname,
                         cgcgt.fname = cgcgt.fname,
+                        agt.fname = agt.fname,
                         server = server,
                         pair = pair,
                         ev.types = ev.types,
@@ -104,6 +107,7 @@ gallery.wrapper = function(complex.fname = NULL,
 #' @param cvgt.fname (character) coverage gTrack file path
 #' @param gngt.fname (character) gencode gTrack file path
 #' @param cgcgt.fname (character) CGC gTrack file path
+#' @param agt.fname (character) allele gTrack file name
 #' @param server (character) server url
 #' @param pair (character) pair id
 #' @param ev.types (character) complex event types
@@ -117,6 +121,7 @@ sv.plot = function(complex.fname = NULL,
                    cvgt.fname = "./coverage.gtrack.rds",
                    gngt.fname = "./data/gt.ge.hg19.rds",
                    cgcgt.fname = NULL,
+                   agt.fname = NULL,
                    server = "",
                    pair = "",
                    ev.types = c("qrp", "tic", "qpdup", "qrdel",
@@ -164,6 +169,17 @@ sv.plot = function(complex.fname = NULL,
         cgc.gt = NULL
     }
 
+    ## read allele gTrack if provided
+    if (!is.null(agt.fname)) {
+        if (file.exists(agt.fname)) {
+            agt = readRDS(agt.fname)
+        } else {
+            agt = NULL
+        }
+    } else {
+        agt = NULL
+    }
+
     ## gTrack formatting
     cvgt$ylab = "CN"
     cvgt$name = "cov"
@@ -195,6 +211,14 @@ sv.plot = function(complex.fname = NULL,
         gt = c(gngt, cgc.gt, cvgt, this.complex.gt)
     } else {
         gt = c(gngt, cvgt, this.complex.gt)
+    }
+
+    if (!is.null(agt)) {
+        agt$ylab = "CN"
+        agt$yaxis.pretty = 3
+        agt$xaxis.chronly = TRUE
+
+        gt = c(agt, gt)
     }
 
     ## save plots
