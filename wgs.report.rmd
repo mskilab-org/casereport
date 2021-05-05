@@ -102,10 +102,10 @@ knitr::include_graphics(file.path(params$outdir, "wgs.circos.png"))
 ## Copy number variants
 Copy number variations (CNVs) in oncogenes and tumor suppressor genes.
 
-```{r, driver-cnv-table, results = "asis", out.width= "100%"}
+```{r, driver-cnv-table, results = "asis", max.width= "100%"}
 driver.genes.cnv = fread(file.path(params$outdir, "driver.genes.cnv.txt"))
-driver.genes.cnv[cnv != ''] %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
-
+## driver.genes.cnv[cnv != ''] %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
+DT::datatable(driver.genes.cnv, options = list(scrollX = TRUE))
 ```
 
 ## Known fusions
@@ -113,7 +113,8 @@ Fusions in which at least one involved gene is an oncogene or tumor suppressor.
 
 ```{r, driver-fusions-table, results = "asis", out.width= "100%"}
 driver.fusions.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
-driver.fusions.dt[, .(genes, walk.id, driver.name, chroms, maxcn, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling()
+dat = driver.fusions.dt[, .(genes, walk.id, driver.name, chroms, maxcn, total.aa, gene.pc, ev.id, ev.type)] ## %>% kbl() %>% kable_styling()
+DT::datatable(dat, options = list(scrollX = TRUE))
 ```
 
 ### Gallery
@@ -128,9 +129,11 @@ slick_up
 
 ## Other in-frame, non-silent gene fusions
 
-```{r, other-fusions-table, results = "asis", out.width= "100%"}
+```{r, other-fusions-table, results = "asis", max.width= "100%"}
 other.fusions.dt = fread(file.path(params$outdir, "fusions.other.txt"))
-other.fusions.dt[, .(genes, walk.id, chroms, maxcn, total.aa, gene.pc, ev.id, ev.type)] %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
+dat = other.fusions.dt[, .(genes, walk.id, chroms, maxcn, total.aa, gene.pc, ev.id, ev.type)] 
+## %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
+DT::datatable(dat, options = list(scrollX = TRUE))
 ```
 
 ### Gallery
