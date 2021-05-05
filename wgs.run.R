@@ -174,12 +174,12 @@ if (!opt$knit_only) {
 
     if (opt$overwrite | !file.exists(wgs.circos.fname)) {
         message("Generating whole-genome circos plot")
-        ppng(circos(junctions = gg$junctions[type == "ALT"],
-                    cov = cvgt@data[[1]],
-                    field = "cn",
-                    link.h.ratio = 0.1,
-                    cex.points = 0.1,
-                    cytoband.path = file.path(opt$libdir, "data", "hg19.cytoband.txt")),
+        ppng(wgs.circos(junctions = gg$junctions[type == "ALT"],
+                        cov = cvgt@data[[1]],
+                        field = "cn",
+                        link.h.ratio = 0.1,
+                        cex.points = 0.1,
+                        cytoband.path = file.path(opt$libdir, "data", "hg19.cytoband.txt")),
              filename = wgs.circos.fname,
              height = 1000,
              width = 1000)
@@ -228,13 +228,25 @@ if (!opt$knit_only) {
         message("Fusion files already exist")
     }
     
-
+    ## ##################
+    ## SV gallery code
+    ## ##################
     if (opt$overwrite | !file.exists(file.path(opt$outdir, "sv.gallery.txt"))) {
         message("Preparing SV gallery")
+
+        ## generate gTrack with just cgc genes
+        cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers),
+                           file.path(opt$libdir, "data", "cgc.tsv"),
+                           opt$drivers)
+        cgc.gtrack.fname = cgc.gtrack(cgc.fname = cgc.fname,
+                                      gencode.fname = opt$gencode,
+                                      outdir = opt$outdir)
+        
         sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
                                        background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
                                        cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
                                        gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                       cgcgt.fname = cgc.gtrack.fname,
                                        server = opt$server,
                                        pair = opt$pair,
                                        pad = 0.5,
