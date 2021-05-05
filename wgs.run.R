@@ -312,6 +312,29 @@ if (!opt$knit_only){
         message("SV gallery files already exist")
     }
 
+    ## #################
+    ## CN gallery
+    ## #################
+    cn.gallery.fn = file.path(opt$outdir, "cn.gallery.txt")
+    message(cn.gallery.fn)
+    if (!check_file(cn.gallery.fn, overwrite = opt$overwrite)) {
+        cn.slickr.dt = cn.plot(drivers.fname = driver.genes.cnv.fn,
+                               opt$complex,
+                               cvgt.fname = cvgt_fn,
+                               gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                               cgcgt.fname = cgc.gtrack.fname,
+                               agt.fname = agt_fn,
+                               server = opt$server,
+                               pair = opt$pair,
+                               pad = 0.5,
+                               height = 1200,
+                               width = 1000,
+                               outdir = opt$outdir)
+        fwrite(cn.slickr.dt, cn.gallery.fn)
+    } else {
+        message("CN gallery files already exist")
+    }
+
     ## ##################
     ## RNA expression level over a cohort
     ## ##################
