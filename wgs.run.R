@@ -109,7 +109,7 @@ if (!opt$knit_only){
         #' zchoo Monday, May 03, 2021 02:33:55 PM
         #' add ploidy to avoid bug
         #' simplify seqnames to avoid empty data tables
-        genes_cn = get_gene_copy_numbers(gg, gene_ranges = opt$genes, nseg = nseg, ploidy = kag$ploidy, simplify_seqnames = TRUE)
+        genes_cn = get_gene_copy_numbers(gg, gene_ranges = opt$genes, nseg = nseg, ploidy = kag$ploidy, simplify_seqnames = TRUE, complex.fname = opt$complex)
         genes_cn_annotated = get_gene_ampdel_annotations(genes_cn, amp.thresh = opt$amp_thresh,
                                        del.thresh = opt$del_thresh)
 
@@ -126,11 +126,13 @@ if (!opt$knit_only){
             ## driver.genes_cn = genes_cn_annotated[gene_name %in% c(onc, tsg)]
             driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
                                                  (cnv == "del" & gene_name %in% tsg)]
-            fields = c("gene_name", "cnv", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "number_of_cn_segments", "ncn", "seqnames", "start", "end", "width", "gene_id", "gene_type", "source",  "level", "hgnc_id", "havana_gene")
+            fields = c("gene_name", "cnv", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "number_of_cn_segments", "ncn", "seqnames", "start", "end", "width", "gene_id", "gene_type", "source",  "level", "hgnc_id", "havana_gene", "ev.id", "ev.type")
             fields = intersect(fields, names(driver.genes_cn))
             fwrite(driver.genes_cn[, ..fields], driver.genes.cnv.fn)
         }
     }
+
+    ## prepare driver gallery
     opt$complex = paste0(opt$outdir, "/complex.rds")
 
     message("Prepare coverage data")
@@ -184,10 +186,34 @@ if (!opt$knit_only){
     wgs.circos.fname = file.path(opt$outdir, "wgs.circos.png")
     if (opt$overwrite | !file.exists(wgs.gtrack.fname)) {
         message("Generating whole-genome gTrack plots")
+        ## synchronize y0 and y1 of cvgt and agt
+        y0 = 0
+        gg.max.cn = max(gg$nodes$dt[!is.na(cn) & !is.infinite(cn), cn], na.rm = TRUE)
+        y1 = round(gg.max.cn/10) * 10
+        
+        ## gGraph gTrack formatting
+        gg.gt = gg$gt
+        gg.gt$yaxis.pretty = 4
+        gg.gt$ylab = "CN"
+        gg.gt$y0 = 0
+        gg.gt$y1 = y1
+
+        ## coverage gTrack formatting
+        cvgt$yaxis.pretty = 4
+        cvgt$y0 = 0
+        cvgt$y1 = y1
+        
         if (is.null(agt)) {
-            gt = c(cvgt, gg$gt)
+            gt = c(cvgt, gg.gt)
         } else {
-            gt = c(agt, cvgt, gg$gt)
+
+            ## agtrack formatting
+            agt$y0 = 0
+            agt$y1 = y1
+            agt$yaxis.pretty = 4
+
+            ## concatenate with agt
+            gt = c(agt, cvgt, gg.gt)
         }
         ppng(plot(gt, c(as.character(1:22), "X", "Y")),
              filename  = wgs.gtrack.fname,

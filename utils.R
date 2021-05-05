@@ -817,20 +817,29 @@ check_GRanges_compatibility = function(gr1, gr2, name1 = 'first', name2 = 'secon
 #'
 #' @param gg either path to rds of a gGraph or an object containing the gGraph with JaBbA output
 #' @param gene_ranges GRanges of genes (must contain field "gene_name"). Alternatively a path to a file that could be parsed by rtracklayer::import (such as gtf) is acceptable.
+#' @param complex.fname (character) path to complex event calls
 #' @param nseg GRanges with field "ncn" - the normal copy number (if not provided then ncn = 2 is used)
 #' @param nseg GRanges with field "ncn" - the normal copy number (if not provided then ncn = 2 is used)
 #' @param gene_id_col the name of the column to be used in order to identify genes (must be unique for each gene, so usually "gene_name" is not the right choice).
 #' @param simplify_seqnames when set to TRUE, then gr.sub is ran on the seqnames of the gGraph segments and the genes GRanges
 #' @param ploidy tumor ploidy default 2
 #' @param mfields the metadata fields that the output should inherit from the genes GRanges
+#' @param ev.types complex event types (for now excluding simple dups/dels...)
 #' @param output_type either GRanges or data.table
 #' @return GRanges or data.table with genes CN
 #' @author Alon Shaiber
 #' @export 
-get_gene_copy_numbers = function(gg, gene_ranges, nseg = NULL, gene_id_col = 'gene_id',
-                                      simplify_seqnames = FALSE,
-                                      mfields = c("gene_name", "source", "gene_id", "gene_type", "level", "hgnc_id", "havana_gene"),
-                                      output_type = 'data.table',
+get_gene_copy_numbers = function(gg, gene_ranges,
+                                 complex.fname = NULL,
+                                 nseg = NULL,
+                                 gene_id_col = 'gene_id',
+                                 simplify_seqnames = FALSE,
+                                 mfields = c("gene_name", "source", "gene_id",
+                                             "gene_type", "level", "hgnc_id", "havana_gene"),
+                                 ev.types = c("qrp", "qpdup", "qrdel",
+                                              "tic", "bfb", "dm", "chromoplexy",
+                                              "chromothripsis", "tyfonas", "rigma", "pyrgo"),
+                                 output_type = 'data.table',
                                  ploidy = 2){
     if (is.character(gg)){
       gg = readRDS(gg)
@@ -902,6 +911,27 @@ get_gene_copy_numbers = function(gg, gene_ranges, nseg = NULL, gene_id_col = 'ge
     gene_cn_split_genes = merge(gene_cn_split_genes, number_of_segments_per_split_gene, by = gene_id_col)
 
     gene_cn_table = rbind(gene_cn_split_genes, gene_cn_non_split_genes)
+
+    ## overlap with event calls
+    this.ev = readRDS(complex.fname)$meta$events[type %in% ev.types,]
+    ev.grl = parse.grl(this.ev$footprint)
+    values(ev.grl) = this.ev
+    ev.gr = stack(ev.grl)
+
+    ## get genes as granges
+    gene_cn_gr = dt2gr(gene_cn_table, seqlengths = seqlengths(gene_ranges))
+    
+    ov = gr.findoverlaps(gene_cn_gr, ev.gr,
+                         qcol = c("gene_name"),
+                         scol = c("ev.id", "type"),
+                         return.type = "data.table")
+
+    if (ov[,.N] > 0){
+        ov = ov[, .(ev.id = paste(unique(ev.id), sep = ","), ev.type = paste(unique(type), sep = ",")), by = gene_name]
+        gene_cn_table = merge(gene_cn_table, ov, by = "gene_name", all.x = TRUE)
+    } else {
+        gene_cn_table[, ":="(ev.id = NA, type = NA)]
+    }
 
     if (output_type == 'data.table'){
         return(gene_cn_table)
