@@ -52,6 +52,7 @@ suppressMessages(expr = {
         library(rmarkdown)
         library(ComplexHeatmap)
         library(deconstructSigs)
+        library(DT)
         message("Loading critical dependencies from KevUtils")
         source(paste0(opt$libdir, "/utils.R"))
         source(paste0(opt$libdir, "/config.R"))
@@ -119,7 +120,11 @@ if (!opt$knit_only) {
         if (genes_cn[, .N] > 0){
             onc = readRDS(oncogenes.fn)
             tsg = readRDS(tsg.fn)
-            driver.genes_cn = genes_cn_annotated[gene_name %in% c(onc, tsg)]
+            #' zchoo Tuesday, May 04, 2021 10:41:25 PM
+            ## subsetted so that there are just dels in tsgs and amps in oncogenes
+            ## driver.genes_cn = genes_cn_annotated[gene_name %in% c(onc, tsg)]
+            driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
+                                                 (cnv == "del" & gene_name %in% tsg)]
             fields = c("gene_name", "cnv", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "number_of_cn_segments", "ncn", "seqnames", "start", "end", "width", "gene_id", "gene_type", "source",  "level", "hgnc_id", "havana_gene")
             fields = intersect(fields, names(driver.genes_cn))
             fwrite(driver.genes_cn[, ..fields], driver.genes.cnv.fn)
