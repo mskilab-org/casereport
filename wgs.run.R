@@ -12,7 +12,8 @@ if (!exists("opt")){
         make_option(c("--fusions"), type = "character", help = "fusions module output, RDS"),
         make_option(c("--proximity"), type = "character", help = "proximity module output, RDS"),
         make_option(c("--deconstruct_sigs"), type = "character", default = NA_character_, help = "deconstruct_sigs module output, RDS"),
-        make_option(c("--sigs_cohort"), type = "character", default = NA_character_, help = ""),
+        make_option(c("--deconstruct_variants"), type = "character", default = NA_character_, help = "deconstruct_sigs module variant output, TXT"),
+        make_option(c("--sigs_cohort"), type = "character", default = NA_character_, help = "variant count for each signature in a cohort"),
         make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample"),
         make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
@@ -61,7 +62,7 @@ suppressMessages(expr = {
     })
 })
 
-if (!opt$knit_only) {
+if (!opt$knit_only){
     message("Preparing data and plots")
 
     message("Returning Purity, Ploidy, and run 'events' if not already provided")
@@ -88,7 +89,7 @@ if (!opt$knit_only) {
     oncogenes.fn = file.path(opt$libdir, "data", "onc.rds")
     tsg.fn = file.path(opt$libdir, "data", "tsg.rds")
     if (check_file(genes_cn.fn, overwrite = opt$overwrite)){
-        genes_cn = readRDS(genes_cn.fn)
+        genes_cn_annotated = readRDS(genes_cn.fn)
     } else {
         kag_rds = gsub("jabba.simple.rds", "karyograph.rds", opt$jabba_rds)
         nseg = NULL
@@ -117,7 +118,7 @@ if (!opt$knit_only) {
 
     driver.genes.cnv.fn = paste0(opt$outdir, '/driver.genes.cnv.txt')
     if (!check_file(driver.genes.cnv.fn, overwrite = opt$overwrite)){
-        if (genes_cn[, .N] > 0){
+        if (genes_cn_annotated[, .N] > 0){
             onc = readRDS(oncogenes.fn)
             tsg = readRDS(tsg.fn)
             #' zchoo Tuesday, May 04, 2021 10:41:25 PM
@@ -347,14 +348,20 @@ if (!opt$knit_only) {
     ## SNV signatures
     ## ##################
     if (file.good(opt$deconstruct_sigs)){
+        ## signatures
         sig = readRDS(opt$deconstruct_sigs)
         sigd = sig$weights %>% data.table::melt(variable.name = "Signature", value.name = "Proportion") %>% data.table
         sigd[, Signature := factor(Signature, levels = rev(levels(Signature)))]
         sigd[, pair := opt$pair]
 
+        ## counts of variants
+        var = fread(opt$deconstruct_variants)[nchar(max.post)>0]
+        sct = var[, .(sig_count = .N), by = .(Signature = max.post)]
+        sct[, pair := opt$pair]
+
         if (!file.exists(paste0(opt$outdir, "/deconstruct_sigs.png")) | opt$overwrite){
             ## ppng({
-            png(filename = paste0(opt$outdir, "/deconstruct_sigs.png"), width = 1600, height = 1200)
+            png(filename = paste0(opt$outdir, "/deconstruct_sigs.png"), width = 1000, height = 1000)
             deconstructSigs::plotSignatures(sig)
             dev.off()
             ## makePie(sig)
@@ -365,24 +372,34 @@ if (!opt$knit_only) {
             if (file.good(opt$sigs_cohort)){
                 ## make proportion relative to cohort plot
                 allsig = data.table::fread(opt$sigs_cohort)
-                allsig = data.table::melt(allsig, id.var = "pair", variable.name = "Signature", value.name = "Proportion")
-                allsig[, Signature := factor(Signature, levels = rev(levels(Signature)))]
+                allsig = data.table::melt(allsig, id.var = "pair", variable.name = "Signature", value.name = "sig_count")
+
+                slevels = allsig[, .(ftot = sum(sig_count)), by = Signature][order(ftot), as.character(Signature)]
+                allsig[, Signature := factor(Signature, levels = slevels)]
 
                 if (opt$pair %in% allsig[, pair]){
                     ## remove existing record from the cohort first
                     allsig = allsig[pair!=opt$pair]
                 }
 
-                allsig = rbind(allsig, sigd)
+                sct[, Signature := factor(Signature, levels = levels(allsig$Signature))]
+                allsig = rbind(allsig, sct)
                 ## calculate percentile
-                allsig[, perc := rank(Proportion)/.N, by = Signature]
+                allsig[, perc := rank(sig_count)/.N, by = Signature]
 
-                png(filename = paste0(opt$outdir, "/sig.composition.png"), width = 1600, height= 900)
+                ## highlight the tracks where the signature is non-zero in this sample
+                allsig[, highlight := Signature %in% sct[, Signature]]
+                allsig = allsig[(highlight)]
+                allsig[, Signature := factor(Signature, levels = intersect(slevels, sct[sig_count>0, as.character(Signature)]))]
+                
+                png(filename = paste0(opt$outdir, "/sig.composition.png"), height = 1000, width = 800)
                 ## individual sample compositions
                 ## ppng({
-                sigbar = ggplot(allsig, aes(y = Signature, x = Proportion)) +
-                    geom_density_ridges(bandwidth = 0.1,
-                                        alpha = 0.5, scale = 0.9,
+                sigbar = ggplot(allsig, aes(y = Signature, x = sig_count)) +
+                    geom_density_ridges(aes(fill = highlight),
+                                        bandwidth = 0.1,
+                                        alpha = 0.5,
+                                        scale = 0.9,
                                         rel_min_height = 0.01,
                                         color = NA,
                                         jittered_points = TRUE,
@@ -391,28 +408,38 @@ if (!opt$knit_only) {
                                         point_size = 3,
                                         point_alpha = 0.1,
                                         point_colour = "black") +
-                    geom_segment(data = sigd,
-                                 aes(x = Proportion, xend = Proportion,
+                    geom_segment(data = allsig[pair==opt$pair & sig_count>0],
+                                 aes(x = sig_count, xend = sig_count,
                                      y = as.numeric(Signature), yend = as.numeric(Signature) + 0.9),
                                  color = "red", size = 2, lty = "dashed") +
                     geom_label(data = allsig[pair==opt$pair],
-                               aes(x = Proportion, y = as.numeric(Signature) + 0.8,
+                               aes(x = sig_count, y = as.numeric(Signature) + 0.8,
                                    label = paste0("qt ", format(perc * 100, digits = 2), "%")),
-                               nudge_x = 0.2) + 
+                               nudge_x = 0.2) +
+                    scale_x_continuous(trans = "log1p",
+                                       breaks = c(0, 1, 10, 100, 1000, 10000, 100000),
+                                       labels = c(0, 1, 10, expression(10^2), expression(10^3), expression(10^4), expression(10^5)),
+                                       ## labels = sprintf("%.0f", c(0, 1, 10, 100, 1000, 10000, 100000)),
+                                       limits = c(0, 100000)) +
+                    scale_fill_manual(values = binary.cols) +
+                    labs(x = "Burden") +
                     theme_minimal() +
                     theme(
-                        text = element_text(size = 32)
+                        text = element_text(size = 32),
+                        legend.position = "none"
                         ## axis.text.x = element_text(angle = 45, hjust = 1)
                     )
                 print(sigbar)
                 ## }, width = 900, height = 1600)
                 dev.off()
+                
             } else {
-                png(filename = "sig.composition.png", width = 1600, height= 900)
+                png(filename = "sig.composition.png", width = 800, height= 1200)
                 ## individual sample compositions
+                sct[, Signature := fct_reorder(Signature, sig_count)]
                 sigbar = ggplot(
-                    sigd,
-                    aes(x = Signature, y = Proportion)) +
+                    sct[order(sig_count)],
+                    aes(x = Signature, y = sig_count)) +
                     geom_bar(stat = "identity") +
                     theme_minimal() +
                     theme(text = element_text(size = 32),

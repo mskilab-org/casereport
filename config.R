@@ -38,3 +38,6 @@ event.cols = data.table(
               "yellow", "orange", "brown",
               "grey50")
 )
+
+
+binary.cols = setNames(c("grey70", "#e6194b"), c("FALSE", "TRUE"))
