@@ -175,7 +175,7 @@ sv.plot = function(complex.fname = NULL,
     this.complex.gt$yaxis.pretty = 3
     this.complex.gt$xaxis.chronly = TRUE
 
-    gngt$cex.label = 0.2
+    gngt$cex.label = 0.01 ## no labels for full gencode
     gngt$xaxis.chronly = TRUE
     gngt$name = "genes"
     gngt$ywid = 0.1
@@ -187,7 +187,8 @@ sv.plot = function(complex.fname = NULL,
         cgc.gt$xaxis.chronly = TRUE
         cgc.gt$name = "CGC"
         cgc.gt$ywid = 0.1
-        cgc.gt$height = 2
+        cgc.gt$height = 5
+        cgc.gt$stack.gap = 0.5
         gngt$yaxis.cex = 0.8
 
         ## concatenate final gTracks
