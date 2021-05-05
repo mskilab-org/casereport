@@ -143,6 +143,20 @@ if (!opt$knit_only) {
         saveRDS(cvgt, cvgt_fn)
     }
 
+    agt_fn = paste0(opt$outdir, "/agtrack.rds")
+    if (check_file(agt_fn, overwrite = opt$overwrite)) {
+        agt = readRDS(agt_fn)
+    } else {
+        message("Checking for hets")
+        if (is.null(opt$het_pileups_wgs) || !file.exists(opt$het_pileups_wgs)) {
+            message("no het pileups provided, skipping")
+        } else {
+            agt = grab.agtrack(opt$het_pileups_wgs,
+                               purity = jabba$purity,
+                               ploidy = jabba$ploidy)
+            saveRDS(agt, agt_fn)
+        }
+    }
 
     ## xtYao legacy code
     ## if (!file.exists(paste0(opt$outdir, "/hets.gtrack.rds"))){
@@ -217,7 +231,7 @@ if (!opt$knit_only) {
         cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers), file.path(opt$libdir, "data", "cgc.tsv"), opt$drivers)
         fusions.slickr.dt = fusion.wrapper(fusions.fname = opt$fusions,
                                            complex.fname = opt$complex,
-                                           cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
+                                           cvgt.fname = cvgt_fn,
                                            cgc.fname = cgc.fname,
                                            gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
                                            pad = 0.5,
@@ -249,9 +263,10 @@ if (!opt$knit_only) {
         
         sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
                                        background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
-                                       cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
+                                       cvgt.fname = cvgt_fn,
                                        gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
                                        cgcgt.fname = cgc.gtrack.fname,
+                                       agt.fname = agt_fn,
                                        server = opt$server,
                                        pair = opt$pair,
                                        pad = 0.5,

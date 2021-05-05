@@ -940,3 +940,100 @@ reduce_gencode = function(gencode, gene_id_col = 'gene_id'){
     gencode_reduced$havana_gene = as.character(gencode_reduced$havana_gene)
 
 }
+
+#' zchoo Wednesday, May 05, 2021 11:22:17 AM
+
+#' @name counts.to.allele.cn
+#' @title counts.to.allele.cn
+#'
+#' @description
+#'
+#' allele rel2abs
+#'
+#' @param counts (numeric) numeric vector of counts
+#' @param purity (numeric) purity
+#' @param ploidy (numeric)
+#'
+#' @return cn (numeric) counts transformed to CN via purity + ploidy
+counts.to.allele.cn = function(counts, purity, ploidy) {
+    y = counts
+    y.bar = 2 * mean(y, na.rm = TRUE)
+
+    ## purity and ploidy
+    alpha = purity
+    tau = ploidy
+
+    ## linear equation
+    denom = alpha * tau + 2 * (1 - alpha)
+    beta = (y.bar * alpha) / denom
+    gamma =(y.bar * (1 - alpha)) / denom
+
+    cn = (y - gamma) / beta
+    return(cn)
+}
+
+#' @name grab.agtrack
+#' @title grab.agtrack
+#'
+#' @description
+#'
+#' returns allele gtrack given sites.txt from het pileup
+#'
+#' @param agt.fname (character) path to sites.txt
+#' @param min.frac (numeric) between 0 and 1, min frequency in normal to count as het site
+#' @param max.frac (numeric) between 0 and 1, max frequency in normal to count as het site
+#' @param purity (numeric)
+#' @param ploidy (numeric)
+#' @param major.col (character) major allele color
+#' @param minor.col (character) minor allele color
+#' @param max.ranges (numeric) gTrack param
+#' @param max.ranges (numeric) gTrack param
+#' @param lwd.border (numeric)
+#' @param name (character) gTrack name
+#' @param ... additional args to be passed to gTrack
+#' 
+#' @return allele gTrack
+grab.agtrack = function(agt.fname = NULL,
+                        min.frac = 0.2,
+                        max.frac = 0.8,
+                        purity = NULL,
+                        ploidy = NULL,
+                        major.col = "red",
+                        minor.col = "blue",
+                        max.ranges = 1e4,
+                        lwd.border = 0.2,
+                        name = "SNP",
+                        ...) {
+    if (is.null(agt.fname) || !file.exists(agt.fname)) {
+        stop("agt.fname does not exist")
+    }
+    if (is.null(purity) | is.null(ploidy)) {
+        stop("purity or ploidy not supplied")
+    }
+    ## prepare and filter
+    agt.dt = fread(agt.fname)[alt.frac.n > min.frac & alt.frac.n < max.frac,]
+    ## add major and minor
+    agt.dt[, which.major := ifelse(alt.count.t > ref.count.t, "alt", "ref")]
+    agt.dt[, major.count := ifelse(which.major == "alt", alt.count.t, ref.count.t)]
+    agt.dt[, minor.count := ifelse(which.major == "alt", ref.count.t, alt.count.t)]
+
+    ## melt the data frame
+    agt.melted = rbind(agt.dt[, .(seqnames, start, end, count = major.count, allele = "major", col = major.col)],
+                       agt.dt[, .(seqnames, start, end, count = minor.count, allele = "minor", col = minor.col)]
+                       )
+
+    ## rel2abs for alleles
+    agt.melted[, cn := counts.to.allele.cn(count, purity, ploidy)]
+
+    ## make GRanges
+    agt.gr = dt2gr(agt.melted[, .(seqnames, start, end, cn, allele, col)])
+
+    ## make gTrack
+    agt = gTrack(agt.gr, y.field = "cn", name = name, 
+                 ylab = "CN",
+                 y.cap = FALSE, labels.suppress = TRUE,
+                 circles = TRUE, lwd.border = lwd.border,
+                 ...)
+
+    return (agt)
+}
