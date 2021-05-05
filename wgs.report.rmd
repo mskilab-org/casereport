@@ -208,17 +208,21 @@ cat("\n")
 cat("## deconstructSigs: input profile, fitted, error")
 cat("\n")
 ## knitr::include_graphics(paste0(params$outdir, "/deconstruct_sigs.png"))
+
 cat(
     paste0("![](", paste0(params$outdir, "/deconstruct_sigs.png"),")"), "\n"
 )
+
 cat ("\n<br>\n")
 
 cat("\n")
 cat("## SNV signature composition")
 cat("\n")
+
 cat(
     paste0("![](", paste0(params$outdir, "/sig.composition.png"),")"), "\n"
 )
+
 cat ("\n<br>\n")
 ```
 

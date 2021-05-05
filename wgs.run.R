@@ -340,7 +340,7 @@ if (!opt$knit_only){
 
         if (!file.exists(paste0(opt$outdir, "/deconstruct_sigs.png")) | opt$overwrite){
             ## ppng({
-            png(filename = paste0(opt$outdir, "/deconstruct_sigs.png"), width = 1600, height = 1200)
+            png(filename = paste0(opt$outdir, "/deconstruct_sigs.png"), width = 1000, height = 1000)
             deconstructSigs::plotSignatures(sig)
             dev.off()
             ## makePie(sig)
@@ -366,12 +366,19 @@ if (!opt$knit_only){
                 ## calculate percentile
                 allsig[, perc := rank(sig_count)/.N, by = Signature]
 
-                png(filename = paste0(opt$outdir, "/sig.composition.png"), width = 1600, height= 900)
+                ## highlight the tracks where the signature is non-zero in this sample
+                allsig[, highlight := Signature %in% sct[, Signature]]
+                allsig = allsig[(highlight)]
+                allsig[, Signature := factor(Signature, levels = intersect(slevels, sct[sig_count>0, as.character(Signature)]))]
+                
+                png(filename = paste0(opt$outdir, "/sig.composition.png"), height = 1000, width = 800)
                 ## individual sample compositions
                 ## ppng({
                 sigbar = ggplot(allsig, aes(y = Signature, x = sig_count)) +
-                    geom_density_ridges(bandwidth = 0.1,
-                                        alpha = 0.5, scale = 0.9,
+                    geom_density_ridges(aes(fill = highlight),
+                                        bandwidth = 0.1,
+                                        alpha = 0.5,
+                                        scale = 0.9,
                                         rel_min_height = 0.01,
                                         color = NA,
                                         jittered_points = TRUE,
@@ -380,7 +387,7 @@ if (!opt$knit_only){
                                         point_size = 3,
                                         point_alpha = 0.1,
                                         point_colour = "black") +
-                    geom_segment(data = sct,
+                    geom_segment(data = allsig[pair==opt$pair & sig_count>0],
                                  aes(x = sig_count, xend = sig_count,
                                      y = as.numeric(Signature), yend = as.numeric(Signature) + 0.9),
                                  color = "red", size = 2, lty = "dashed") +
@@ -388,17 +395,25 @@ if (!opt$knit_only){
                                aes(x = sig_count, y = as.numeric(Signature) + 0.8,
                                    label = paste0("qt ", format(perc * 100, digits = 2), "%")),
                                nudge_x = 0.2) +
-                    scale_x_continuous(trans = "log1p", breaks = c(0, 1, 10, 100, 1000, 10000, 100000), limits = c(0, 100000)) +
+                    scale_x_continuous(trans = "log1p",
+                                       breaks = c(0, 1, 10, 100, 1000, 10000, 100000),
+                                       labels = c(0, 1, 10, expression(10^2), expression(10^3), expression(10^4), expression(10^5)),
+                                       ## labels = sprintf("%.0f", c(0, 1, 10, 100, 1000, 10000, 100000)),
+                                       limits = c(0, 100000)) +
+                    scale_fill_manual(values = binary.cols) +
+                    labs(x = "Burden") +
                     theme_minimal() +
                     theme(
-                        text = element_text(size = 32)
+                        text = element_text(size = 32),
+                        legend.position = "none"
                         ## axis.text.x = element_text(angle = 45, hjust = 1)
                     )
                 print(sigbar)
                 ## }, width = 900, height = 1600)
                 dev.off()
+                
             } else {
-                png(filename = "sig.composition.png", width = 1600, height= 900)
+                png(filename = "sig.composition.png", width = 800, height= 1200)
                 ## individual sample compositions
                 sct[, Signature := fct_reorder(Signature, sig_count)]
                 sigbar = ggplot(
