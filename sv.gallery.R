@@ -1,6 +1,34 @@
 #' zchoo Monday, Apr 26, 2021 02:24:31 PM
 ## This is a script to generate .png files for SV gallery
 
+#' @name cgc.gtrack
+#'
+#' @param cgc.fname (character)
+#' @param gencode (character)
+#' @param outdir (character)
+#' @param verbose (logical)
+#'
+#' @return file name of gencode gTrack
+cgc.gtrack = function(cgc.fname = "./data/cgc.tsv",
+                      gencode.fname = NULL,
+                      outdir = "./") {
+    
+    if (!file.exists(cgc.fname)) {
+        stop("cgc.fname does not exist")
+    }
+    if (is.null(gencode.fname) || !file.exists(gencode.fname)) {
+        stop("gencode does not exist")
+    }
+
+    cgc.gene.symbols = fread(cgc.fname)[["Gene Symbol"]]
+    gff = skidb::read_gencode(fn = gencode.fname)
+    cgc.gt = track.gencode(gencode = gff, genes = cgc.gene.symbols)
+
+    fn = file.path(outdir, "cgc.gtrack.rds")
+    saveRDS(cgc.gt, fn)
+    return(fn)
+}
+
 #' @name gallery.wrapper
 #' @title gallery.wrapper
 #'
@@ -10,6 +38,7 @@
 #' @param complex.fname (character)
 #' @param cvgt.fname
 #' @param gngt.fname
+#' @param cgcgt.fname CGC gene gTrack
 #' @param background.fname
 #' @param server
 #' @param pair
@@ -24,6 +53,7 @@ gallery.wrapper = function(complex.fname = NULL,
                            background.fname = "/data/sv.burden.txt",
                            cvgt.fname = "./coverage.gtrack.rds",
                            gngt.fname = "./data/gt.ge.hg19.rds",
+                           cgcgt.fname = NULL,
                            server = "",
                            pair = "",
                            ev.types = c("qrp", "tic", "qpdup", "qrdel",
@@ -33,6 +63,7 @@ gallery.wrapper = function(complex.fname = NULL,
                            height = 1000,
                            width = 1000,
                            outdir = "./") {
+
     ## generate ridge plot
     ridgeplot.fname = ridge.plot(complex.fname = complex.fname,
                                  background.fname = background.fname,
@@ -44,6 +75,7 @@ gallery.wrapper = function(complex.fname = NULL,
     svplot.dt = sv.plot(complex.fname = complex.fname,
                         cvgt.fname = cvgt.fname,
                         gngt.fname = gngt.fname,
+                        cgcgt.fname = cgcgt.fname,
                         server = server,
                         pair = pair,
                         ev.types = ev.types,
@@ -71,6 +103,7 @@ gallery.wrapper = function(complex.fname = NULL,
 #' @param complex.fname (character) output from complex event caller
 #' @param cvgt.fname (character) coverage gTrack file path
 #' @param gngt.fname (character) gencode gTrack file path
+#' @param cgcgt.fname (character) CGC gTrack file path
 #' @param server (character) server url
 #' @param pair (character) pair id
 #' @param ev.types (character) complex event types
@@ -83,6 +116,7 @@ gallery.wrapper = function(complex.fname = NULL,
 sv.plot = function(complex.fname = NULL,
                    cvgt.fname = "./coverage.gtrack.rds",
                    gngt.fname = "./data/gt.ge.hg19.rds",
+                   cgcgt.fname = NULL,
                    server = "",
                    pair = "",
                    ev.types = c("qrp", "tic", "qpdup", "qrdel",
@@ -119,6 +153,17 @@ sv.plot = function(complex.fname = NULL,
     }, by = ev.id]
     complex.ev[, plot.link := paste0(server, "index.html?file=", pair, ".json&location=", ev.js.range, "&view=")]
 
+    ## read CGC gTrack if provided
+    if (!is.null(cgcgt.fname)) {
+        if (file.exists(cgcgt.fname)) {
+            cgc.gt = readRDS(cgcgt.fname)
+        } else {
+            cgc.gt = NULL
+        }
+    } else {
+        cgc.gt = NULL
+    }
+
     ## gTrack formatting
     cvgt$ylab = "CN"
     cvgt$name = "cov"
@@ -130,14 +175,27 @@ sv.plot = function(complex.fname = NULL,
     this.complex.gt$yaxis.pretty = 3
     this.complex.gt$xaxis.chronly = TRUE
 
-    gngt$cex.label = 0.2
+    gngt$cex.label = 0.01 ## no labels for full gencode
     gngt$xaxis.chronly = TRUE
     gngt$name = "genes"
     gngt$ywid = 0.1
     gngt$height = 2
     gngt$yaxis.cex = 0.8
-        
-    gt = c(gngt, cvgt, this.complex.gt)
+
+    if (!is.null(cgc.gt)) {
+        cgc.gt$cex.label = 0.5
+        cgc.gt$xaxis.chronly = TRUE
+        cgc.gt$name = "CGC"
+        cgc.gt$ywid = 0.1
+        cgc.gt$height = 5
+        cgc.gt$stack.gap = 0.5
+        gngt$yaxis.cex = 0.8
+
+        ## concatenate final gTracks
+        gt = c(gngt, cgc.gt, cvgt, this.complex.gt)
+    } else {
+        gt = c(gngt, cvgt, this.complex.gt)
+    }
 
     ## save plots
     pts = lapply(1:nrow(complex.ev),

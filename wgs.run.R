@@ -53,6 +53,7 @@ suppressMessages(expr = {
         library(rmarkdown)
         library(ComplexHeatmap)
         library(deconstructSigs)
+        library(DT)
         message("Loading critical dependencies from KevUtils")
         source(paste0(opt$libdir, "/utils.R"))
         source(paste0(opt$libdir, "/config.R"))
@@ -120,7 +121,11 @@ if (!opt$knit_only){
         if (genes_cn_annotated[, .N] > 0){
             onc = readRDS(oncogenes.fn)
             tsg = readRDS(tsg.fn)
-            driver.genes_cn = genes_cn_annotated[gene_name %in% c(onc, tsg)]
+            #' zchoo Tuesday, May 04, 2021 10:41:25 PM
+            ## subsetted so that there are just dels in tsgs and amps in oncogenes
+            ## driver.genes_cn = genes_cn_annotated[gene_name %in% c(onc, tsg)]
+            driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
+                                                 (cnv == "del" & gene_name %in% tsg)]
             fields = c("gene_name", "cnv", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "number_of_cn_segments", "ncn", "seqnames", "start", "end", "width", "gene_id", "gene_type", "source",  "level", "hgnc_id", "havana_gene")
             fields = intersect(fields, names(driver.genes_cn))
             fwrite(driver.genes_cn[, ..fields], driver.genes.cnv.fn)
@@ -175,12 +180,12 @@ if (!opt$knit_only){
 
     if (opt$overwrite | !file.exists(wgs.circos.fname)) {
         message("Generating whole-genome circos plot")
-        ppng(circos(junctions = gg$junctions[type == "ALT"],
-                    cov = cvgt@data[[1]],
-                    field = "cn",
-                    link.h.ratio = 0.1,
-                    cex.points = 0.1,
-                    cytoband.path = file.path(opt$libdir, "data", "hg19.cytoband.txt")),
+        ppng(wgs.circos(junctions = gg$junctions[type == "ALT"],
+                        cov = cvgt@data[[1]],
+                        field = "cn",
+                        link.h.ratio = 0.1,
+                        cex.points = 0.1,
+                        cytoband.path = file.path(opt$libdir, "data", "hg19.cytoband.txt")),
              filename = wgs.circos.fname,
              height = 1000,
              width = 1000)
@@ -229,13 +234,25 @@ if (!opt$knit_only){
         message("Fusion files already exist")
     }
     
-
+    ## ##################
+    ## SV gallery code
+    ## ##################
     if (opt$overwrite | !file.exists(file.path(opt$outdir, "sv.gallery.txt"))) {
         message("Preparing SV gallery")
+
+        ## generate gTrack with just cgc genes
+        cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers),
+                           file.path(opt$libdir, "data", "cgc.tsv"),
+                           opt$drivers)
+        cgc.gtrack.fname = cgc.gtrack(cgc.fname = cgc.fname,
+                                      gencode.fname = opt$gencode,
+                                      outdir = opt$outdir)
+        
         sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
                                        background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
                                        cvgt.fname = file.path(opt$outdir, "coverage.gtrack.rds"),
                                        gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                       cgcgt.fname = cgc.gtrack.fname,
                                        server = opt$server,
                                        pair = opt$pair,
                                        pad = 0.5,
