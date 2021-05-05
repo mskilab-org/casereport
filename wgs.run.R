@@ -139,7 +139,8 @@ if (!opt$knit_only) {
     } else {
         ## pull coverage file from jabba_rds
         cov.file = readRDS(file.path(dirname(opt$jabba_rds), "cmd.args.rds"))$coverage
-        cvgt = covcbs(cov.file, purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3)
+        cvgt = covcbs(cov.file, purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3,
+                      ylab = "CN", y.cap = FALSE, xaxis.chronly = TRUE)
         saveRDS(cvgt, cvgt_fn)
     }
 
@@ -150,6 +151,7 @@ if (!opt$knit_only) {
         message("Checking for hets")
         if (is.null(opt$het_pileups_wgs) || !file.exists(opt$het_pileups_wgs)) {
             message("no het pileups provided, skipping")
+            agt = NULL
         } else {
             agt = grab.agtrack(opt$het_pileups_wgs,
                                purity = jabba$purity,
@@ -181,11 +183,14 @@ if (!opt$knit_only) {
     wgs.circos.fname = file.path(opt$outdir, "wgs.circos.png")
     if (opt$overwrite | !file.exists(wgs.gtrack.fname)) {
         message("Generating whole-genome gTrack plots")
-        ## formatting gTrack
-        cvgt$xaxis.chronly = TRUE
-        ppng(plot(c(cvgt, gg$gt), c(as.character(1:22), "X", "Y")),
+        if (is.null(agt)) {
+            gt = c(cvgt, gg$gt)
+        } else {
+            gt = c(agt, cvgt, gg$gt)
+        }
+        ppng(plot(gt, c(as.character(1:22), "X", "Y")),
              filename  = wgs.gtrack.fname,
-             height = 1000,
+             height = 1500,
              width = 5000)
     } else {
         message("Whole genome gTracks already exist")
@@ -232,10 +237,11 @@ if (!opt$knit_only) {
         fusions.slickr.dt = fusion.wrapper(fusions.fname = opt$fusions,
                                            complex.fname = opt$complex,
                                            cvgt.fname = cvgt_fn,
+                                           agt.fname = agt_fn,
                                            cgc.fname = cgc.fname,
                                            gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
                                            pad = 0.5,
-                                           height = 1500,
+                                           height = 2000,
                                            width = 1000,
                                            outdir = opt$outdir)
 
