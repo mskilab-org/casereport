@@ -28,10 +28,8 @@ star2grl = function(fname, mc.cores = 16) {
     return(grl)
 }
 
-#' @name wgs.gtrack.plot
-
-#' @name circos
-#' @title circos
+#' @name wgs.circos
+#' @title wgs.circos
 #'
 #' Quick utility function for circos plot with read depth, junctions, and segments
 #' (copied from skitools)
@@ -50,27 +48,27 @@ star2grl = function(fname, mc.cores = 16) {
 #' @param chr.sum whether to chr.sub everything 
 #' @author Marcin Imielinski
 #' @export
-circos = function(junctions = jJ(),
-                  cov = NULL,
-                  segs = NULL,
-                  win = NULL,
-                  field = 'ratio',
-                  cytoband = NULL,
-                  y.field = field,
-                  ylim = NA,
-                  cytoband.path = '~/DB/UCSC/hg19.cytoband.txt',
-                  cex.points = 1,
-                  ideogram.outer = TRUE,
-                  scatter = TRUE,
-                  bar = FALSE,
-                  line = FALSE,
-                  gap.after = 1,
-                  labels.cex = 1,
-                  y.quantile = 0.9999,
-                  chr.sub = TRUE,
-                  max.ranges = 1e4,
-                  axis.frac = 0.02,
-                  palette = 'BrBg', ...)
+wgs.circos = function(junctions = jJ(),
+                      cov = NULL,
+                      segs = NULL,
+                      win = NULL,
+                      field = 'ratio',
+                      cytoband = NULL,
+                      y.field = field,
+                      ylim = NA,
+                      cytoband.path = '~/DB/UCSC/hg19.cytoband.txt',
+                      cex.points = 1,
+                      ideogram.outer = TRUE,
+                      scatter = TRUE,
+                      bar = FALSE,
+                      line = FALSE,
+                      gap.after = 1,
+                      labels.cex = 1,
+                      y.quantile = 0.9999,
+                      chr.sub = TRUE,
+                      max.ranges = 1e4,
+                      axis.frac = 0.02,
+                      palette = 'BrBg', ...)
 {
 
     if (!file.exists(cytoband.path))
