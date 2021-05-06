@@ -419,88 +419,132 @@ if (!opt$knit_only){
         }
 
         if (!file.exists(paste0(opt$outdir, "/sig.composition.png")) | opt$overwrite){
+
+            sig.fn = file.path(opt$libdir, "data", "all.signatures.txt")
+            background.type = "Cell cohort"
+            
             if (file.good(opt$sigs_cohort)){
-                ## make proportion relative to cohort plot
-                allsig = data.table::fread(opt$sigs_cohort)
-                allsig = data.table::melt(allsig, id.var = "pair", variable.name = "Signature", value.name = "sig_count")
-
-                slevels = allsig[, .(ftot = sum(sig_count)), by = Signature][order(ftot), as.character(Signature)]
-                allsig[, Signature := factor(Signature, levels = slevels)]
-
-                if (opt$pair %in% allsig[, pair]){
-                    ## remove existing record from the cohort first
-                    allsig = allsig[pair!=opt$pair]
-                }
-
-                sct[, Signature := factor(Signature, levels = levels(allsig$Signature))]
-                allsig = rbind(allsig, sct)
-                ## calculate percentile
-                allsig[, perc := rank(sig_count)/.N, by = Signature]
-
-                ## highlight the tracks where the signature is non-zero in this sample
-                allsig[, highlight := Signature %in% sct[, Signature]]
-                allsig = allsig[(highlight)]
-                allsig[, Signature := factor(Signature, levels = intersect(slevels, sct[sig_count>0, as.character(Signature)]))]
-                
-                png(filename = paste0(opt$outdir, "/sig.composition.png"), height = 1000, width = 800)
-                ## individual sample compositions
-                ## ppng({
-                sigbar = ggplot(allsig, aes(y = Signature, x = sig_count)) +
-                    geom_density_ridges(aes(fill = highlight),
-                                        bandwidth = 0.1,
-                                        alpha = 0.5,
-                                        scale = 0.9,
-                                        rel_min_height = 0.01,
-                                        color = NA,
-                                        jittered_points = TRUE,
-                                        position = position_points_jitter(width = 0.01, height = 0),
-                                        point_shape = '|',
-                                        point_size = 3,
-                                        point_alpha = 0.1,
-                                        point_colour = "black") +
-                    geom_segment(data = allsig[pair==opt$pair & sig_count>0],
-                                 aes(x = sig_count, xend = sig_count,
-                                     y = as.numeric(Signature), yend = as.numeric(Signature) + 0.9),
-                                 color = "red", size = 2, lty = "dashed") +
-                    geom_label(data = allsig[pair==opt$pair],
-                               aes(x = sig_count, y = as.numeric(Signature) + 0.8,
-                                   label = paste0("qt ", format(perc * 100, digits = 2), "%")),
-                               nudge_x = 0.2) +
-                    scale_x_continuous(trans = "log1p",
-                                       breaks = c(0, 1, 10, 100, 1000, 10000, 100000),
-                                       labels = c(0, 1, 10, expression(10^2), expression(10^3), expression(10^4), expression(10^5)),
-                                       ## labels = sprintf("%.0f", c(0, 1, 10, 100, 1000, 10000, 100000)),
-                                       limits = c(0, 100000)) +
-                    scale_fill_manual(values = binary.cols) +
-                    labs(x = "Burden") +
-                    theme_minimal() +
-                    theme(
-                        text = element_text(size = 32),
-                        legend.position = "none"
-                        ## axis.text.x = element_text(angle = 45, hjust = 1)
-                    )
-                print(sigbar)
-                ## }, width = 900, height = 1600)
-                dev.off()
-                
+                sig.fn = opt$sigs_cohort
+                background.type = "supplied" ## what is the background dist, used for plot title
             } else {
-                png(filename = "sig.composition.png", width = 800, height= 1200)
-                ## individual sample compositions
-                sct[, Signature := fct_reorder(Signature, sig_count)]
-                sigbar = ggplot(
-                    sct[order(sig_count)],
-                    aes(x = Signature, y = sig_count)) +
-                    geom_bar(stat = "identity") +
-                    theme_minimal() +
-                    theme(text = element_text(size = 32),
-                          axis.text.x = element_text(angle = 45, hjust = 1)) +
-                    coord_flip()
-                print(sigbar)
-                dev.off()
+                if (!is.null(opt$tumor_type) & !is.na(opt$tumor_type)) {
+
+                    ## tumor type specific signature
+                    tumor.sig.fn = file.path(opt$libdir, "data", paste0(opt$tumor_type, ".signatures.txt"))
+
+                    ## check if file exists for specific tumor type
+                    if (file.exists(tumor.sig.fn)) {
+                        message("Using supplied background signature burden for tumor type: ", opt$tumor_type)
+                        sig.fn = tumor.sig.fn
+                        background.type = opt$tumor_type
+                    } else {
+                        message("Using background signature burden for whole Cell cohort")
+                    }
+                } else {
+                    message("Using background signature burden for whole Cell cohort")
+                }
             }
+
+            
+            allsig = data.table::fread(sig.fn)
+            allsig = data.table::melt(allsig, id = "pair", variable.name = "Signature", value.name = "sig_count")
+
+            ## recast as character to avoid releveling for now
+            allsig[, Signature := as.character(Signature)]
+            sct[, Signature := as.character(Signature)]
+
+            if (opt$pair %in% allsig[, pair]){
+                ## remove existing record from the cohort first
+                allsig = allsig[pair!=opt$pair]
+            }
+
+            ## sct[, Signature := factor(Signature, levels = levels(allsig$Signature))][!is.na(Signature)]
+            allsig = rbind(allsig, sct)
+            
+            ## calculate percentile
+            allsig[, perc := rank(sig_count)/.N, by = Signature]
+
+            ## highlight the tracks where the signature is non-zero in this sample
+            ## allsig[, highlight := as.character(Signature) %in% as.character(sct[, Signature])]
+            allsig = allsig[!is.na(Signature) & (Signature %in% sct$Signature)]
+
+            ## order levels...
+            keep.slevels = allsig[pair == opt$pair, Signature] %>% as.character
+            ## allsig[, Signature := factor(Signature, levels = new.slevels)]
+
+            allsig = allsig[!is.na(Signature) & Signature %in% keep.slevels,][, Signature := gsub("Signature.", "", Signature)]
+            ## just level one time
+            new.slevels = allsig[pair == opt$pair,][order(sig_count), Signature]
+            allsig[, Signature := factor(Signature, levels = new.slevels)]
+            
+            sigbar = ggplot(allsig,aes(y = Signature, x = sig_count, fill = Signature)) +
+                geom_density_ridges(bandwidth = 0.1,
+                                    alpha = 0.5,
+                                    scale = 0.9,
+                                    rel_min_height = 0.01,
+                                    color = NA,
+                                    jittered_points = TRUE,
+                                    position = position_points_jitter(width = 0.01, height = 0),
+                                    point_shape = '|',
+                                    point_size = 3,
+                                    point_alpha = 0.3,
+                                    point_colour = "black") +
+                geom_segment(data = allsig[pair==opt$pair & sig_count>0],
+                             aes(x = sig_count, xend = sig_count,
+                                 y = as.numeric(Signature), yend = as.numeric(Signature) + 0.9),
+                             color = "red", size = 1, alpha = 0.5) +
+                geom_label(data = allsig[pair==opt$pair],
+                           aes(x = sig_count, y = as.numeric(Signature) + 0.8,
+                               label = paste0("qt ", format(perc * 100, digits = 2), "%")),
+                           nudge_x = 0.2,
+                           hjust = "left",
+                           color = "black",
+                           label.size = 0,
+                           alpha = 0.5) +
+                scale_x_continuous(trans = "log1p",
+                                   breaks = c(0, 1, 10, 100, 1000, 10000, 100000),
+                                   labels = c(0, 1, 10,
+                                              expression(10^2),
+                                              expression(10^3),
+                                              expression(10^4),
+                                              expression(10^5)),
+                                   limits = c(0, 100000)) +
+                labs(title = paste0("Signatures vs. ", background.type, " background"), x = "Burden") +
+                theme_minimal() +
+                theme(legend.position = "none",
+                      title = element_text(size = 20, family = "sans"),
+                      axis.title = element_text(size = 20, family = "sans"),
+                      axis.text.x = element_text(size = 15, family = "sans"),
+                      axis.text.y = element_text(size = 20, family = "sans"))
+
+            ## theme(
+            ##     text = element_text(size = 32),
+            ##     axis.text.x
+            ##     legend.position = "none"
+            ##     ## axis.text.x = element_text(angle = 45, hjust = 1)
+            ## )
+
+            ppng(print(sigbar), filename = paste0(opt$outdir, "/sig.composition.png"), height = 800, width = 800)
+            
+            
+        } else {
+            png(filename = "sig.composition.png", width = 800, height= 1200)
+            ## individual sample compositions
+            sct[, Signature := forcats::fct_reorder(Signature, sig_count)]
+            sigbar = ggplot(
+                sct[order(sig_count)],
+                aes(x = Signature, y = sig_count)) +
+                geom_bar(stat = "identity") +
+                theme_minimal() +
+                theme(text = element_text(size = 32),
+                      axis.text.x = element_text(angle = 45, hjust = 1)) +
+                coord_flip()
+            print(sigbar)
+            dev.off()
         }
     }
 }
+
 
 
 
