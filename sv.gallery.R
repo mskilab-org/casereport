@@ -144,104 +144,114 @@ cn.plot = function(drivers.fname = NULL,
     }
 
     ## grab drivers and convert to GRanges
-    drivers.dt = fread(drivers.fname)
-    drivers.gr = dt2gr(drivers.dt)
+    drivers.dt = fread(drivers.fname) %>% as.data.table
 
-    ## grab complex and coverage gTracks
-    this.complex = readRDS(complex.fname)
-    this.complex.gt = this.complex$gt
-    cvgt = readRDS(cvgt.fname) ## coverage
-    gngt = readRDS(gngt.fname) ## gencode gTrack
+    message(nrow(drivers.dt))
 
-    ## grab plot titles and file names
-    drivers.dt[, plot.fname := file.path(outdir, paste(gene_name, "png", sep = "."))]
+    ## if empty data table, return
+    if (nrow(drivers.dt) > 0) {
+        ## otherwise grab gr and intersect with things
+        drivers.gr = dt2gr(drivers.dt)
 
-    ## make gGnome.js url query parameters
-    drivers.dt[, ev.js.range := gr.string(drivers.gr)]
-    drivers.dt[, plot.link := paste0(server, "index.html?file=", pair, ".json&location=", ev.js.range, "&view=")]
+        ## grab complex and coverage gTracks
+        this.complex = readRDS(complex.fname)
+        this.complex.gt = this.complex$gt
+        cvgt = readRDS(cvgt.fname) ## coverage
+        gngt = readRDS(gngt.fname) ## gencode gTrack
 
-    ## read CGC gTrack if provided
-    if (!is.null(cgcgt.fname)) {
-        if (file.exists(cgcgt.fname)) {
-            cgc.gt = readRDS(cgcgt.fname)
+        ## grab plot titles and file names
+        drivers.dt[, plot.fname := file.path(outdir, paste(gene_name, "png", sep = "."))]
+
+        ## make gGnome.js url query parameters
+        drivers.dt[, ev.js.range := gr.string(drivers.gr)]
+        drivers.dt[, plot.link := paste0(server, "index.html?file=", pair, ".json&location=", ev.js.range, "&view=")]
+
+        ## read CGC gTrack if provided
+        if (!is.null(cgcgt.fname)) {
+            if (file.exists(cgcgt.fname)) {
+                cgc.gt = readRDS(cgcgt.fname)
+            } else {
+                cgc.gt = NULL
+            }
         } else {
             cgc.gt = NULL
         }
-    } else {
-        cgc.gt = NULL
-    }
 
-    ## read allele gTrack if provided
-    if (!is.null(agt.fname)) {
-        if (file.exists(agt.fname)) {
-            agt = readRDS(agt.fname)
+        ## read allele gTrack if provided
+        if (!is.null(agt.fname)) {
+            if (file.exists(agt.fname)) {
+                agt = readRDS(agt.fname)
+            } else {
+                agt = NULL
+            }
         } else {
             agt = NULL
         }
-    } else {
-        agt = NULL
-    }
 
-    ## gTrack formatting
-    cvgt$ylab = "CN"
-    cvgt$name = "cov"
-    cvgt$yaxis.pretty = 3
-    cvgt$xaxis.chronly = TRUE
+        ## gTrack formatting
+        cvgt$ylab = "CN"
+        cvgt$name = "cov"
+        cvgt$yaxis.pretty = 3
+        cvgt$xaxis.chronly = TRUE
 
-    this.complex.gt$ylab = "CN"
-    this.complex.gt$name = "JaBbA"
-    this.complex.gt$yaxis.pretty = 3
-    this.complex.gt$xaxis.chronly = TRUE
+        this.complex.gt$ylab = "CN"
+        this.complex.gt$name = "JaBbA"
+        this.complex.gt$yaxis.pretty = 3
+        this.complex.gt$xaxis.chronly = TRUE
 
-    gngt$cex.label = 0.01 ## no labels for full gencode
-    gngt$xaxis.chronly = TRUE
-    gngt$name = "genes"
-    gngt$ywid = 0.1
-    gngt$height = 2
-    gngt$yaxis.cex = 0.8
-
-    if (!is.null(cgc.gt)) {
-        cgc.gt$cex.label = 0.5
-        cgc.gt$xaxis.chronly = TRUE
-        cgc.gt$name = "CGC"
-        cgc.gt$ywid = 0.1
-        cgc.gt$height = 5
-        cgc.gt$stack.gap = 0.5
+        gngt$cex.label = 0.01 ## no labels for full gencode
+        gngt$xaxis.chronly = TRUE
+        gngt$name = "genes"
+        gngt$ywid = 0.1
+        gngt$height = 2
         gngt$yaxis.cex = 0.8
 
-        ## concatenate final gTracks
-        gt = c(gngt, cgc.gt, cvgt, this.complex.gt)
+        if (!is.null(cgc.gt)) {
+            cgc.gt$cex.label = 0.5
+            cgc.gt$xaxis.chronly = TRUE
+            cgc.gt$name = "CGC"
+            cgc.gt$ywid = 0.1
+            cgc.gt$height = 5
+            cgc.gt$stack.gap = 0.5
+            gngt$yaxis.cex = 0.8
+
+            ## concatenate final gTracks
+            gt = c(gngt, cgc.gt, cvgt, this.complex.gt)
+        } else {
+            gt = c(gngt, cvgt, this.complex.gt)
+        }
+
+        if (!is.null(agt)) {
+            agt$ylab = "CN"
+            agt$yaxis.pretty = 3
+            agt$xaxis.chronly = TRUE
+
+            gt = c(agt, gt)
+        }
+
+        ## make one plot per range in drivers gr
+        pts = lapply(1:length(drivers.gr),
+                     function(ix) {
+                         ## prepare window
+                         win = drivers.gr[ix]
+                         if (pad > 0 & pad <= 1) {
+                             adjust = pmax(5e5, pad * width(win))
+                             win = GenomicRanges::trim(win + adjust)
+                         } else {
+                             win = GenomicRanges::trim(win + pad)
+                         }
+                         ppng(plot(gt, win, legend.params = list(plot = FALSE)),
+                              title = drivers.gr$gene_name[ix], ## title is the gene name
+                              filename = drivers.dt$plot.fname[ix],
+                              height = height,
+                              width = width)
+                     })
+
+        return(drivers.dt[, .(plot.fname, plot.link)])
     } else {
-        gt = c(gngt, cvgt, this.complex.gt)
+        warning("No drivers with CN change!")
+        return(data.table(plot.fname = character(), plot.link = character()))
     }
-
-    if (!is.null(agt)) {
-        agt$ylab = "CN"
-        agt$yaxis.pretty = 3
-        agt$xaxis.chronly = TRUE
-
-        gt = c(agt, gt)
-    }
-
-    ## make one plot per range in drivers gr
-    pts = lapply(1:length(drivers.gr),
-                 function(ix) {
-                     ## prepare window
-                     win = drivers.gr[ix]
-                     if (pad > 0 & pad <= 1) {
-                         adjust = pmax(5e5, pad * width(win))
-                         win = GenomicRanges::trim(win + adjust)
-                     } else {
-                         win = GenomicRanges::trim(win + pad)
-                     }
-                     ppng(plot(gt, win, legend.params = list(plot = FALSE)),
-                          title = drivers.gr$gene_name[ix], ## title is the gene name
-                          filename = drivers.dt$plot.fname[ix],
-                          height = height,
-                          width = width)
-                 })
-
-    return(drivers.dt[, .(plot.fname, plot.link)])
 }
 
 #' @name sv.plot

@@ -39,6 +39,7 @@ if (!exists("opt")){
 message("Loading Libraries -- Please wait...")
 suppressMessages(expr = {
     suppressPackageStartupMessages(expr = {
+        library(forcats)
         library(stringr)
         library(gGnome)
         library(gTrack)
@@ -316,8 +317,8 @@ if (!opt$knit_only){
     ## CN gallery
     ## #################
     cn.gallery.fn = file.path(opt$outdir, "cn.gallery.txt")
-    message(cn.gallery.fn)
     if (!check_file(cn.gallery.fn, overwrite = opt$overwrite)) {
+        message("preparing CN gallery")
         cn.slickr.dt = cn.plot(drivers.fname = driver.genes.cnv.fn,
                                opt$complex,
                                cvgt.fname = cvgt_fn,
@@ -399,7 +400,7 @@ if (!opt$knit_only){
     if (file.good(opt$deconstruct_sigs)){
         ## signatures
         sig = readRDS(opt$deconstruct_sigs)
-        sigd = sig$weights %>% data.table::melt(variable.name = "Signature", value.name = "Proportion") %>% data.table
+        sigd = as.data.table(sig$weights) %>% data.table::melt(variable.name = "Signature", value.name = "Proportion") %>% data.table
         sigd[, Signature := factor(Signature, levels = rev(levels(Signature)))]
         sigd[, pair := opt$pair]
 
