@@ -411,8 +411,8 @@ if (!opt$knit_only){
                                    label = paste0("qt ", format(perc * 100, digits = 2), "%")),
                                nudge_x = 0.2) +
                     scale_x_continuous(trans = "log1p",
-                                       breaks = c(0, 1, 10, 100, 1000, 10000, 100000),
-                                       labels = c(0, 1, 10, expression(10^2), expression(10^3), expression(10^4), expression(10^5)),
+                                       breaks = c(0, 10, 100, 1000, 10000, 100000),
+                                       labels = c(0, 10, expression(10^2), expression(10^3), expression(10^4), expression(10^5)),
                                        ## labels = sprintf("%.0f", c(0, 1, 10, 100, 1000, 10000, 100000)),
                                        limits = c(0, 100000)) +
                     scale_fill_manual(values = binary.cols) +
