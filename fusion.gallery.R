@@ -329,6 +329,7 @@ wgs.circos = function(junctions = jJ(),
 #' @param fusions.fname (character)
 #' @param complex.fname (character)
 #' @param cvgt.fname (character)
+#' @param agt.fname (character)
 #' @param gngt.fname (character)
 #' @param cgc.fname (character)
 #' @param ev.types (character)
@@ -342,6 +343,7 @@ fusion.wrapper = function(fusions.fname = NULL,
                           complex.fname = NULL,
                           cvgt.fname = NULL,
                           gngt.fname = NULL,
+                          agt.fname = NULL,
                           cgc.fname = "/data/cgc.tsv",
                           ev.types = c("qrp", "qpdup", "qrdel",
                                        "tic", "bfb", "dm", "chromoplexy",
@@ -360,6 +362,7 @@ fusion.wrapper = function(fusions.fname = NULL,
                                    complex.fname = complex.fname,
                                    cvgt.fname = cvgt.fname,
                                    gngt.fname = gngt.fname,
+                                   agt.fname = agt.fname,
                                    pad = pad,
                                    height = height,
                                    width = width,
@@ -492,6 +495,7 @@ fusion.table = function(fusions.fname = NULL,
 #' @param complex.fname (character)
 #' @param cvgt.fname (character) coverage gTrack file name
 #' @param gngt.fname (character) gencode gTrack file name
+#' @param agt.fname (character) allele gTrack file name
 #' @param pad (numeric) gWalk pad for plotting default 1e5
 #' @param height (numeric) plot height default 1e3
 #' @param width (numeric) plot width default 1e3
@@ -501,6 +505,7 @@ fusion.table = function(fusions.fname = NULL,
 fusion.plot = function(fs = NULL,
                        complex.fname = NULL,
                        cvgt.fname = NULL,
+                       agt.fname = NULL,
                        gngt.fname = "/data/gt.ge.hg19.rds",
                        pad = 1e5,
                        height = 1e3,
@@ -537,7 +542,21 @@ fusion.plot = function(fs = NULL,
 
     gngt$xaxis.chronly = TRUE
     gngt$name = "genes"
-    
+
+    ## read allele gTrack if provided
+    if (!is.null(agt.fname)) {
+        if (file.exists(agt.fname)) {
+            agt = readRDS(agt.fname)
+            agt$ylab = "CN"
+            agt$yaxis.pretty = 3
+            agt$xaxis.chronly = TRUE
+        } else {
+            agt = NULL
+        }
+    } else {
+        agt = NULL
+    }
+
     plot.fnames = sapply(seq_along(fs),
                          function (ix) {
                              fn = file.path(outdir, "fusions", paste0("walk", fs$dt$walk.id[ix], ".png"))
@@ -549,7 +568,11 @@ fusion.plot = function(fs = NULL,
                              fs.gt$labels.suppress.grl = TRUE
                              fs.gt$xaxis.chronly = TRUE
 
-                             gt = c(gngt, cvgt, this.complex.gt, fs.gt)
+                             if (is.null(agt)) {
+                                 gt = c(gngt, cvgt, this.complex.gt, fs.gt)
+                             } else {
+                                 gt = c(gngt, agt, cvgt, this.complex.gt, fs.gt)
+                             }
                              gt$xaxis.chronly = TRUE
 
                              ## format window

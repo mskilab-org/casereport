@@ -95,7 +95,165 @@ gallery.wrapper = function(complex.fname = NULL,
     ## return (out)
     return(svplot.dt)
 }
-                           
+
+#' @name cn.plot
+#' @title cn.plot
+#'
+#' @description
+#'
+#' Creates .png files corresponding to gTrack plots for each amplified/deleted gene
+#'
+#' @param drivers.fname text file with drivers + CN alterations + genomic locations
+#' @param complex.fname (character) output from complex event caller
+#' @param cvgt.fname (character) coverage gTrack file path
+#' @param gngt.fname (character) gencode gTrack file path
+#' @param cgcgt.fname (character) CGC gTrack file path
+#' @param agt.fname (character) allele gTrack file name
+#' @param server (character) server url
+#' @param pair (character) pair id
+#' @param ev.types (character) complex event types
+#' @param pad (numeric) window padding in bp default 5e5
+#' @param height (numeric) plot height default 500
+#' @param width (numeric) plot width default 500
+#' @param outdir (character) where to save plots?
+#'
+#' @return data.table with columns id, plot.fname, and plot.link
+cn.plot = function(drivers.fname = NULL,
+                   complex.fname = NULL,
+                   cvgt.fname = "./coverage.gtrack.rds",
+                   gngt.fname = "./data/gt.ge.hg19.rds",
+                   cgcgt.fname = NULL,
+                   agt.fname = NULL,
+                   server = "",
+                   pair = "",
+                   ev.types = c("qrp", "tic", "qpdup", "qrdel",
+                                "bfb", "dm", "chromoplexy", "chromothripsis",
+                                "tyfonas", "rigma", "pyrgo"),
+                   pad = 5e5,
+                   height = 1000,
+                   width = 1000,
+                   outdir = "./") {
+    if (!file.exists(drivers.fname)) {
+        stop("drivers.fname does not exist")
+    }
+    if (!file.exists(complex.fname)) {
+        stop("complex.fname does not exist")
+    }
+    if (!file.exists(cvgt.fname)) {
+        stop("coverage gTrack does not exist")
+    }
+
+    ## grab drivers and convert to GRanges
+    drivers.dt = fread(drivers.fname) %>% as.data.table
+
+    message(nrow(drivers.dt))
+
+    ## if empty data table, return
+    if (nrow(drivers.dt) > 0) {
+        ## otherwise grab gr and intersect with things
+        drivers.gr = dt2gr(drivers.dt)
+
+        ## grab complex and coverage gTracks
+        this.complex = readRDS(complex.fname)
+        this.complex.gt = this.complex$gt
+        cvgt = readRDS(cvgt.fname) ## coverage
+        gngt = readRDS(gngt.fname) ## gencode gTrack
+
+        ## grab plot titles and file names
+        drivers.dt[, plot.fname := file.path(outdir, paste(gene_name, "png", sep = "."))]
+
+        ## make gGnome.js url query parameters
+        drivers.dt[, ev.js.range := gr.string(drivers.gr)]
+        drivers.dt[, plot.link := paste0(server, "index.html?file=", pair, ".json&location=", ev.js.range, "&view=")]
+
+        ## read CGC gTrack if provided
+        if (!is.null(cgcgt.fname)) {
+            if (file.exists(cgcgt.fname)) {
+                cgc.gt = readRDS(cgcgt.fname)
+            } else {
+                cgc.gt = NULL
+            }
+        } else {
+            cgc.gt = NULL
+        }
+
+        ## read allele gTrack if provided
+        if (!is.null(agt.fname)) {
+            if (file.exists(agt.fname)) {
+                agt = readRDS(agt.fname)
+            } else {
+                agt = NULL
+            }
+        } else {
+            agt = NULL
+        }
+
+        ## gTrack formatting
+        cvgt$ylab = "CN"
+        cvgt$name = "cov"
+        cvgt$yaxis.pretty = 3
+        cvgt$xaxis.chronly = TRUE
+
+        this.complex.gt$ylab = "CN"
+        this.complex.gt$name = "JaBbA"
+        this.complex.gt$yaxis.pretty = 3
+        this.complex.gt$xaxis.chronly = TRUE
+
+        gngt$cex.label = 0.01 ## no labels for full gencode
+        gngt$xaxis.chronly = TRUE
+        gngt$name = "genes"
+        gngt$ywid = 0.1
+        gngt$height = 2
+        gngt$yaxis.cex = 0.8
+
+        if (!is.null(cgc.gt)) {
+            cgc.gt$cex.label = 0.5
+            cgc.gt$xaxis.chronly = TRUE
+            cgc.gt$name = "CGC"
+            cgc.gt$ywid = 0.1
+            cgc.gt$height = 5
+            cgc.gt$stack.gap = 0.5
+            gngt$yaxis.cex = 0.8
+
+            ## concatenate final gTracks
+            gt = c(gngt, cgc.gt, cvgt, this.complex.gt)
+        } else {
+            gt = c(gngt, cvgt, this.complex.gt)
+        }
+
+        if (!is.null(agt)) {
+            agt$ylab = "CN"
+            agt$yaxis.pretty = 3
+            agt$xaxis.chronly = TRUE
+
+            gt = c(agt, gt)
+        }
+
+        ## make one plot per range in drivers gr
+        pts = lapply(1:length(drivers.gr),
+                     function(ix) {
+                         ## prepare window
+                         win = drivers.gr[ix]
+                         if (pad > 0 & pad <= 1) {
+                             adjust = pmax(5e5, pad * width(win))
+                             win = GenomicRanges::trim(win + adjust)
+                         } else {
+                             win = GenomicRanges::trim(win + pad)
+                         }
+                         ppng(plot(gt, win, legend.params = list(plot = FALSE)),
+                              title = drivers.gr$gene_name[ix], ## title is the gene name
+                              filename = drivers.dt$plot.fname[ix],
+                              height = height,
+                              width = width)
+                     })
+
+        return(drivers.dt[, .(plot.fname, plot.link)])
+    } else {
+        warning("No drivers with CN change!")
+        return(data.table(plot.fname = character(), plot.link = character()))
+    }
+}
+
 #' @name sv.plot
 #' @title sv.plot
 #'
