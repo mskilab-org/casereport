@@ -1,5 +1,5 @@
 #Module casereport ("<libdir>run.sh <libdir>wgs.run.R --libdir <libdir> --pair <pair> --jabba_rds <jabba_rds> --cbs_cov_r...")
-/gpfs/commons/groups/imielinski_lab/home/yaox-934/git/casereport
+/gpfs/commons/groups/imielinski_lab/home/zchoo/git/casereport
 input	pair	 pair  value
 input	jabba_rds	 jabba_rds  path
 input	complex	 complex  path	    /dev/null
