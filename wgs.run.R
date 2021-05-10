@@ -16,6 +16,7 @@ if (!exists("opt")){
         make_option(c("--sigs_cohort"), type = "character", default = NA_character_, help = "variant count for each signature in a cohort"),
         make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample"),
         make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
+        make_option(c("--hrd_output"), type = "character", default = NA_character_, help = "The one line CSV of HRDetect final call"),
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
         make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
@@ -85,7 +86,7 @@ if (!opt$knit_only){
     }
 
     message('Calling CNVs for oncogenes and tumor suppressor genes')
-    # get the ncn data from jabba
+    ## # get the ncn data from jabba
     genes_cn.fn = paste0(opt$outdir, '/genes_cn.rds')
     oncogenes.fn = file.path(opt$libdir, "data", "onc.rds")
     tsg.fn = file.path(opt$libdir, "data", "tsg.rds")
@@ -103,7 +104,7 @@ if (!opt$knit_only){
                 message('JaBbA karyograph does not contain the "ncn" field so CN = 2 will be assumed for the normal copy number of all seqnames.')
             }
         } else {
-            # TODO: perhaps we should allow to directly provide a nseg input
+            ## # TODO: perhaps we should allow to directly provide a nseg input
             message('JaBbA karyograph was not found at the expected location (', kag_rds, ') so we will use CN = 2 for the normal copy number of all chromosomes.')
         }
 
@@ -542,6 +543,22 @@ if (!opt$knit_only){
             print(sigbar)
             dev.off()
         }
+    }
+
+    browser()
+    ## ##################
+    ## HRDetect results
+    ## ##################
+    if (file.good(opt$hrd_output)){
+        hrd = fread(opt$hrd_output)
+        hrd[, pair := opt$pair]
+        hrd = data.table::melt(hrd, id.var = "pair")
+
+        ## ## If there's no cohort to compare to
+        ## hrd.res = ggplot(hrd[!variable %in% c("intercept", "Probability")],
+        ##                  aes(x = variable, y = value)) +
+        ##     geom_bar(stat = "identity")
+        saveRDS(hrd, paste0(opt$outdir, "/hrdetect.rds"))
     }
 }
 

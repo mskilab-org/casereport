@@ -1,5 +1,5 @@
 #Module casereport ("<libdir>run.sh <libdir>wgs.run.R --libdir <libdir> --pair <pair> --jabba_rds <jabba_rds> --cbs_cov_r...")
-/gpfs/commons/groups/imielinski_lab/home/zchoo/git/casereport
+~/git/casereport
 input	pair	 pair  value
 input	jabba_rds	 jabba_rds  path
 input	complex	 complex  path	    /dev/null
@@ -12,6 +12,7 @@ input	deconstruct_variants	 deconstruct_variants  path	/dev/null
 input	sigs_cohort	sigs_cohort	path	   /dev/null
 input	tpm	tpm	path	 /dev/null
 input	tpm_cohort	tpm_cohort	path	/dev/null
+input	hrd_output	hrd_output	path	/dev/null
 input	server	server	value		"https://mskilab.com/gGraph/"
 input	tumor_type	tumor_type	value "unknown"
 input	flags	flags	value		""

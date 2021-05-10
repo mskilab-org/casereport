@@ -237,8 +237,34 @@ if (file.exists(paste0(params$outdir, "/sig.composition.png"))) {
 cat ("\n<br>\n")
 ```
 
+```{r, HRDetect, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+if (file.exists(paste0(params$outdir, "/hrdetect.rds"))){
+    cat("# HRDetect prediction (homologous recombination deficiency)\n")
+    cat("Applying the [HRDetect](https://doi.org/10.1038/nm.4292) model, we
+predict homologous recombination deficiency status of this sample
+based on its SNV/INDEL/SV signatures.\n\n")
 
-# HRDetect prediction (homologous recombination deficiency)
+    hrd = readRDS(paste0(params$outdir, "/hrdetect.rds"))
+    hrd.yes = hrd[variable=="Probability", value>0.7]
+    cat("This sample is classified as", ifelse(hrd.yes, "**HR deficient**", "**NOT** HR deficient"), ".\n")
+    
+    hrdetect.dims = setNames(        
+        c('intercept',
+          'Proportion of deletions with microhomology',
+          'SBS3',
+          'SV signature 3',
+          'SV signature 5',
+          'HRD index (LOH)',
+          'SBS8',
+          'Probability of Homologous Recombination Deficiency'),
+        c('Intercept', 'del.mh.prop', 'SNV3', 'SV3', 'SV5', 'hrd', 'SNV8', 'Probability')
+    )
+    
+    kbl(hrd[, .(Variable = hrdetect.dims[variable], value = sprintf("%f", value))]) %>%
+        kable_classic(full_width = FALSE) %>%
+        row_spec(8, bold = T, color = "white", background = ifelse(hrd.yes, "#D7261E", "#1f78b4"))
+}
+```
 
 ***
 # Proximity to enhancers
