@@ -347,7 +347,7 @@ fusion.wrapper = function(fusions.fname = NULL,
                           cgc.fname = "/data/cgc.tsv",
                           ev.types = c("qrp", "qpdup", "qrdel",
                                        "tic", "bfb", "dm", "chromoplexy",
-                                       "chromothripsis", "tyfonas", "rigma", "pyrgo"),
+                                       "chromothripsis", "tyfonas", "rigma", "pyrgo", "cpxdm"),
                           height = 1000,
                           width = 1000,
                           pad = 1e5,
@@ -396,7 +396,7 @@ fusion.table = function(fusions.fname = NULL,
                         cgc.fname = "/data/cgc.tsv",
                         ev.types = c("qrp", "qpdup", "qrdel",
                                      "tic", "bfb", "dm", "chromoplexy",
-                                     "chromothripsis", "tyfonas", "rigma", "pyrgo"))
+                                     "chromothripsis", "tyfonas", "rigma", "pyrgo", "cpxdm"))
 {
     if (!file.exists(fusions.fname)) {
         stop("fusions.fname does not exist")
