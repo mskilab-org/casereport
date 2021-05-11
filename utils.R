@@ -838,7 +838,7 @@ get_gene_copy_numbers = function(gg, gene_ranges,
                                              "gene_type", "level", "hgnc_id", "havana_gene"),
                                  ev.types = c("qrp", "qpdup", "qrdel",
                                               "tic", "bfb", "dm", "chromoplexy",
-                                              "chromothripsis", "tyfonas", "rigma", "pyrgo"),
+                                              "chromothripsis", "tyfonas", "rigma", "pyrgo", "cpxdm"),
                                  output_type = 'data.table',
                                  ploidy = 2){
     if (is.character(gg)){
