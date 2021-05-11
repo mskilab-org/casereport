@@ -545,7 +545,6 @@ if (!opt$knit_only){
         }
     }
 
-    browser()
     ## ##################
     ## HRDetect results
     ## ##################
