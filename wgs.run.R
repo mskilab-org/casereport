@@ -667,7 +667,7 @@ if (!opt$knit_only){
             scale_discrete_manual("point_colour", values = binary.cols, labels = NULL) +
             scale_fill_manual(values = binary.cols,
                               labels = c("Non HR deficient", "HR deficient")) +
-            scale_y_discrete(labels = hrdetect.dims) +
+            ## scale_y_discrete(labels = hrdetect.dims) +
             labs(x = "Proportion") +
             guides(point_colour = FALSE) +
             geom_segment(data = rdat[pair==opt$pair],
