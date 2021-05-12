@@ -132,10 +132,10 @@ DT::datatable(dat, options = list(scrollX = TRUE))
 
 ```{r, driver-fusions-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 driver.fusions.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
-slick_up = slickR(obj = driver.fusions.dt$plot.fname, height = 500, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+if (nrow(driver.fusions.dt) > 0) {
+   slick_up = slickR(obj = driver.fusions.dt$plot.fname, height = 500, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
 slick_up
-## slick_down = slickR(obj = driver.fusions.dt$plot.fname, height = 100, width = "95%") + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
-## slick_up %synch% slick_down
+}
 ```
 
 ## Other in-frame, non-silent gene fusions
@@ -151,8 +151,10 @@ DT::datatable(dat, options = list(scrollX = TRUE))
 
 ```{r, other-fusions-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 other.fusions.dt = fread(file.path(params$outdir, "fusions.other.txt"))
-slick_up = slickR(obj = other.fusions.dt$plot.fname, height = 500, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+if (nrow(other.fusions.dt) > 0) {
+   slick_up = slickR(obj = other.fusions.dt$plot.fname, height = 500, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
 slick_up
+}
 ## slick_down = slickR(obj = other.fusions.dt$plot.fname, height = 100, width = "95%") + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
 ## slick_up %synch% slick_down
 ```

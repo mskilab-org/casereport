@@ -418,7 +418,12 @@ fusion.table = function(fusions.fname = NULL,
 
     ## filter so that gene pairs are unique (if multiple choose the one with most AA's)
     filtered.fusions = filtered.fusions[order(n.aa, decreasing = TRUE)]
-    filtered.fusions = filtered.fusions[which(!duplicated(filtered.fusions$dt$name))]
+    filtered.fusions = filtered.fusions[which(!duplicated(filtered.fusions$dt$genes))]
+
+    ## return if length is 0
+    if (length(filtered.fusions) == 0) {
+        return (filtered.fusions)
+    }
 
     ## Cancer Gene Census genes
     cgc.gene.symbols = fread(cgc.fname)[["Gene Symbol"]]
@@ -428,7 +433,7 @@ fusion.table = function(fusions.fname = NULL,
         lapply(1:length(filtered.fusions),
                function(ix) {
                    ## xtYao: name seems to be integers in new gGnome??
-                   ## let's use "genes" moving forward
+                   ## let's use "genes" moving forward yep
                    ## gns = unlist(strsplit(filtered.fusions$dt$name[ix], ","))
                    gns = unlist(strsplit(filtered.fusions$dt$genes[ix], ","))
                    gene.in.cgc = any(gns %in% cgc.gene.symbols)
