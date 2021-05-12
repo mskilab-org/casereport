@@ -422,6 +422,7 @@ fusion.table = function(fusions.fname = NULL,
 
     ## return if length is 0
     if (length(filtered.fusions) == 0) {
+        filtered.fusions$set(driver = c(), driver.name = c(), ev.id = c(), ev.type = c())
         return (filtered.fusions)
     }
 

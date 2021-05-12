@@ -274,9 +274,20 @@ if (!opt$knit_only){
                                            width = 1000,
                                            outdir = opt$outdir)
 
-        ## save data table for drivers and non-drivers separately
-        fwrite(fusions.slickr.dt[driver == TRUE,], fusions.driver.fname)
-        fwrite(fusions.slickr.dt[driver == FALSE,], fusions.other.fname)
+        ## make sure data table is not empty
+        if (nrow(fusions.slickr.dt) == 0) {
+
+            ## write empty data table, rmd file will deal with this.
+            fwrite(fusions.slickr.dt, fusions.driver.fname)
+            fwrite(fusions.slickr.dt, fusions.other.fname)
+            
+        } else {
+
+            ## save data table for drivers and non-drivers separately
+            fwrite(fusions.slickr.dt[driver == TRUE,], fusions.driver.fname)
+            fwrite(fusions.slickr.dt[driver == FALSE,], fusions.other.fname)
+
+        }
         
     } else {
         message("Fusion files already exist")
