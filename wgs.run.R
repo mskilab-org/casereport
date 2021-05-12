@@ -16,7 +16,7 @@ if (!exists("opt")){
         make_option(c("--sigs_cohort"), type = "character", default = NA_character_, help = "variant count for each signature in a cohort"),
         make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample"),
         make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
-        make_option(c("--hrd_output"), type = "character", default = NA_character_, help = "The one line CSV of HRDetect final call"),
+        make_option(c("--hrd_results"), type = "character", default = NA_character_, help = "The comprehensive HRDetect module results"),
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
         make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
@@ -548,16 +548,139 @@ if (!opt$knit_only){
     ## ##################
     ## HRDetect results
     ## ##################
-    if (file.good(opt$hrd_output)){
-        hrd = fread(opt$hrd_output)
-        hrd[, pair := opt$pair]
-        hrd = data.table::melt(hrd, id.var = "pair")
+    if (file.good(opt$hrd_results)){
+        hrd.res = readRDS(opt$hrd_results)
+        ## melt the input data matrix
+        hrd.dat = as.data.table(hrd.res$data_matrix) %>% data.table::melt()
+        hrd.dat[, pair := opt$pair]
+        ## melt the output results
+        hrd.out = as.data.table(hrd.res$hrdetect_output) %>% data.table::melt()
+        hrd.out[, pair := opt$pair]
+        saveRDS(hrd.out, paste0(opt$outdir, "/hrdetect.rds"))
 
-        ## ## If there's no cohort to compare to
-        ## hrd.res = ggplot(hrd[!variable %in% c("intercept", "Probability")],
-        ##                  aes(x = variable, y = value)) +
-        ##     geom_bar(stat = "identity")
-        saveRDS(hrd, paste0(opt$outdir, "/hrdetect.rds"))
+        hrd = merge(hrd.out, hrd.dat[, .(variable, data = value)], by = "variable")
+
+        ## original training data
+        hrd_cohort = fread(paste0(opt$libdir, "/data/hrdetect.og.txt"))
+        hrd_cohort = data.table::melt(hrd_cohort, id.vars = c("pair", "is.hrd"))
+        ## if (opt$pair %in% hrd_cohort$pair){
+        hrd_cohort = rbindlist(list(hrd_cohort[pair!=opt$pair], hrd.dat), fill = TRUE)
+        ## }
+
+        hrd_cohort[, range(value), by = .(variable, is.hrd)]
+
+        hrd.yes = hrd.out[variable=="Probability", value>0.7]
+
+        ## these are the dimensions that need to be logged
+        ldat = hrd_cohort[variable != "del.mh.prop"]
+        ldat[, variable := factor(variable, levels = setdiff(levels(variable), "del.mh.prop"))]
+        ## plot the distribution of raw count
+        hrd.plot = ggplot(ldat, aes(x = value, y = variable)) +
+            geom_density_ridges(aes(point_colour = is.hrd,
+                                    fill = is.hrd),
+                                bandwidth = 0.1,
+                                alpha = 0.5,
+                                scale = 0.9,
+                                rel_min_height = 0.01,
+                                color = NA,
+                                jittered_points = TRUE,
+                                position = position_points_jitter(width = 0.01, height = 0),
+                                point_shape = '|',
+                                point_size = 3,
+                                point_alpha = 0.3) +
+            scale_discrete_manual("point_colour", values = binary.cols) +
+            scale_fill_manual(values = binary.cols) +
+            geom_segment(data = ldat[pair==opt$pair],
+                         aes(x = value, xend = value,
+                             y = as.numeric(variable), yend = as.numeric(variable) + 0.9),
+                         color = ifelse(hrd.yes, "#D7261E", "#1f78b4"),
+                         alpha = 1, lwd = 3) +
+            scale_x_continuous(trans = "log1p",
+                               breaks = c(0, 1, 10, 100, 1000, 10000, 100000),
+                               labels = c(0, 1, 10,
+                                          expression(10^2),
+                                          expression(10^3),
+                                          expression(10^4),
+                                          expression(10^5)),
+                               limits = c(0, 100000),
+                               expand = c(0, 0)) +
+            labs(title = paste0("HRDetect features compared to Davies et al. 2017"), x = "Burden") +
+            theme_minimal() +
+            theme(legend.position = "none",
+                  title = element_text(size = 20, family = "sans"),
+                  axis.title = element_text(size = 20, family = "sans"),
+                  axis.text.x = element_text(size = 15, family = "sans"),
+                  axis.text.y = element_text(size = 20, family = "sans"))
+
+        ## these are the dimensions that need to be logged
+        rdat = hrd_cohort[variable == "del.mh.prop"]
+        rdat[, variable := factor(variable, levels = "del.mh.prop")]
+        ## plot the distribution of raw count
+        hrd.plot.2 = ggplot(rdat, aes(x = value, y = variable)) +
+            geom_density_ridges(aes(point_colour = is.hrd,
+                                    fill = is.hrd),
+                                bandwidth = 0.1,
+                                alpha = 0.5,
+                                scale = 0.9,
+                                rel_min_height = 0.01,
+                                color = NA,
+                                jittered_points = TRUE,
+                                position = position_points_jitter(width = 0.01, height = 0),
+                                point_shape = '|',
+                                point_size = 3,
+                                point_alpha = 0.3) +
+            scale_discrete_manual("point_colour", values = binary.cols, labels = NULL) +
+            scale_fill_manual(values = binary.cols,
+                              labels = c("Non HR deficient", "HR deficient")) +
+            scale_y_discrete(labels = hrdetect.dims) +
+            labs(x = "Proportion") +
+            guides(point_colour = FALSE) +
+            geom_segment(data = rdat[pair==opt$pair],
+                         aes(x = value, xend = value,
+                             y = as.numeric(variable), yend = as.numeric(variable) + 3),
+                         color = ifelse(hrd.yes, "#D7261E", "#1f78b4"),
+                         alpha = 1, lwd = 3) +
+        ## scale_x_continuous(trans = "log1p",
+        ##                    breaks = c(0, 1, 10, 100, 1000, 10000, 100000),
+        ##                    labels = c(0, 1, 10,
+        ##                               expression(10^2),
+        ##                               expression(10^3),
+        ##                               expression(10^4),
+        ##                               expression(10^5)),
+        ##                    limits = c(0, 100000)) +
+            ## labs(title = paste0("HRDetect features compared to Davies et al. 2017"), x = "Burden") +
+            theme_minimal() +
+            theme(legend.position = "bottom",
+                  legend.text = element_text(size=20),
+                  title = element_text(size = 20, family = "sans"),
+                  axis.title = element_text(size = 20, family = "sans"),
+                  axis.text.x = element_text(size = 15, family = "sans"),
+                  axis.text.y = element_text(size = 20, family = "sans"))
+
+        ## finally draw the output probability in a waterfall plot
+        ## hrd.plot.3 = ggplot(hrd_cohort, aes(x = rank)) %>%
+            
+
+        ## draw the plots
+        png(paste0(opt$outdir, "/hrdetect.log.dat.png"), width = 800, height = 800)
+        print(hrd.plot)
+        dev.off()
+
+        png(paste0(opt$outdir, "/hrdetect.prop.dat.png"), width = 800, height = 200)
+        print(hrd.plot.2)
+        dev.off()
+        
+
+            ## geom_label(data = allsig[pair==opt$pair],
+            ##            aes(x = sig_count, y = as.numeric(Signature) + 0.8,
+            ##                label = paste0("qt ", format(perc * 100, digits = 2), "%")),
+            ##            nudge_x = 0.2,
+            ##            hjust = "left",
+            ##            color = "black",
+            ##            label.size = 0,
+            ##            alpha = 0.5) +
+
+
     }
 }
 

@@ -913,7 +913,10 @@ get_gene_copy_numbers = function(gg, gene_ranges,
     gene_cn_table = rbind(gene_cn_split_genes, gene_cn_non_split_genes)
 
     ## overlap with event calls
-    this.ev = readRDS(complex.fname)$meta$events[type %in% ev.types,]
+    if (is.null(gg$meta$events)){
+        gg = events(gg)
+    }
+    this.ev = gg$meta$events[type %in% ev.types,]
     ev.grl = parse.grl(this.ev$footprint)
     values(ev.grl) = this.ev
     ev.gr = stack(ev.grl)
