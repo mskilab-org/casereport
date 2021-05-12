@@ -478,14 +478,12 @@ fusion.table = function(fusions.fname = NULL,
 
     if (ov[,.N] > 0){
         ov = ov[, .(ev.id = paste(unique(ev.id), sep = ","), type = paste(unique(type), sep = ",")), by = walk.id]
-        dt = merge(filtered.fusions$dt, ov, by = "walk.id", all.x = TRUE)
+        pmt = match(filtered.fusions$dt$walk.id, ov$walk.id)
+        filtered.fusions$set(ev.id = ov$ev.id[pmt])
+        filtered.fusions$set(ev.type = ov$type[pmt])
     } else {
-        dt = filtered.fusions$dt
+        filtered.fusions$set(ev.id = NA, ev.type = NA)
     }
-
-        ## add ev.id and type to  metadata
-        filtered.fusions$set(ev.id = dt$ev.id)
-        filtered.fusions$set(ev.type = dt$type)
 
     return(filtered.fusions)
 }
