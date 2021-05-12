@@ -285,16 +285,17 @@ if (!opt$knit_only){
     ## ##################
     ## SV gallery code
     ## ##################
+    ## generate gTrack with just cgc genes
+    cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers),
+                       file.path(opt$libdir, "data", "cgc.tsv"),
+                       opt$drivers)
+    cgc.gtrack.fname = cgc.gtrack(cgc.fname = cgc.fname,
+                                  gencode.fname = opt$gencode,
+                                  outdir = opt$outdir)
+
     if (opt$overwrite | !file.exists(file.path(opt$outdir, "sv.gallery.txt"))) {
         message("Preparing SV gallery")
 
-        ## generate gTrack with just cgc genes
-        cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers),
-                           file.path(opt$libdir, "data", "cgc.tsv"),
-                           opt$drivers)
-        cgc.gtrack.fname = cgc.gtrack(cgc.fname = cgc.fname,
-                                      gencode.fname = opt$gencode,
-                                      outdir = opt$outdir)
         
         sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
                                        background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
@@ -364,6 +365,8 @@ if (!opt$knit_only){
         ## TODO: make the quantile threshold adjustable
         cool.exp = mexp[pair==opt$pair][(role=="TSG" & qt<0.05) | (role=="ONC" & qt>0.95)]
         ## cool.exp[order(qt)]
+
+        cool.exp.fn = file.path(opt$outdir, "cool.expr.rds")
         if (nrow(cool.exp)>0){
             cool.exp[, direction := ifelse(qt>0.95, "over", "under")]
             cool.exp[, gf := paste0(opt$outdir, "/", gene, ".", direction, ".expr.png")]
@@ -391,7 +394,28 @@ if (!opt$knit_only){
                     dev.off()
                 }
             }
-            saveRDS(cool.exp, paste0(opt$outdir, "/cool.expr.rds"))
+            saveRDS(cool.exp, cool.exp.fn)
+        }
+
+        ## expression change gallery
+        expr.gallery.fn = file.path(opt$outdir, "expr.gallery.txt")
+        if (!check_file(expr.gallery.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
+            message("preparing CN gallery")
+            expr.slickr.dt = cn.plot(drivers.fname = cool.exp.fn,
+                                     opt$complex,
+                                     cvgt.fname = cvgt_fn,
+                                     gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                     cgcgt.fname = cgc.gtrack.fname,
+                                     agt.fname = agt_fn,
+                                     server = opt$server,
+                                     pair = opt$pair,
+                                     pad = 0.5,
+                                     height = 1200,
+                                     width = 1000,
+                                     outdir = opt$outdir)
+            fwrite(expr.slickr.dt, expr.gallery.fn)
+        } else {
+            message("Expression gallery files already exist")
         }
     }
 
