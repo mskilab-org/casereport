@@ -12,7 +12,7 @@ input	deconstruct_variants	 deconstruct_variants  path	/dev/null
 input	sigs_cohort	sigs_cohort	path	   /dev/null
 input	tpm	tpm	path	 /dev/null
 input	tpm_cohort	tpm_cohort	path	/dev/null
-input	hrd_output	hrd_output	path	/dev/null
+input	hrd_results	hrd_results	path	/dev/null
 input	server	server	value		"https://mskilab.com/gGraph/"
 input	tumor_type	tumor_type	value "unknown"
 input	flags	flags	value		""

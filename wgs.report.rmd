@@ -268,19 +268,28 @@ based on its SNV/INDEL/SV signatures.\n\n")
     
     hrdetect.dims = setNames(        
         c('intercept',
-          'Proportion of deletions with microhomology',
+          'Proportion of DELs\nwith microhomology',
           'SBS3',
           'SV signature 3',
           'SV signature 5',
           'HRD index (LOH)',
           'SBS8',
-          'Probability of Homologous Recombination Deficiency'),
+          'Probability of HR Deficiency'),
         c('Intercept', 'del.mh.prop', 'SNV3', 'SV3', 'SV5', 'hrd', 'SNV8', 'Probability')
     )
     
-    kbl(hrd[, .(Variable = hrdetect.dims[variable], value = sprintf("%f", value))]) %>%
+    cat(kbl(hrd[, .(Variable = hrdetect.dims[variable], value = sprintf("%f", value))]) %>%
         kable_classic(full_width = FALSE) %>%
-        row_spec(8, bold = T, color = "white", background = ifelse(hrd.yes, "#D7261E", "#1f78b4"))
+        row_spec(8, bold = T, color = "white", background = ifelse(hrd.yes, "#D7261E", "#1f78b4")))
+
+    cat("\n<br>\n")
+    ## insert the plots of input data
+    cat(
+        paste0("![](", paste0(params$outdir, "/hrdetect.log.dat.png"),")"), "\n\n"
+    )
+    cat(
+        paste0("![](", paste0(params$outdir, "/hrdetect.prop.dat.png"),")"), "\n\n"
+    )
 }
 ```
 
