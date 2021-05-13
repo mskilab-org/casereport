@@ -1070,3 +1070,43 @@ grab.agtrack = function(agt.fname = NULL,
 
     return (agt)
 }
+
+#' @name rna.quantile
+#' @title rna.quantile
+#'
+#' @description
+#'
+#' compute quantile of each transcript
+#'
+#' @param tpm.cohort file path data.table with id column gene and other columns representing pairs
+#' @param pair character pair of interest. must be a column in tpm.cohort if tpm.pair is NULL
+#' @param tpm.pair file path of data.table with column gene, pair
+#'
+#' @return data table with column gene and quantile representing expression quantile for the pair of interest relative to rest of cohort
+rna.quantile = function(tpm.cohort = NULL, pair = NULL, tpm.pair = NULL) {
+
+    if (is.null(pair)) {
+        stop("must supply pair")
+    }
+
+    tpm.cohort = data.table::fread(tpm.cohort, header = TRUE)
+    tpm.pair = data.table::fread(tpm.pair, header = TRUE)
+    
+    if (!is.null(tpm.pair)) {
+        if (pair %in% colnames(tpm.cohort)) {
+            tpm.cohort[[pair]] = NULL
+            tpm.cohort = merge.data.table(tpm.cohort, tpm.pair, by = "gene", all.x = TRUE)
+        }
+    }
+    if (!(pair %in% colnames(tpm.cohort))) {
+        stop("pair must be in tpm.cohort columns")
+    }
+
+    melted.tpm.cohort = data.table::melt(tpm.cohort,
+                                         id.vars = c("gene"),
+                                         variable.name = "pair")
+
+    melted.tpm.cohort[, qt := rank(as.double(.SD$value))/.N, by = gene]
+
+    return(melted.tpm.cohort)
+}

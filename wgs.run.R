@@ -115,22 +115,54 @@ if (!opt$knit_only){
         genes_cn_annotated = get_gene_ampdel_annotations(genes_cn, amp.thresh = opt$amp_thresh,
                                        del.thresh = opt$del_thresh)
 
+
+
+        #' zchoo Wednesday, May 12, 2021 04:17:06 PM
+        #' integrate RNA expression data with genes data
+        if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {
+            message("Computing quantiles")
+            melted.expr = rna.quantile(opt$tpm_cohort,
+                                       opt$pair,
+                                       opt$tpm)
+            message("Done computing quantiles")
+            genes_cn_annotated = merge.data.table(genes_cn_annotated,
+                                                  melted.expr[pair == opt$pair,
+                                                              .(gene_name = gene, expr.quantile = qt, expr.value = value)],
+                                                  by = "gene_name",
+                                                  all.x = TRUE)
+            message("Done merging")
+        } else {
+            genes_cn_annotated[, ":="(expr.quantile = NA, expr.value = NA)]
+        }
+
+        ## add over/under expression annotations
+        qt.thres = 0.05 ## expose this parameter later
+        genes_cn_annotated[expr.quantile < qt.thres, expr := "under"]
+        genes_cn_annotated[expr.quantile > (1 - qt.thres), expr := "over"]
+
+        ## save annotated genes
         saveRDS(genes_cn_annotated, genes_cn.fn)
     }
 
     driver.genes.cnv.fn = paste0(opt$outdir, '/driver.genes.cnv.txt')
+    driver.genes.expr.fn = paste0(opt$outdir, '/driver.genes.expr.txt')
     if (!check_file(driver.genes.cnv.fn, overwrite = opt$overwrite)){
         if (genes_cn_annotated[, .N] > 0){
             onc = readRDS(oncogenes.fn)
             tsg = readRDS(tsg.fn)
             #' zchoo Tuesday, May 04, 2021 10:41:25 PM
-            ## subsetted so that there are just dels in tsgs and amps in oncogenes
-            ## driver.genes_cn = genes_cn_annotated[gene_name %in% c(onc, tsg)]
+            ## save just expression change and just CNA separately
             driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
                                                  (cnv == "del" & gene_name %in% tsg)]
-            fields = c("gene_name", "cnv", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "number_of_cn_segments", "ncn", "seqnames", "start", "end", "width", "gene_id", "gene_type", "source",  "level", "hgnc_id", "havana_gene", "ev.id", "ev.type")
+            driver.genes_expr = genes_cn_annotated[(expr == "over" & gene_name %in% onc) |
+                                                   (expr == "under" & gene_name %in% tsg)]
+            #' zchoo Wednesday, May 12, 2021 05:00:24 PM
+            ## subset these to make less overwhelming...
+            ## fields = c("gene_name", "cnv", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "number_of_cn_segments", "ncn", "seqnames", "start", "end", "width", "gene_id", "gene_type", "source",  "level", "hgnc_id", "havana_gene", "ev.id", "ev.type")
+            fields = c("gene_name", "cnv", "expr", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "expr.value", "expr.quantile", "seqnames", "start", "end", "width", "ev.id", "ev.type")
             fields = intersect(fields, names(driver.genes_cn))
             fwrite(driver.genes_cn[, ..fields], driver.genes.cnv.fn)
+            fwrite(driver.genes_expr[, ..fields], driver.genes.expr.fn)
         }
     }
 

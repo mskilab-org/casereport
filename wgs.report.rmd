@@ -176,7 +176,14 @@ Under construction
 
 ***
 
-# Over/under-expression of oncogenes/TSGs {.tabset .tabset-fade .tabset-pills}
+# Over/under-expression of oncogenes/TSGs 
+```{r, driver-expr-table, results = "asis", max.width= "100%"}
+driver.genes.expr = fread(file.path(params$outdir, "driver.genes.expr.txt"))
+DT::datatable(driver.genes.expr, options = list(scrollX = TRUE))
+```
+
+
+## Gallery {.tabset .tabset-fade .tabset-pills}
 ```{r expression, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
     cool.exp = readRDS(paste0(params$outdir, "/cool.expr.rds"))
@@ -195,7 +202,6 @@ if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
                 params$outdir,
                 cool.exp[g, paste0("/", gene, ".", direction, ".expr.png")],
                 ")",
-		"\n",
 		"![](",
 		expr.slickr.dt[gene_name == g, plot.fname],
 		")"),
