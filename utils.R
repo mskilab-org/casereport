@@ -1067,3 +1067,22 @@ grab.agtrack = function(agt.fname = NULL,
 
     return (agt)
 }
+
+#' @name dcreate
+#' @title dcreate
+#'
+#' @description
+#'
+#' Creates the directory if it does not exist and returns the absolute path to the directory
+#'
+#' @param dir_name name for the directory
+#' @param showWarnings by default set to FALSE, overwriting the default of dir.create which is showWarnings = TRUE
+#' @param recursive by default set to TRUE, overwriting the default of dir.create which is FALSE
+#' @param mode see help menu for dir.create
+#' 
+#' @return absolute path to directory
+dcreate = function(dir_name, showWarnings = FALSE, recursive = TRUE, mode = "0777"){
+    dir.create(dir_name, showWarnings = showWarnings, recursive = recursive,
+               mode = mode)
+    return(normalizePath(dir_name))
+}

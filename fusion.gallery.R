@@ -328,9 +328,9 @@ wgs.circos = function(junctions = jJ(),
 #'
 #' @param fusions.fname (character)
 #' @param complex.fname (character)
-#' @param cvgt.fname (character)
+#' @param cvgt (character or gTrack)
 #' @param agt.fname (character)
-#' @param gngt.fname (character)
+#' @param gngt gTrack object or character describing path to RDS file containing a gTrack object
 #' @param cgc.fname (character)
 #' @param ev.types (character)
 #' @param pad (numeric)
@@ -341,8 +341,8 @@ wgs.circos = function(junctions = jJ(),
 #' @return data.table
 fusion.wrapper = function(fusions.fname = NULL,
                           complex.fname = NULL,
-                          cvgt.fname = NULL,
-                          gngt.fname = NULL,
+                          cvgt = NULL,
+                          gngt = NULL,
                           agt.fname = NULL,
                           cgc.fname = "/data/cgc.tsv",
                           ev.types = c("qrp", "qpdup", "qrdel",
@@ -360,8 +360,8 @@ fusion.wrapper = function(fusions.fname = NULL,
 
     filtered.fusions = fusion.plot(fs = filtered.fusions,
                                    complex.fname = complex.fname,
-                                   cvgt.fname = cvgt.fname,
-                                   gngt.fname = gngt.fname,
+                                   cvgt = cvgt,
+                                   gngt = gngt,
                                    agt.fname = agt.fname,
                                    pad = pad,
                                    height = height,
@@ -493,63 +493,119 @@ fusion.table = function(fusions.fname = NULL,
 #'
 #' @param fs (gWalk) gWalk object containing filtered fusions
 #' @param complex.fname (character)
-#' @param cvgt.fname (character) coverage gTrack file name
-#' @param gngt.fname (character) gencode gTrack file name
+#' @param cvgt gTrack object or character describing path to RDS file containing the coverage gTrack object
+#' @param gngt gTrack object or character describing path to RDS file containing a gTrack object
 #' @param agt.fname (character) allele gTrack file name
 #' @param pad (numeric) gWalk pad for plotting default 1e5
 #' @param height (numeric) plot height default 1e3
 #' @param width (numeric) plot width default 1e3
 #' @param outdir (character) output directory
+#' @param prefix (character) a charachter prefix to use for file names
+#' @param show.walk (logical) plot a track for the walk
+#' @param yaxis.pretty vector or scalar positive integer specifying how many ticks to optimally draw on yaxis (formatting)(logical) plot a track for the walk. When provided this will modify the value for agt cvgt and the complex gTrack. The default is 3. If you wish to maintain the unique value from each original gTrack then set yaxis.pretty = NULL.
+#' @param zoom_on_junctions (logical) instead of taking the footprint of the walk, take a window around the coordinates of the ALT junctions (window width is determined by the pad argument)
+#' @param show.junction.support (logical) compute and plot junction.support (junction.support is done with realign = FALSE for speed). You must also supply a tumor.bam, ref_bwa, and ref_seq in order to run junction.support
+#' @param ref_bwa (character or RSeqLib::BWA) a path to an RDS containing the RSeqLib::BWA object for the reference genome
+#' @param ref_seq (character or DNAStringSet) DNAStringSet or a path to an RDS containing the Biostrings::DNAStringSet object for the reference genome
+#' @param tumor.bam (character) path to the tumor BAM file. This is only used when show.junction.support == TRUE.
 #'
 #' @return gWalk with additional columns plot.fname (input to slickR)
 fusion.plot = function(fs = NULL,
                        complex.fname = NULL,
-                       cvgt.fname = NULL,
+                       cvgt = NULL,
                        agt.fname = NULL,
-                       gngt.fname = "/data/gt.ge.hg19.rds",
+                       gngt = "/data/gt.ge.hg19.rds",
                        pad = 1e5,
-                       height = 1e3,
-                       width = 1e3,
-                       outdir = "./") {
+                       height = NULL,
+                       width = NULL,
+                       outdir = "./",
+                       prefix = '',
+                       show.walk = TRUE,
+                       yaxis.pretty = 3,
+                       zoom_on_junctions = FALSE,
+                       show.junction.support = FALSE,
+                       ref_bwa = NULL,
+                       ref_seq = NULL,
+                       tumor.bam = NULL,
+                       plot.type = 'png') {
 
-    if (!file.exists(cvgt.fname)) {
-        stop("cvgt.fname does not exist")
+    if (!inherits(cvgt, 'gTrack') & !is.null(cvgt)){
+        if (is.character(cvgt)){
+            if (!file.exists(cvgt)) {
+               stop('cvgt input not valid: ', cvgt, ' does not exist')
+            }
+       } else {
+            stop("cvgt not valid. cvgt must be either a gTrack object or character describing path to RDS file containing a gTrack object, but an objcet of class \"", paste(class(cvgt), collapse = ' '), "\" was provided.")
+       }
+        cvgt = readRDS(cvgt)
     }
-    if (!file.exists(gngt.fname)) {
-        stop("gngt.fname does not exist")
+
+    if (!inherits(gngt, 'gTrack')){
+        if (is.character(gngt)){
+            if (!file.exists(gngt)) {
+               stop('gngt input not valid: ', gngt, ' does not exist')
+            }
+       } else {
+            stop("gngt not valid. gngt must be either a gTrack object or character describing path to RDS file containing a gTrack object, but an objcet of class \"", paste(class(gngt), collapse = ' '), "\" was provided.")
+       }
+        gngt = readRDS(gngt)
     }
+
     if (!file.exists(complex.fname)) {
         stop("complex.fname does not exist")
     }
 
-    fs = fs$copy
-
-    ## read gTracks
-    cvgt = readRDS(cvgt.fname)
-    gngt = readRDS(gngt.fname)
-    this.complex.gt = readRDS(complex.fname)$gt
-
-    ## format gTracks
-    cvgt$ylab = "CN"
-    cvgt$name = "cov"
-    cvgt$yaxis.pretty = 3
-    cvgt$xaxis.chronly = TRUE
-
-    this.complex.gt$ylab = "CN"
-    this.complex.gt$name = "JaBbA"
-    this.complex.gt$yaxis.pretty = 3
-    this.complex.gt$chronly = TRUE
+    if (show.junction.support & is.character(tumor.bam) & !is.null(ref_bwa) & !is.null(ref_seq)){
+        # if junction.support was requested then let's load the ref_bwa and ref_seq
+        if (is.character(ref_bwa)){
+            if (!file.exists(ref_bwa)){
+                stop('Invalid ref_bwa. ', ref_bwa, ' does not exist.')
+            }
+            message('Loading reference BWA object.')
+            bwa_object = readRDS(ref_bwa)
+        } else {
+            if (inherits(ref_bwa, 'BWA')){
+                bwa_object = ref_bwa
+            } else {
+                stop('ref_bwa must be a RSeqLib::BWA object or a path to an RDS containing such object, but \"', paste(class(ref_bwa), collapse = ' '), '\" was provided.')
+            }
+        }
+        if (is.character(ref_seq)){
+            if (!file.exists(ref_seq)){
+                stop('Invalid ref_seq. ', ref_seq, ' does not exist.')
+            }
+            message('Loading reference DNAStringSet object.')
+            ref_seq = readRDS(ref_seq)
+        } else {
+            if (!inherits(ref_seq, 'DNAStringSet')){
+                stop('ref_seq must be a DNAStringSet object or a path to an RDS containing such object, but \"', paste(class(ref_seq), collapse = ' '), '\" was provided.')
+            }
+        }
+        if (!file.exists(tumor.bam)){
+            stop('Invalid tumor.bam. ', tumor.bam, ' does not exist.')
+        }
+    } else {
+        if (show.junction.support){
+            message('Setting show.junction.support to FALSE since not all required info was provided. See help menu.')
+            show.junction.support = FALSE
+        }
+    }
 
     gngt$xaxis.chronly = TRUE
     gngt$name = "genes"
+
+    base.gt = gngt # we always plot the genes track
 
     ## read allele gTrack if provided
     if (!is.null(agt.fname)) {
         if (file.exists(agt.fname)) {
             agt = readRDS(agt.fname)
             agt$ylab = "CN"
-            agt$yaxis.pretty = 3
+            if (!is.null(yaxis.pretty)){
+                agt$yaxis.pretty = yaxis.pretty
+            }
             agt$xaxis.chronly = TRUE
+            base.gt = c(base.gt, agt)
         } else {
             agt = NULL
         }
@@ -557,42 +613,100 @@ fusion.plot = function(fs = NULL,
         agt = NULL
     }
 
+    fs = fs$copy
+
+    if (!is.null(cvgt)){
+        ## format gTrack
+        cvgt$ylab = "CN"
+        cvgt$name = "cov"
+        if (!is.null(yaxis.pretty)){
+            cvgt$yaxis.pretty = yaxis.pretty
+        }
+        cvgt$xaxis.chronly = TRUE
+        # add to the baseline gTrack
+        base.gt = c(base.gt, cvgt)
+    }
+    if (!is.null(complex.fname)){
+        this.complex.gt = readRDS(complex.fname)$gt
+        ## format gTrack
+        this.complex.gt$ylab = "CN"
+        this.complex.gt$name = "JaBbA"
+        if (!is.null(yaxis.pretty)){
+            this.complex.gt$yaxis.pretty = yaxis.pretty
+        }
+        this.complex.gt$chronly = TRUE
+        # add to the baseline gTrack
+        base.gt = c(base.gt, this.complex.gt)
+    }
+
     plot.fnames = sapply(seq_along(fs),
                          function (ix) {
-                             fn = file.path(outdir, "fusions", paste0("walk", fs$dt$walk.id[ix], ".png"))
-                             fs.gt = fs[ix]$gt
+                            fn = file.path(dcreate(outdir), "fusions", paste0(prefix, "walk", fs$dt$walk.id[ix], ".", plot.type))
+                            if (show.walk == TRUE){
+                                fs.gt = fs[ix]$gt
 
-                             ## formatting
-                             fs.gt$name = "gWalk"
-                             fs.gt$labels.suppress = TRUE
-                             fs.gt$labels.suppress.grl = TRUE
-                             fs.gt$xaxis.chronly = TRUE
+                                ## formatting
+                                fs.gt$name = "gWalk"
+                                fs.gt$labels.suppress = TRUE
+                                fs.gt$labels.suppress.grl = TRUE
+                                fs.gt$xaxis.chronly = TRUE
 
-                             if (is.null(agt)) {
-                                 gt = c(gngt, cvgt, this.complex.gt, fs.gt)
-                             } else {
-                                 gt = c(gngt, agt, cvgt, this.complex.gt, fs.gt)
-                             }
-                             gt$xaxis.chronly = TRUE
+                                gt = c(base.gt, fs.gt)
+                            }
 
-                             ## format window
-                             win = fs[ix]$footprint
+                            gt$xaxis.chronly = TRUE
 
-                             if (pad > 0 & pad <= 1) {
-                                 adjust = pmax(1e5, pad * width(win))
-                                 win = GenomicRanges::trim(win + adjust)
-                             } else {
-                                 win = GenomicRanges::trim(win + pad)
-                             }
+                            if (show.junction.support){
+                                message('Computing junction support')
+                                j = fs$edges[type == 'ALT']$junctions
+                                reads = read.bam(tumor.bam, j$breakpoints + 1e4) %>% grl.unlist
+                                reads = reads %Q% which(!is.na(seq))
 
-                             ppng(plot(gt,
-                                       win,
-                                       legend.params = list(plot = FALSE)),
-                                  title = paste(fs$dt$genes[ix], "|", "walk", fs$dt$walk.id[ix]),
-                                  filename = fn,
-                                  height = height,
-                                  width = width)
-                             return(fn)
+                                jsupp = junction.support(
+                                    reads,
+                                    junctions = j,
+                                    ref = ref_seq,
+                                    pad = 1e3,
+                                    realign = FALSE,
+                                    bwa = bwa_object)
+
+                               jsupp.gt = gTrack(jsupp %>% split(., .$grl.ix) %>% unname, name = "reads")
+                               gt = c(gt, jsupp.gt)
+                            }
+
+                            ## format window
+                            if (zoom_on_junctions == TRUE){
+                                win = fs$edges[type == 'ALT']$junctions$grl %>% grl.unlist
+                            } else {
+                                win = fs[ix]$footprint
+                            }
+
+                            if (pad > 0 & pad <= 1) {
+                                adjust = pmax(1e5, pad * width(win))
+                                win = GenomicRanges::trim(win + adjust)
+                            } else {
+                                win = GenomicRanges::trim(win + pad)
+                            }
+
+                            if (plot.type == 'png'){
+                                plot.fun = skitools::ppng
+                                if (is.null(height)) height = 1e3
+                                if (is.null(width)) width = 1e3
+                            } else {
+                                plot.fun = skitools::ppdf
+                                if (is.null(height)) height = 10
+                                if (is.null(width)) width = 10
+                            }
+
+                                plot.fun(plot(gt,
+                                     win,
+                                     legend.params = list(plot = FALSE)),
+                                     title = paste(fs$dt$genes[ix], "|", "walk", fs$dt$walk.id[ix]),
+                                     filename = fn,
+                                     height = height,
+                                     width = width)
+
+                            return(fn)
                          })
 
     fs$set(plot.fname = plot.fnames)

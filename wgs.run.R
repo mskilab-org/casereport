@@ -265,7 +265,7 @@ if (!opt$knit_only){
         cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers), file.path(opt$libdir, "data", "cgc.tsv"), opt$drivers)
         fusions.slickr.dt = fusion.wrapper(fusions.fname = opt$fusions,
                                            complex.fname = opt$complex,
-                                           cvgt.fname = cvgt_fn,
+                                           cvgt = cvgt_fn,
                                            agt.fname = agt_fn,
                                            cgc.fname = cgc.fname,
                                            gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
