@@ -55,6 +55,7 @@ library(htmlwidgets)
 library(svglite)
 library(slickR)
 library(plotly)
+library(shiny)
 message("Loaded Packages")
 
 gg = readRDS(paste0(params$outdir, "/complex.rds"))
@@ -387,5 +388,10 @@ if (length(prox.plots)>0){
 There are xx high quality loose ends in this sample.
 
 ***
+# Purity and ploidy estimation
+
+***
 # Junction read support
 Below we show the junction supporting reads.
+
+
