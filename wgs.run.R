@@ -762,14 +762,17 @@ if (!opt$knit_only){
             ## prox.plot.dir = paste0(opt$outdir, "/proximity.")
             
             for (g in pgs){
-                w = prox[pdt[gene_name==g, walk.id]]
-                this.enh = copy(enh)
-                this.enh$col = binary.cols[as.character(seq_along(enh) %in% w$dt$qid)]
-                gt.enh = gTrack(this.enh, name = "enhancer", height = 5)
-                pgt = c(cvgt, gg$gtrack(height = 30), w$gtrack(name = "shortest walk"), gt.cgc, gt.enh)
-                png(paste0(opt$outdir, "/", g, ".proximity.png"), height = 1200, width = 1600)
-                plot(pgt, w$footprint + 1e6, legend.params = list(plot = FALSE), y0 = 0)
-                dev.off()
+                this.png = paste0(opt$outdir, "/", g, ".proximity.png")
+                if (!file.exists(this.png) | opt$overwrite){
+                    w = prox[pdt[gene_name==g, walk.id]]
+                    this.enh = copy(enh)
+                    this.enh$col = binary.cols[as.character(seq_along(enh) %in% w$dt$qid)]
+                    gt.enh = gTrack(this.enh, name = "enhancer", height = 5)
+                    pgt = c(cvgt, gg$gtrack(height = 30), w$gtrack(name = "shortest walk"), gt.cgc, gt.enh)
+                    png(this.png, height = 1200, width = 1600)
+                    plot(pgt, w$footprint + 1e6, legend.params = list(plot = FALSE), y0 = 0)
+                    dev.off()
+                }
             }
             
         }
