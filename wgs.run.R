@@ -232,6 +232,7 @@ if (!opt$knit_only){
         gg.gt$ylab = "CN"
         gg.gt$y0 = 0
         gg.gt$y1 = y1
+        gg.gt$gap = 1e7 ## gap between chromosomes
 
         ## coverage gTrack formatting
         cvgt$yaxis.pretty = 4
