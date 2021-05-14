@@ -348,9 +348,40 @@ based on its SNV/INDEL/SV signatures.\n\n")
 ```
 
 ***
-# Proximity to enhancers
+# Enhancer hijacking candidates {.tabset .tabset-fade .tabset-pills}
+The shortest path on a genome graph provides a lower bound on the
+actual genomic distance between two locations in a rearranged
+genome. Sometimes rearrangements can bring distal enhancers near a
+target gene and activate its expression, thus named _enhancer
+hijacking_. We identify such pairs of gene-enhancer where they are >5Mbp
+away in the reference genome while potentially <1Mbp in the rearranged genome.
 
-
+```{r, enhancer hijacking, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+prox.plots = dir(params$outdir, "proximity.png$", full.names = TRUE)
+if (length(prox.plots)>0){
+    for (prox.plot in prox.plots){
+        g = gsub(".proximity.png", "", file.name(prox.plot))
+        cat("## ", g, "\n<br>\n")
+        cat(
+            paste0(
+                '<p float="left">',
+                '<img src="',
+                prox.plot,
+                '" width="45%" />',
+                '<img src="',
+                params$outdir,
+                cool.exp[g, paste0("/", gene, ".", direction, ".expr.png")],
+                '" width="45%" />',
+                '</p>'
+            )
+        )
+        ## cat(
+        ##     paste0("![](", prox.plot,")"), "\n\n"
+        ## )
+        cat('\n', '<br>', '\n\n')
+    }
+}
+```
 ***
 # Loose ends
 There are xx high quality loose ends in this sample.
