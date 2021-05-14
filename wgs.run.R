@@ -458,6 +458,18 @@ if (!opt$knit_only){
                                      outdir = opt$outdir)
             fwrite(expr.slickr.dt, expr.gallery.fn)
         } else {
+            message("Expressiong gallery files already exist")
+        }
+        waterfall.fn = file.path(opt$outdir, "waterfall.png")
+        if (!check_file(waterfall.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
+            message("generating waterfall plot")
+            gns = readRDS(cool.exp.fn)$gene ## genes with changes in expression
+            rna.waterfall.plot(tpm.cohort = opt$tpm_cohort,
+                               pair = opt$pair,
+                               tpm.pair = opt$tpm,
+                               out.fn = waterfall.fn,
+                               genes.to.label = gns)
+        } else {
             message("Expression gallery files already exist")
         }
     }

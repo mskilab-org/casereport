@@ -176,11 +176,18 @@ Under construction
 
 ***
 
-# Over/under-expression of oncogenes/TSGs {.tabset .tabset-fade .tabset-pills}
+# Over/under-expression of oncogenes/TSGs 
 ```{r, driver-expr-table, results = "asis", max.width= "100%"}
 driver.genes.expr = fread(file.path(params$outdir, "driver.genes.expr.txt"))
 DT::datatable(driver.genes.expr, options = list(scrollX = TRUE))
 ```
+
+## Waterfall plot
+```{r, driver-waterfall, results = "asis", max.width = "100%"}
+knitr::include_graphics(file.path(params$outdir, "waterfall.png"))
+```
+
+## Gallery {.tabset .tabset-fade .tabset-pills}
 
 ```{r expression, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
@@ -189,7 +196,7 @@ if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
     cat("\n")
     for (g in cool.exp[order(qt, decreasing = T), gene]){
         cat("\n")
-        cat("##", cool.exp[g, paste0(gene, " (", direction, ")", "<br>", "\n")])
+        cat("###", cool.exp[g, paste0(gene, " (", direction, ")", "<br>", "\n")])
         ## this.png = try(readPNG(file.path(
         ##     params$outdir, cool.exp[g, paste0("/", gene, ".", direction, ".expr.png")]
         ## )))
