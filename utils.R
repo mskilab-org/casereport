@@ -1184,11 +1184,10 @@ rna.waterfall.plot = function(tpm.cohort = NULL,
     }
     pt = ggplot(ds, aes(x = gene, y = zs, fill = role)) +
         geom_bar(stat = "identity", width = 1) +
-        geom_label(mapping = aes(label = gene.label,
+        geom_label_repel(mapping = aes(label = gene.label,
                                  x = as.numeric(gene),
                                  y = label.y),
                    data = ds[!is.na(gene.label)],
-                   hjust = "left",
                    alpha = 0.8)
 
     pad = nrow(ds) * 0.05
