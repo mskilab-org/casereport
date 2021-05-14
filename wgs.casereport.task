@@ -5,6 +5,7 @@ input	jabba_rds	 jabba_rds  path
 input	complex	 complex  path	    /dev/null
 input	fusions	fusions	path	/dev/null
 input	proximity	proximity.rds	path	/dev/null
+input	enhancer	enhancer	path	/dev/null
 input	cbs_cov_rds	 cbs_cov_rds  path	/dev/null
 input	het_pileups_wgs	het_pileups_wgs	path	/dev/null
 input	deconstruct_sigs	 deconstruct_sigs  path	/dev/null
@@ -12,7 +13,7 @@ input	deconstruct_variants	 deconstruct_variants  path	/dev/null
 input	sigs_cohort	sigs_cohort	path	   /dev/null
 input	tpm	tpm	path	 /dev/null
 input	tpm_cohort	tpm_cohort	path	/dev/null
-input	hrd_output	hrd_output	path	/dev/null
+input	hrd_results	hrd_results	path	/dev/null
 input	server	server	value		"https://mskilab.com/gGraph/"
 input	tumor_type	tumor_type	value "unknown"
 input	flags	flags	value		""

@@ -838,7 +838,7 @@ get_gene_copy_numbers = function(gg, gene_ranges,
                                              "gene_type", "level", "hgnc_id", "havana_gene"),
                                  ev.types = c("qrp", "qpdup", "qrdel",
                                               "tic", "bfb", "dm", "chromoplexy",
-                                              "chromothripsis", "tyfonas", "rigma", "pyrgo"),
+                                              "chromothripsis", "tyfonas", "rigma", "pyrgo", "cpxdm"),
                                  output_type = 'data.table',
                                  ploidy = 2){
     if (is.character(gg)){
@@ -913,7 +913,10 @@ get_gene_copy_numbers = function(gg, gene_ranges,
     gene_cn_table = rbind(gene_cn_split_genes, gene_cn_non_split_genes)
 
     ## overlap with event calls
-    this.ev = readRDS(complex.fname)$meta$events[type %in% ev.types,]
+    if (is.null(gg$meta$events)){
+        gg = events(gg)
+    }
+    this.ev = gg$meta$events[type %in% ev.types,]
     ev.grl = parse.grl(this.ev$footprint)
     values(ev.grl) = this.ev
     ev.gr = stack(ev.grl)
@@ -1086,3 +1089,141 @@ dcreate = function(dir_name, showWarnings = FALSE, recursive = TRUE, mode = "077
                mode = mode)
     return(normalizePath(dir_name))
 }
+
+#' @name rna.quantile
+#' @title rna.quantile
+#'
+#' @description
+#'
+#' compute quantile of each transcript
+#'
+#' @param tpm.cohort file path data.table with id column gene and other columns representing pairs
+#' @param pair character pair of interest. must be a column in tpm.cohort if tpm.pair is NULL
+#' @param tpm.pair file path of data.table with column gene, pair
+#'
+#' @return data table with column gene and quantile representing expression quantile for the pair of interest relative to rest of cohort
+rna.quantile = function(tpm.cohort = NULL, pair = NULL, tpm.pair = NULL) {
+
+    if (is.null(pair)) {
+        stop("must supply pair")
+    }
+
+    tpm.cohort = data.table::fread(tpm.cohort, header = TRUE)
+    tpm.pair = data.table::fread(tpm.pair, header = TRUE)
+    
+    if (!is.null(tpm.pair)) {
+        if (pair %in% colnames(tpm.cohort)) {
+            tpm.cohort[[pair]] = NULL ## overwite pair if it exists
+            tpm.cohort = merge.data.table(tpm.cohort, tpm.pair, by = "gene", all.x = TRUE)
+        } else {
+            tpm.cohort = merge.data.table(tpm.cohort, tpm.pair, by = "gene", all.x = TRUE)
+        }
+    }
+    if (!(pair %in% colnames(tpm.cohort))) {
+        stop("pair must be in tpm.cohort columns")
+    }
+
+    melted.tpm.cohort = data.table::melt(tpm.cohort,
+                                         id.vars = c("gene"),
+                                         variable.name = "pair")
+
+    melted.tpm.cohort[, qt := rank(as.double(.SD$value))/.N, by = gene]
+    return(melted.tpm.cohort)
+}
+
+#' @name rna.waterfall.plot
+#' @title rna.waterfall.plot
+#'
+#' @description
+#'
+#' create waterfall plot
+#' 
+#' @param tpm.cohort file path data.table with id column gene and other columns representing pairs
+#' @param pair character pair of interest. must be a column in tpm.cohort if tpm.pair is NULL
+#' @param tpm.pair file path of data.table with column gene, pair
+#' @param out.fn output file name
+#' @param genes.to.label (character) label these genes
+#'
+#' @return creates a plot
+rna.waterfall.plot = function(tpm.cohort = NULL,
+                              pair = NULL,
+                              tpm.pair = NULL,
+                              out.fn = NULL,
+                              genes.to.label = NULL) {
+
+    if (is.null(pair)) {
+        stop("must supply pair")
+    }
+
+    tpm.cohort = data.table::fread(tpm.cohort, header = TRUE)
+    tpm.pair = data.table::fread(tpm.pair, header = TRUE)
+    
+    if (!is.null(tpm.pair)) {
+        if (pair %in% colnames(tpm.cohort)) {
+            tpm.cohort[[pair]] = NULL ## overwite pair if it exists
+            tpm.cohort = merge.data.table(tpm.cohort, tpm.pair, by = "gene", all.x = TRUE)
+        } else {
+            tpm.cohort = merge.data.table(tpm.cohort, tpm.pair, by = "gene", all.x = TRUE)
+        }
+    }
+    if (!(pair %in% colnames(tpm.cohort))) {
+        stop("pair must be in tpm.cohort columns")
+    }
+
+    melted.tpm.cohort = data.table::melt(tpm.cohort,
+                                         id.vars = c("gene"),
+                                         variable.name = "pair")
+
+    ## compute zscores
+    melted.tpm.cohort[, value := as.double(value)]
+    melted.tpm.cohort[, m := mean(value, na.rm = TRUE), by = "gene"]
+    melted.tpm.cohort[, v := var(value, na.rm = TRUE), by = "gene"]
+    melted.tpm.cohort[, zs := (value - m)/sqrt(v), by = "gene"]
+
+    sel = melted.tpm.cohort$pair == pair
+    ds = melted.tpm.cohort[sel, .(gene, zs)]
+
+    od = order(ds$zs, decreasing = TRUE)
+    flevels = ds$gene[od]
+    ds[, gene := factor(gene, levels = flevels)]
+
+    ## text for genes to label
+    if (!is.null(genes.to.label)) {
+        ds[, gene.label := ifelse(as.character(gene) %in% genes.to.label,
+                                  as.character(gene), NA)]
+        ds[gene %in% genes.to.label, role := "onc"]
+        ds[gene %in% genes.to.label, label.y := ifelse(zs > 0,
+                                                       zs + 0.1,
+                                                       zs - 0.1)]
+        
+    } else {
+        ds[, gene.label := NA]
+        ds[, role := NA]
+        ds[, label.y := NA]
+    }
+    pt = ggplot(ds, aes(x = gene, y = zs, fill = role)) +
+        geom_bar(stat = "identity", width = 1) +
+        geom_label_repel(mapping = aes(label = gene.label,
+                                 x = as.numeric(gene),
+                                 y = label.y),
+                   data = ds[!is.na(gene.label)],
+                   alpha = 0.8)
+
+    pad = nrow(ds) * 0.05
+    pt = pt +
+        expand_limits(x = c(-pad, nrow(ds) + pad)) +
+        labs(x = "gene", y = "z-score") +
+        theme_bw() +
+        theme(legend.position="none",
+              axis.title.x = element_text(size = 25, family = "sans"),
+              axis.title.y = element_text(size = 25, family = "sans"),
+              axis.text.x = element_blank(),
+              axis.text.y = element_text(size = 20, family = "sans"),
+              panel.border = element_blank(),
+              panel.grid.major = element_blank(),
+              panel.grid.minor = element_blank(),
+              plot.margin=unit(c(1,1,1,1),"cm"))
+
+    ppng(print(pt), filename = out.fn)
+}
+

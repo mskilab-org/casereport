@@ -11,12 +11,13 @@ if (!exists("opt")){
         make_option(c("--complex"), type = "character", help = "complex event caller, RDS"),
         make_option(c("--fusions"), type = "character", help = "fusions module output, RDS"),
         make_option(c("--proximity"), type = "character", help = "proximity module output, RDS"),
+        make_option(c("--enhancer"), type = "character", help = "annotation of putative active enhancers in the tissue type, used for proximity analysis"),
         make_option(c("--deconstruct_sigs"), type = "character", default = NA_character_, help = "deconstruct_sigs module output, RDS"),
         make_option(c("--deconstruct_variants"), type = "character", default = NA_character_, help = "deconstruct_sigs module variant output, TXT"),
         make_option(c("--sigs_cohort"), type = "character", default = NA_character_, help = "variant count for each signature in a cohort"),
         make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample"),
         make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
-        make_option(c("--hrd_output"), type = "character", default = NA_character_, help = "The one line CSV of HRDetect final call"),
+        make_option(c("--hrd_results"), type = "character", default = NA_character_, help = "The comprehensive HRDetect module results"),
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
         make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
@@ -49,6 +50,7 @@ suppressMessages(expr = {
         library(dplyr)
         library(ggforce)
         library(ggridges)
+        library(ggrepel)
         library(httr)
         library(jsonlite)
         library(knitr)
@@ -115,22 +117,54 @@ if (!opt$knit_only){
         genes_cn_annotated = get_gene_ampdel_annotations(genes_cn, amp.thresh = opt$amp_thresh,
                                        del.thresh = opt$del_thresh)
 
+
+
+        #' zchoo Wednesday, May 12, 2021 04:17:06 PM
+        #' integrate RNA expression data with genes data
+        if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {
+            message("Computing quantiles")
+            melted.expr = rna.quantile(opt$tpm_cohort,
+                                       opt$pair,
+                                       opt$tpm)
+            message("Done computing quantiles")
+            genes_cn_annotated = merge.data.table(genes_cn_annotated,
+                                                  melted.expr[pair == opt$pair,
+                                                              .(gene_name = gene, expr.quantile = qt, expr.value = value)],
+                                                  by = "gene_name",
+                                                  all.x = TRUE)
+            message("Done merging")
+        } else {
+            genes_cn_annotated[, ":="(expr.quantile = NA, expr.value = NA)]
+        }
+
+        ## add over/under expression annotations
+        qt.thres = 0.05 ## expose this parameter later
+        genes_cn_annotated[expr.quantile < qt.thres, expr := "under"]
+        genes_cn_annotated[expr.quantile > (1 - qt.thres), expr := "over"]
+
+        ## save annotated genes
         saveRDS(genes_cn_annotated, genes_cn.fn)
     }
 
     driver.genes.cnv.fn = paste0(opt$outdir, '/driver.genes.cnv.txt')
+    driver.genes.expr.fn = paste0(opt$outdir, '/driver.genes.expr.txt')
     if (!check_file(driver.genes.cnv.fn, overwrite = opt$overwrite)){
         if (genes_cn_annotated[, .N] > 0){
             onc = readRDS(oncogenes.fn)
             tsg = readRDS(tsg.fn)
             #' zchoo Tuesday, May 04, 2021 10:41:25 PM
-            ## subsetted so that there are just dels in tsgs and amps in oncogenes
-            ## driver.genes_cn = genes_cn_annotated[gene_name %in% c(onc, tsg)]
+            ## save just expression change and just CNA separately
             driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
                                                  (cnv == "del" & gene_name %in% tsg)]
-            fields = c("gene_name", "cnv", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "number_of_cn_segments", "ncn", "seqnames", "start", "end", "width", "gene_id", "gene_type", "source",  "level", "hgnc_id", "havana_gene", "ev.id", "ev.type")
+            driver.genes_expr = genes_cn_annotated[(expr == "over" & gene_name %in% onc) |
+                                                   (expr == "under" & gene_name %in% tsg)]
+            #' zchoo Wednesday, May 12, 2021 05:00:24 PM
+            ## subset these to make less overwhelming...
+            ## fields = c("gene_name", "cnv", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "number_of_cn_segments", "ncn", "seqnames", "start", "end", "width", "gene_id", "gene_type", "source",  "level", "hgnc_id", "havana_gene", "ev.id", "ev.type")
+            fields = c("gene_name", "cnv", "expr", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "expr.value", "expr.quantile", "seqnames", "start", "end", "width", "ev.id", "ev.type")
             fields = intersect(fields, names(driver.genes_cn))
             fwrite(driver.genes_cn[, ..fields], driver.genes.cnv.fn)
+            fwrite(driver.genes_expr[, ..fields], driver.genes.expr.fn)
         }
     }
 
@@ -274,9 +308,20 @@ if (!opt$knit_only){
                                            width = 1000,
                                            outdir = opt$outdir)
 
-        ## save data table for drivers and non-drivers separately
-        fwrite(fusions.slickr.dt[driver == TRUE,], fusions.driver.fname)
-        fwrite(fusions.slickr.dt[driver == FALSE,], fusions.other.fname)
+        ## make sure data table is not empty
+        if (nrow(fusions.slickr.dt) == 0) {
+
+            ## write empty data table, rmd file will deal with this.
+            fwrite(fusions.slickr.dt, fusions.driver.fname)
+            fwrite(fusions.slickr.dt, fusions.other.fname)
+            
+        } else {
+
+            ## save data table for drivers and non-drivers separately
+            fwrite(fusions.slickr.dt[driver == TRUE,], fusions.driver.fname)
+            fwrite(fusions.slickr.dt[driver == FALSE,], fusions.other.fname)
+
+        }
         
     } else {
         message("Fusion files already exist")
@@ -285,16 +330,17 @@ if (!opt$knit_only){
     ## ##################
     ## SV gallery code
     ## ##################
+    ## generate gTrack with just cgc genes
+    cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers),
+                       file.path(opt$libdir, "data", "cgc.tsv"),
+                       opt$drivers)
+    cgc.gtrack.fname = cgc.gtrack(cgc.fname = cgc.fname,
+                                  gencode.fname = opt$gencode,
+                                  outdir = opt$outdir)
+
     if (opt$overwrite | !file.exists(file.path(opt$outdir, "sv.gallery.txt"))) {
         message("Preparing SV gallery")
 
-        ## generate gTrack with just cgc genes
-        cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers),
-                           file.path(opt$libdir, "data", "cgc.tsv"),
-                           opt$drivers)
-        cgc.gtrack.fname = cgc.gtrack(cgc.fname = cgc.fname,
-                                      gencode.fname = opt$gencode,
-                                      outdir = opt$outdir)
         
         sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
                                        background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
@@ -364,6 +410,8 @@ if (!opt$knit_only){
         ## TODO: make the quantile threshold adjustable
         cool.exp = mexp[pair==opt$pair][(role=="TSG" & qt<0.05) | (role=="ONC" & qt>0.95)]
         ## cool.exp[order(qt)]
+
+        cool.exp.fn = file.path(opt$outdir, "cool.expr.rds")
         if (nrow(cool.exp)>0){
             cool.exp[, direction := ifelse(qt>0.95, "over", "under")]
             cool.exp[, gf := paste0(opt$outdir, "/", gene, ".", direction, ".expr.png")]
@@ -391,7 +439,40 @@ if (!opt$knit_only){
                     dev.off()
                 }
             }
-            saveRDS(cool.exp, paste0(opt$outdir, "/cool.expr.rds"))
+            saveRDS(cool.exp, cool.exp.fn)
+        }
+
+        ## expression change gallery
+        expr.gallery.fn = file.path(opt$outdir, "expr.gallery.txt")
+        if (!check_file(expr.gallery.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
+            message("preparing CN gallery")
+            expr.slickr.dt = cn.plot(drivers.fname = cool.exp.fn,
+                                     opt$complex,
+                                     cvgt.fname = cvgt_fn,
+                                     gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                     cgcgt.fname = cgc.gtrack.fname,
+                                     agt.fname = agt_fn,
+                                     server = opt$server,
+                                     pair = opt$pair,
+                                     pad = 0.5,
+                                     height = 1200,
+                                     width = 1000,
+                                     outdir = opt$outdir)
+            fwrite(expr.slickr.dt, expr.gallery.fn)
+        } else {
+            message("Expressiong gallery files already exist")
+        }
+        waterfall.fn = file.path(opt$outdir, "waterfall.png")
+        if (!check_file(waterfall.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
+            message("generating waterfall plot")
+            gns = readRDS(cool.exp.fn)$gene ## genes with changes in expression
+            rna.waterfall.plot(tpm.cohort = opt$tpm_cohort,
+                               pair = opt$pair,
+                               tpm.pair = opt$tpm,
+                               out.fn = waterfall.fn,
+                               genes.to.label = gns)
+        } else {
+            message("Expression gallery files already exist")
         }
     }
 
@@ -548,16 +629,166 @@ if (!opt$knit_only){
     ## ##################
     ## HRDetect results
     ## ##################
-    if (file.good(opt$hrd_output)){
-        hrd = fread(opt$hrd_output)
-        hrd[, pair := opt$pair]
-        hrd = data.table::melt(hrd, id.var = "pair")
+    if (!file.good(paste0(opt$outdir, "/hrdetect.rds")) | opt$overwrite){
+        if (file.good(opt$hrd_results)){
+            hrd.res = readRDS(opt$hrd_results)
+            ## melt the input data matrix
+            hrd.dat = as.data.table(hrd.res$data_matrix) %>% data.table::melt()
+            hrd.dat[, pair := opt$pair]
+            ## melt the output results
+            hrd.out = as.data.table(hrd.res$hrdetect_output) %>% data.table::melt()
+            hrd.out[, pair := opt$pair]
+            saveRDS(hrd.out, paste0(opt$outdir, "/hrdetect.rds"))
 
-        ## ## If there's no cohort to compare to
-        ## hrd.res = ggplot(hrd[!variable %in% c("intercept", "Probability")],
-        ##                  aes(x = variable, y = value)) +
-        ##     geom_bar(stat = "identity")
-        saveRDS(hrd, paste0(opt$outdir, "/hrdetect.rds"))
+            hrd = merge(hrd.out, hrd.dat[, .(variable, data = value)], by = "variable")
+
+            ## original training data
+            hrd_cohort = fread(paste0(opt$libdir, "/data/hrdetect.og.txt"))
+            hrd_cohort = data.table::melt(hrd_cohort, id.vars = c("pair", "is.hrd"))
+            ## if (opt$pair %in% hrd_cohort$pair){
+            hrd_cohort = rbindlist(list(hrd_cohort[pair!=opt$pair], hrd.dat), fill = TRUE)
+            ## }
+
+            hrd_cohort[, range(value), by = .(variable, is.hrd)]
+
+            hrd.yes = hrd.out[variable=="Probability", value>0.7]
+
+            ## these are the dimensions that need to be logged
+            ldat = hrd_cohort[variable != "del.mh.prop"]
+            ldat[, variable := factor(variable, levels = setdiff(levels(variable), "del.mh.prop"))]
+            ## plot the distribution of raw count
+            hrd.plot = ggplot(ldat, aes(x = value, y = variable)) +
+                geom_density_ridges(aes(point_colour = is.hrd,
+                                        fill = is.hrd),
+                                    bandwidth = 0.1,
+                                    alpha = 0.5,
+                                    scale = 0.9,
+                                    rel_min_height = 0.01,
+                                    color = NA,
+                                    jittered_points = TRUE,
+                                    position = position_points_jitter(width = 0.01, height = 0),
+                                    point_shape = '|',
+                                    point_size = 3,
+                                    point_alpha = 0.3) +
+                scale_discrete_manual("point_colour", values = binary.cols) +
+                scale_fill_manual(values = binary.cols) +
+                geom_segment(data = ldat[pair==opt$pair],
+                             aes(x = value, xend = value,
+                                 y = as.numeric(variable), yend = as.numeric(variable) + 0.9),
+                             color = ifelse(hrd.yes, "#D7261E", "#1f78b4"),
+                             alpha = 1, lwd = 3) +
+                scale_x_continuous(trans = "log1p",
+                                   breaks = c(0, 1, 10, 100, 1000, 10000, 100000),
+                                   labels = c(0, 1, 10,
+                                              expression(10^2),
+                                              expression(10^3),
+                                              expression(10^4),
+                                              expression(10^5)),
+                                   limits = c(0, 100000),
+                                   expand = c(0, 0)) +
+                labs(title = paste0("HRDetect features compared to Davies et al. 2017"), x = "Burden") +
+                theme_minimal() +
+                theme(legend.position = "none",
+                      title = element_text(size = 20, family = "sans"),
+                      axis.title = element_text(size = 20, family = "sans"),
+                      axis.text.x = element_text(size = 15, family = "sans"),
+                      axis.text.y = element_text(size = 20, family = "sans"))
+
+            ## these are the dimensions that need to be logged
+            rdat = hrd_cohort[variable == "del.mh.prop"]
+            rdat[, variable := factor(variable, levels = "del.mh.prop")]
+            ## plot the distribution of raw count
+            hrd.plot.2 = ggplot(rdat, aes(x = value, y = variable)) +
+                geom_density_ridges(aes(point_colour = is.hrd,
+                                        fill = is.hrd),
+                                    bandwidth = 0.1,
+                                    alpha = 0.5,
+                                    scale = 0.9,
+                                    rel_min_height = 0.01,
+                                    color = NA,
+                                    jittered_points = TRUE,
+                                    position = position_points_jitter(width = 0.01, height = 0),
+                                    point_shape = '|',
+                                    point_size = 3,
+                                    point_alpha = 0.3) +
+                scale_discrete_manual("point_colour", values = binary.cols, labels = NULL) +
+                scale_fill_manual(values = binary.cols,
+                                  labels = c("Non HR deficient", "HR deficient")) +
+                ## scale_y_discrete(labels = hrdetect.dims) +
+                labs(x = "Proportion") +
+                guides(point_colour = FALSE) +
+                geom_segment(data = rdat[pair==opt$pair],
+                             aes(x = value, xend = value,
+                                 y = as.numeric(variable), yend = as.numeric(variable) + 3),
+                             color = ifelse(hrd.yes, "#D7261E", "#1f78b4"),
+                             alpha = 1, lwd = 3) +
+                ## scale_x_continuous(trans = "log1p",
+                ##                    breaks = c(0, 1, 10, 100, 1000, 10000, 100000),
+                ##                    labels = c(0, 1, 10,
+                ##                               expression(10^2),
+                ##                               expression(10^3),
+                ##                               expression(10^4),
+                ##                               expression(10^5)),
+                ##                    limits = c(0, 100000)) +
+                ## labs(title = paste0("HRDetect features compared to Davies et al. 2017"), x = "Burden") +
+                theme_minimal() +
+                theme(legend.position = "bottom",
+                      legend.text = element_text(size=20),
+                      title = element_text(size = 20, family = "sans"),
+                      axis.title = element_text(size = 20, family = "sans"),
+                      axis.text.x = element_text(size = 15, family = "sans"),
+                      axis.text.y = element_text(size = 20, family = "sans"))
+
+            ## finally draw the output probability in a waterfall plot
+            ## hrd.plot.3 = ggplot(hrd_cohort, aes(x = rank)) %>%
+            
+
+            ## draw the plots
+            png(paste0(opt$outdir, "/hrdetect.log.dat.png"), width = 800, height = 800)
+            print(hrd.plot)
+            dev.off()
+
+            png(paste0(opt$outdir, "/hrdetect.prop.dat.png"), width = 800, height = 200)
+            print(hrd.plot.2)
+            dev.off()
+        }
+    }
+
+    ## ##################
+    ## Enhancer/gene proximity
+    ## ##################
+    if (file.good(opt$proximity) && file.good(cool.exp.fn <- paste0(opt$outdir, "/cool.expr.rds"))){
+        prox = readRDS(opt$proximity)
+        pdt = prox$dt
+        pdt = pdt[reldist<0.25 & refdist>5e6]
+        cool.exp = readRDS(cool.exp.fn)
+
+        if (any(cool.exp[direction=="over", gene] %in% pdt$gene_name)){
+            ## filter by overexpressed genes
+            pdt = merge.data.table(pdt, cool.exp[direction=="over"], by.x = "gene_name", by.y = "gene", all.x = TRUE)
+            pgs = pdt[(direction=="over"), unique(gene_name)]
+            gt.cgc = readRDS(cgc.gtrack.fname)
+            gt.cgc$name = "CGC"
+            enh = readRDS(opt$enhancer)
+
+            ## ## create a dir for the plots
+            ## prox.plot.dir = paste0(opt$outdir, "/proximity.")
+            
+            for (g in pgs){
+                this.png = paste0(opt$outdir, "/", g, ".proximity.png")
+                if (!file.exists(this.png) | opt$overwrite){
+                    w = prox[pdt[gene_name==g, walk.id]]
+                    this.enh = copy(enh)
+                    this.enh$col = binary.cols[as.character(seq_along(enh) %in% w$dt$qid)]
+                    gt.enh = gTrack(this.enh, name = "enhancer", height = 5)
+                    pgt = c(cvgt, gg$gtrack(height = 30), w$gtrack(name = "shortest walk"), gt.cgc, gt.enh)
+                    png(this.png, height = 1200, width = 1600)
+                    plot(pgt, w$footprint + 1e6, legend.params = list(plot = FALSE), y0 = 0)
+                    dev.off()
+                }
+            }
+            
+        }
     }
 }
 

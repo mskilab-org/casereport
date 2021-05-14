@@ -347,7 +347,7 @@ fusion.wrapper = function(fusions.fname = NULL,
                           cgc.fname = "/data/cgc.tsv",
                           ev.types = c("qrp", "qpdup", "qrdel",
                                        "tic", "bfb", "dm", "chromoplexy",
-                                       "chromothripsis", "tyfonas", "rigma", "pyrgo"),
+                                       "chromothripsis", "tyfonas", "rigma", "pyrgo", "cpxdm"),
                           height = 1000,
                           width = 1000,
                           pad = 1e5,
@@ -396,7 +396,7 @@ fusion.table = function(fusions.fname = NULL,
                         cgc.fname = "/data/cgc.tsv",
                         ev.types = c("qrp", "qpdup", "qrdel",
                                      "tic", "bfb", "dm", "chromoplexy",
-                                     "chromothripsis", "tyfonas", "rigma", "pyrgo"))
+                                     "chromothripsis", "tyfonas", "rigma", "pyrgo", "cpxdm"))
 {
     if (!file.exists(fusions.fname)) {
         stop("fusions.fname does not exist")
@@ -418,7 +418,13 @@ fusion.table = function(fusions.fname = NULL,
 
     ## filter so that gene pairs are unique (if multiple choose the one with most AA's)
     filtered.fusions = filtered.fusions[order(n.aa, decreasing = TRUE)]
-    filtered.fusions = filtered.fusions[which(!duplicated(filtered.fusions$dt$name))]
+    filtered.fusions = filtered.fusions[which(!duplicated(filtered.fusions$dt$genes))]
+
+    ## return if length is 0
+    if (length(filtered.fusions) == 0) {
+        filtered.fusions$set(driver = c(), driver.name = c(), ev.id = c(), ev.type = c())
+        return (filtered.fusions)
+    }
 
     ## Cancer Gene Census genes
     cgc.gene.symbols = fread(cgc.fname)[["Gene Symbol"]]
@@ -428,7 +434,7 @@ fusion.table = function(fusions.fname = NULL,
         lapply(1:length(filtered.fusions),
                function(ix) {
                    ## xtYao: name seems to be integers in new gGnome??
-                   ## let's use "genes" moving forward
+                   ## let's use "genes" moving forward yep
                    ## gns = unlist(strsplit(filtered.fusions$dt$name[ix], ","))
                    gns = unlist(strsplit(filtered.fusions$dt$genes[ix], ","))
                    gene.in.cgc = any(gns %in% cgc.gene.symbols)
@@ -472,14 +478,12 @@ fusion.table = function(fusions.fname = NULL,
 
     if (ov[,.N] > 0){
         ov = ov[, .(ev.id = paste(unique(ev.id), sep = ","), type = paste(unique(type), sep = ",")), by = walk.id]
-        dt = merge(filtered.fusions$dt, ov, by = "walk.id", all.x = TRUE)
+        pmt = match(filtered.fusions$dt$walk.id, ov$walk.id)
+        filtered.fusions$set(ev.id = ov$ev.id[pmt])
+        filtered.fusions$set(ev.type = ov$type[pmt])
     } else {
-        dt = filtered.fusions$dt
+        filtered.fusions$set(ev.id = NA, ev.type = NA)
     }
-
-        ## add ev.id and type to  metadata
-        filtered.fusions$set(ev.id = dt$ev.id)
-        filtered.fusions$set(ev.type = dt$type)
 
     return(filtered.fusions)
 }
