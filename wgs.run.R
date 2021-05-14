@@ -268,7 +268,7 @@ if (!opt$knit_only){
                                            cvgt = cvgt_fn,
                                            agt.fname = agt_fn,
                                            cgc.fname = cgc.fname,
-                                           gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                           gngt = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
                                            pad = 0.5,
                                            height = 2000,
                                            width = 1000,
