@@ -60,7 +60,7 @@ gallery.wrapper = function(complex.fname = NULL,
                            pair = "",
                            ev.types = c("qrp", "tic", "qpdup", "qrdel",
                                         "bfb", "dm", "chromoplexy", "chromothripsis",
-                                        "tyfonas", "rigma", "pyrgo"),
+                                        "tyfonas", "rigma", "pyrgo", "cpxdm"),
                            pad = 5e5,
                            height = 1000,
                            width = 1000,
@@ -128,7 +128,7 @@ cn.plot = function(drivers.fname = NULL,
                    pair = "",
                    ev.types = c("qrp", "tic", "qpdup", "qrdel",
                                 "bfb", "dm", "chromoplexy", "chromothripsis",
-                                "tyfonas", "rigma", "pyrgo"),
+                                "tyfonas", "rigma", "pyrgo", "cpxdm"),
                    pad = 5e5,
                    height = 1000,
                    width = 1000,
@@ -144,20 +144,41 @@ cn.plot = function(drivers.fname = NULL,
     }
 
     ## grab drivers and convert to GRanges
-    drivers.dt = fread(drivers.fname) %>% as.data.table
+    if (grepl("rds", drivers.fname)) {
+        drivers.dt = readRDS(drivers.fname) %>% as.data.table
+    } else {
+        drivers.dt = fread(drivers.fname) %>% as.data.table
+    }
+
+    ## set gene names
+    if (!("gene_name" %in% colnames(drivers.dt)) & ("gene" %in% colnames(drivers.dt))) {
+        drivers.dt[, gene_name := gene]
+    }
 
     message(nrow(drivers.dt))
 
     ## if empty data table, return
     if (nrow(drivers.dt) > 0) {
-        ## otherwise grab gr and intersect with things
-        drivers.gr = dt2gr(drivers.dt)
 
         ## grab complex and coverage gTracks
         this.complex = readRDS(complex.fname)
         this.complex.gt = this.complex$gt
         cvgt = readRDS(cvgt.fname) ## coverage
         gngt = readRDS(gngt.fname) ## gencode gTrack
+
+
+        if ("seqnames" %in% colnames(drivers.dt)) {
+            drivers.gr = dt2gr(drivers.dt)
+        } else {
+
+            ## otherwise grab gr from gencode data and intersect with things
+            ge.stacked = gngt@data[[1]] %>% range %>% stack
+            drivers.ge.dt = gr2dt(ge.stacked %Q% (name %in% drivers.dt$gene_name))
+            drivers.ge.dt[, gene_name := name]
+            drivers.gr = dt2gr(drivers.ge.dt)
+            drivers.dt = gr2dt(drivers.gr)
+            
+        }
 
         ## grab plot titles and file names
         drivers.dt[, plot.fname := file.path(outdir, paste(gene_name, "png", sep = "."))]
@@ -247,10 +268,10 @@ cn.plot = function(drivers.fname = NULL,
                               width = width)
                      })
 
-        return(drivers.dt[, .(plot.fname, plot.link)])
+        return(drivers.dt[, .(gene_name, plot.fname, plot.link)])
     } else {
         warning("No drivers with CN change!")
-        return(data.table(plot.fname = character(), plot.link = character()))
+        return(data.table(gene_name = character(), plot.fname = character(), plot.link = character()))
     }
 }
 
@@ -284,7 +305,7 @@ sv.plot = function(complex.fname = NULL,
                    pair = "",
                    ev.types = c("qrp", "tic", "qpdup", "qrdel",
                                 "bfb", "dm", "chromoplexy", "chromothripsis",
-                                "tyfonas", "rigma", "pyrgo"),
+                                "tyfonas", "rigma", "pyrgo", "cpxdm"),
                    pad = 5e5,
                    height = 1000,
                    width = 1000,

@@ -49,6 +49,7 @@ suppressMessages(expr = {
         library(dplyr)
         library(ggforce)
         library(ggridges)
+        library(ggrepel)
         library(httr)
         library(jsonlite)
         library(knitr)
@@ -115,22 +116,54 @@ if (!opt$knit_only){
         genes_cn_annotated = get_gene_ampdel_annotations(genes_cn, amp.thresh = opt$amp_thresh,
                                        del.thresh = opt$del_thresh)
 
+
+
+        #' zchoo Wednesday, May 12, 2021 04:17:06 PM
+        #' integrate RNA expression data with genes data
+        if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {
+            message("Computing quantiles")
+            melted.expr = rna.quantile(opt$tpm_cohort,
+                                       opt$pair,
+                                       opt$tpm)
+            message("Done computing quantiles")
+            genes_cn_annotated = merge.data.table(genes_cn_annotated,
+                                                  melted.expr[pair == opt$pair,
+                                                              .(gene_name = gene, expr.quantile = qt, expr.value = value)],
+                                                  by = "gene_name",
+                                                  all.x = TRUE)
+            message("Done merging")
+        } else {
+            genes_cn_annotated[, ":="(expr.quantile = NA, expr.value = NA)]
+        }
+
+        ## add over/under expression annotations
+        qt.thres = 0.05 ## expose this parameter later
+        genes_cn_annotated[expr.quantile < qt.thres, expr := "under"]
+        genes_cn_annotated[expr.quantile > (1 - qt.thres), expr := "over"]
+
+        ## save annotated genes
         saveRDS(genes_cn_annotated, genes_cn.fn)
     }
 
     driver.genes.cnv.fn = paste0(opt$outdir, '/driver.genes.cnv.txt')
+    driver.genes.expr.fn = paste0(opt$outdir, '/driver.genes.expr.txt')
     if (!check_file(driver.genes.cnv.fn, overwrite = opt$overwrite)){
         if (genes_cn_annotated[, .N] > 0){
             onc = readRDS(oncogenes.fn)
             tsg = readRDS(tsg.fn)
             #' zchoo Tuesday, May 04, 2021 10:41:25 PM
-            ## subsetted so that there are just dels in tsgs and amps in oncogenes
-            ## driver.genes_cn = genes_cn_annotated[gene_name %in% c(onc, tsg)]
+            ## save just expression change and just CNA separately
             driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
                                                  (cnv == "del" & gene_name %in% tsg)]
-            fields = c("gene_name", "cnv", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "number_of_cn_segments", "ncn", "seqnames", "start", "end", "width", "gene_id", "gene_type", "source",  "level", "hgnc_id", "havana_gene", "ev.id", "ev.type")
+            driver.genes_expr = genes_cn_annotated[(expr == "over" & gene_name %in% onc) |
+                                                   (expr == "under" & gene_name %in% tsg)]
+            #' zchoo Wednesday, May 12, 2021 05:00:24 PM
+            ## subset these to make less overwhelming...
+            ## fields = c("gene_name", "cnv", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "number_of_cn_segments", "ncn", "seqnames", "start", "end", "width", "gene_id", "gene_type", "source",  "level", "hgnc_id", "havana_gene", "ev.id", "ev.type")
+            fields = c("gene_name", "cnv", "expr", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "expr.value", "expr.quantile", "seqnames", "start", "end", "width", "ev.id", "ev.type")
             fields = intersect(fields, names(driver.genes_cn))
             fwrite(driver.genes_cn[, ..fields], driver.genes.cnv.fn)
+            fwrite(driver.genes_expr[, ..fields], driver.genes.expr.fn)
         }
     }
 
@@ -274,9 +307,20 @@ if (!opt$knit_only){
                                            width = 1000,
                                            outdir = opt$outdir)
 
-        ## save data table for drivers and non-drivers separately
-        fwrite(fusions.slickr.dt[driver == TRUE,], fusions.driver.fname)
-        fwrite(fusions.slickr.dt[driver == FALSE,], fusions.other.fname)
+        ## make sure data table is not empty
+        if (nrow(fusions.slickr.dt) == 0) {
+
+            ## write empty data table, rmd file will deal with this.
+            fwrite(fusions.slickr.dt, fusions.driver.fname)
+            fwrite(fusions.slickr.dt, fusions.other.fname)
+            
+        } else {
+
+            ## save data table for drivers and non-drivers separately
+            fwrite(fusions.slickr.dt[driver == TRUE,], fusions.driver.fname)
+            fwrite(fusions.slickr.dt[driver == FALSE,], fusions.other.fname)
+
+        }
         
     } else {
         message("Fusion files already exist")
@@ -285,16 +329,17 @@ if (!opt$knit_only){
     ## ##################
     ## SV gallery code
     ## ##################
+    ## generate gTrack with just cgc genes
+    cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers),
+                       file.path(opt$libdir, "data", "cgc.tsv"),
+                       opt$drivers)
+    cgc.gtrack.fname = cgc.gtrack(cgc.fname = cgc.fname,
+                                  gencode.fname = opt$gencode,
+                                  outdir = opt$outdir)
+
     if (opt$overwrite | !file.exists(file.path(opt$outdir, "sv.gallery.txt"))) {
         message("Preparing SV gallery")
 
-        ## generate gTrack with just cgc genes
-        cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers),
-                           file.path(opt$libdir, "data", "cgc.tsv"),
-                           opt$drivers)
-        cgc.gtrack.fname = cgc.gtrack(cgc.fname = cgc.fname,
-                                      gencode.fname = opt$gencode,
-                                      outdir = opt$outdir)
         
         sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
                                        background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
@@ -364,6 +409,8 @@ if (!opt$knit_only){
         ## TODO: make the quantile threshold adjustable
         cool.exp = mexp[pair==opt$pair][(role=="TSG" & qt<0.05) | (role=="ONC" & qt>0.95)]
         ## cool.exp[order(qt)]
+
+        cool.exp.fn = file.path(opt$outdir, "cool.expr.rds")
         if (nrow(cool.exp)>0){
             cool.exp[, direction := ifelse(qt>0.95, "over", "under")]
             cool.exp[, gf := paste0(opt$outdir, "/", gene, ".", direction, ".expr.png")]
@@ -391,7 +438,40 @@ if (!opt$knit_only){
                     dev.off()
                 }
             }
-            saveRDS(cool.exp, paste0(opt$outdir, "/cool.expr.rds"))
+            saveRDS(cool.exp, cool.exp.fn)
+        }
+
+        ## expression change gallery
+        expr.gallery.fn = file.path(opt$outdir, "expr.gallery.txt")
+        if (!check_file(expr.gallery.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
+            message("preparing CN gallery")
+            expr.slickr.dt = cn.plot(drivers.fname = cool.exp.fn,
+                                     opt$complex,
+                                     cvgt.fname = cvgt_fn,
+                                     gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                     cgcgt.fname = cgc.gtrack.fname,
+                                     agt.fname = agt_fn,
+                                     server = opt$server,
+                                     pair = opt$pair,
+                                     pad = 0.5,
+                                     height = 1200,
+                                     width = 1000,
+                                     outdir = opt$outdir)
+            fwrite(expr.slickr.dt, expr.gallery.fn)
+        } else {
+            message("Expressiong gallery files already exist")
+        }
+        waterfall.fn = file.path(opt$outdir, "waterfall.png")
+        if (!check_file(waterfall.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
+            message("generating waterfall plot")
+            gns = readRDS(cool.exp.fn)$gene ## genes with changes in expression
+            rna.waterfall.plot(tpm.cohort = opt$tpm_cohort,
+                               pair = opt$pair,
+                               tpm.pair = opt$tpm,
+                               out.fn = waterfall.fn,
+                               genes.to.label = gns)
+        } else {
+            message("Expression gallery files already exist")
         }
     }
 
@@ -632,7 +712,7 @@ if (!opt$knit_only){
             scale_discrete_manual("point_colour", values = binary.cols, labels = NULL) +
             scale_fill_manual(values = binary.cols,
                               labels = c("Non HR deficient", "HR deficient")) +
-            scale_y_discrete(labels = hrdetect.dims) +
+            ## scale_y_discrete(labels = hrdetect.dims) +
             labs(x = "Proportion") +
             guides(point_colour = FALSE) +
             geom_segment(data = rdat[pair==opt$pair],
