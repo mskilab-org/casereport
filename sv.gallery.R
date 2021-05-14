@@ -271,7 +271,7 @@ cn.plot = function(drivers.fname = NULL,
         return(drivers.dt[, .(gene_name, plot.fname, plot.link)])
     } else {
         warning("No drivers with CN change!")
-        return(data.table(plot.fname = character(), plot.link = character()))
+        return(data.table(gene_name = character(), plot.fname = character(), plot.link = character()))
     }
 }
 

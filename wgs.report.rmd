@@ -97,9 +97,7 @@ knitr::include_graphics(file.path(params$outdir, "wgs.circos.png"))
 
 ***
 
-# Driver events (CNAs and fusions)
-
-## Copy number variants
+# Copy number variants
 Copy number variations (CNVs) in oncogenes and tumor suppressor genes.
 
 ```{r, driver-cnv-table, results = "asis", max.width= "100%"}
@@ -108,15 +106,36 @@ driver.genes.cnv = fread(file.path(params$outdir, "driver.genes.cnv.txt"))
 DT::datatable(driver.genes.cnv, options = list(scrollX = TRUE))
 ```
 
-### Gallery
 
-```{r, cn-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## Gallery {.tabset .tabset-fade .tabset-pills}
+
+```{r cn-tabset, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
 if (nrow(cn.gallery.dt) > 0) {
-   slick_up = slickR(obj = cn.gallery.dt$plot.fname, height = 500, width = "95%", objLinks = cn.gallery.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
-   slick_up
+    cat("\n")
+    for (g in cn.gallery.dt[, gene_name]) {
+        cat("\n")
+        cat("###", paste0(g, "<br>","\n"))
+	cat(
+		paste0('<p>',
+			'<a href="',
+			cn.gallery.dt[gene_name == g, plot.link],
+			'">',
+			'<img src="',
+			cn.gallery.dt[gene_name == g, plot.fname],
+			'" width="100%" />',
+			'</a>',
+			'</p>'
+		)
+	)
+        cat('\n', '<br>', '\n\n')
+    }
 }
 ```
+
+***
+
+# Fusions
 
 ## Known fusions
 Fusions in which at least one involved gene is an oncogene or tumor suppressor.
@@ -131,15 +150,25 @@ if (file.exists(driver.fusions.fname)) {
 }
 ```
 
-### Gallery
+## Gallery {.tabset .tabset-fade .tabset-pills}
 
-```{r, driver-fusions-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
-if (file.exists(driver.fusions.fname)) {
-   driver.fusions.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
-   		     if (nrow(driver.fusions.dt) > 0) {
-		     	slick_up = slickR(obj = driver.fusions.dt$plot.fname, height = 500, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
-			slick_up
-			}
+```{r fusion-tabset, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
+if (nrow(fusions.gallery.dt) > 0) {
+    cat("\n")
+    for (g in fusions.gallery.dt[, genes]) {
+        cat("\n")
+        cat("###", paste0(g, "<br>","\n"))
+	cat(
+		paste0('<p>',
+			'<img src="',
+			fusions.gallery.dt[genes == g, plot.fname],
+			'" width="75%" />',
+			'</p>'
+		)
+	)
+        cat('\n', '<br>', '\n\n')
+    }
 }
 ```
 
@@ -155,7 +184,7 @@ if (file.exists(other.fusions.fname)) {
 }
 ```
 
-### Gallery
+## Gallery
 
 ```{r, other-fusions-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 
