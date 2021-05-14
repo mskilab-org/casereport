@@ -96,6 +96,27 @@ gallery.wrapper = function(complex.fname = NULL,
     return(svplot.dt)
 }
 
+#' @name grab.window
+#' @title grab.window
+#'
+#' @description
+#'
+#' helper function for adjusting the window around range of interest
+#'
+#' if range falls within a complex event, then return the event footprint
+#' if gene is amplified but not in a complex event but is in a complex amplicon:
+#' - return amplicon
+#' if gene is not in a complex event OR in a complex amplicon:
+#' - return the range of the node(s) containing the gene
+#'
+#' @param gr (GRanges)
+#' @param complex.fname (character)
+#'
+#' @return GRangesList of windows for each position in gr
+grab.window = function(gr, complex.fname) {
+    
+}
+
 #' @name cn.plot
 #' @title cn.plot
 #'
