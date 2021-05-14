@@ -50,3 +50,4 @@ old.R
 *\~
 # ignore emacs backup files
 \#*
+.#*
