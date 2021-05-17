@@ -380,7 +380,7 @@ if (!opt$knit_only){
                                amp.thresh = opt$amp_thresh,
                                ploidy = pl,
                                pad = 0.5,
-                               height = 1200,
+                               height = 1600,
                                width = 1000,
                                outdir = opt$outdir)
         fwrite(cn.slickr.dt, cn.gallery.fn)
@@ -464,7 +464,7 @@ if (!opt$knit_only){
                                      amp.thresh = opt$amp_thresh,
                                      ploidy = pl,
                                      pad = 0.5,
-                                     height = 1200,
+                                     height = 1600,
                                      width = 1000,
                                      outdir = opt$outdir)
             fwrite(expr.slickr.dt, expr.gallery.fn)

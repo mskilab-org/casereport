@@ -358,6 +358,20 @@ cn.plot = function(drivers.fname = NULL,
         gngt$height = 2
         gngt$yaxis.cex = 0.8
 
+        ## form gencode gTrack for just over/underexpressed genes
+        drivers.gt.data = gt.ge@data[[1]][names(gt.ge@data[[1]]) %in% drivers.dt[, gene_name]]
+        drivers.gt = gTrack(drivers.gt.data,
+                            labels.suppress = FALSE,
+                            labels.suppress.gr = TRUE,
+                            height = 5,
+                            cex.label = 0.5,
+                            name = "drivers",
+                            xaxis.chronly = TRUE,
+                            ywid = 0.1,
+                            stack.gap = 0.5,
+                            yaxis.cex = 0.8)
+        
+
         if (!is.null(cgc.gt)) {
             cgc.gt$cex.label = 0.5
             cgc.gt$xaxis.chronly = TRUE
@@ -368,9 +382,9 @@ cn.plot = function(drivers.fname = NULL,
             gngt$yaxis.cex = 0.8
 
             ## concatenate final gTracks
-            gt = c(gngt, cgc.gt, cvgt, this.complex.gt)
+            gt = c(gngt, cgc.gt, drivers.gt, cvgt, this.complex.gt)
         } else {
-            gt = c(gngt, cvgt, this.complex.gt)
+            gt = c(gngt, cvgt, drivers.gt, this.complex.gt)
         }
 
         if (!is.null(agt)) {
