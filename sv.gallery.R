@@ -111,10 +111,114 @@ gallery.wrapper = function(complex.fname = NULL,
 #'
 #' @param gr (GRanges)
 #' @param complex.fname (character)
-#'
-#' @return GRangesList of windows for each position in gr
-grab.window = function(gr, complex.fname) {
+#' @param ploidy (numeric)
+#' @param amp.thresh (numeric)
+#' @param ev.types (character) list of acceptable event types (try to exclude simple events)
+#' @param return.type (character) one of "data.table" or "GRanges"
+#' 
+#' @return data.table with node.fp, amp.fp, and ev.fp for node, event, and amplicon footprints
+grab.window = function(gr, complex.fname,
+                       amp.thresh = 4,
+                       ploidy = 2,
+                       ev.types = c(),
+                       return.type = "data.table")
+{
+
+    if (is.null(complex.fname) || !file.exists(complex.fname)) {
+        stop("complex.fname is not valid")
+    }
+    if (!(return.type %in% c("data.table", "GRanges"))) {
+        stop("invalid return type")
+    }
+
+    ## copy to prevent mutation
+    gr = copy(gr)
+
+    ## check if zero-length input given
+    if (length(gr)== 0) {
+        gr$ev.fp = c()
+        gr$amp.fp = c()
+        gr$node.fp = c()
+        gr$win = c()
+        if (return.type == "data.table") {
+            return (gr2dt(gr))
+        }
+        return(gr)
+    }
+
+    ## read complex
     
+    gg = readRDS(complex.fname)
+
+    ## grab events as GRanges
+    evs = gg$meta$events[type %in% ev.types]
+    if (nrow(evs) > 0) {
+        ev.grl = parse.grl(evs$footprint)
+        values(ev.grl) = evs
+        ev.gr = stack(ev.grl)
+
+        ## warning: for genes overlapping multiple events, will pull ALL footprints (potentially huge :()
+        ev.ov = gr.findoverlaps(gr, ev.gr, scol = c("footprint"), return.type = "data.table")
+        if (nrow(ev.ov) > 0) {
+            tmp = ev.ov[, .(footprint = paste(unique(footprint), collapse = ",")),
+                        by = query.id]
+            gr$ev.fp = tmp[match(1:length(gr), tmp$query.id), footprint]
+        } else {
+            gr$ev.fp = NA_character_ ## keep consistent type
+        }
+    } else {
+        gr$ev.fp = NA_character_
+    }
+
+    ## grab amplicons as GRanges
+    keep = (gg$nodes$dt$cn/ploidy) > amp.thresh
+    gg$clusters(keep)
+
+    ## grab nodes with non-NA cluster
+    amp.gr = (gg$nodes$gr %Q% (!is.na(cluster))) %>% gr.stripstrand
+
+    if (length(amp) > 0) {
+
+        ## get footprint of the whole cluster of easier querying later on
+        amp.dt = gr2dt(amp.gr)
+        amp.dt[, footprint := paste(unique(gr.string(amp.gr)), collapse = ","), by = "cluster"]
+        amp.gr$footprint = amp.dt$footprint
+
+        ## get overlaps with genes
+        amp.ov = gr.findoverlaps(gr, amp.gr, scol = c("cluster", "footprint"), return.type = "data.table")
+        if (nrow(amp.ov) > 0) {
+            tmp.amp = amp.ov[, .(footprint = paste(unique(footprint), collapse = ",")), by = query.id]
+            gr$amp.fp = tmp.amp[match(1:length(gr), tmp.amp$query.id), footprint]
+        } else {
+            gr$amp.fp = NA_character_
+        }
+    } else {
+        gr$amp.fp = NA_character_
+    }
+
+    ## grab node footprint
+    node.gr = gg$nodes$gr[, c()]
+    node.gr$footprint = gr.string(node.gr)
+    node.ov = gr.findoverlaps(gr, node.gr, scol = c("footprint"), return.type = "data.table")
+    if (nrow(node.ov) > 0) {
+        tmp.node = node.ov[, .(footprint = paste(unique(footprint)), collapse = ","), by = query.id]
+        gr$node.fp = tmp.node[match(1:length(gr), tmp.node$query.id), footprint]
+    } else {
+        gr$node.fp = NA_character_
+    }
+
+    ## get final window
+    gr$win = ifelse(!is.na(gr$ev.fp),
+                    gr$ev.fp,
+                    ifelse(!is.na(gr$amp.fp),
+                           gr$amp.fp,
+                           gr$node.fp))
+
+    ## get event id, amplicon id, and node id for each range
+    if (return.type == "data.table") {
+        return(gr2dt(gr))
+    }
+    return(gr)
 }
 
 #' @name cn.plot
@@ -133,10 +237,13 @@ grab.window = function(gr, complex.fname) {
 #' @param server (character) server url
 #' @param pair (character) pair id
 #' @param ev.types (character) complex event types
+#' @param amp.thresh (default 2) amplicon CN threshold for plotting ## possibly compute and save separately?
+#' @param ploidy (default 2)
 #' @param pad (numeric) window padding in bp default 5e5
 #' @param height (numeric) plot height default 500
 #' @param width (numeric) plot width default 500
 #' @param outdir (character) where to save plots?
+#' @param verbose (logical) default TRUE
 #'
 #' @return data.table with columns id, plot.fname, and plot.link
 cn.plot = function(drivers.fname = NULL,
@@ -150,10 +257,13 @@ cn.plot = function(drivers.fname = NULL,
                    ev.types = c("qrp", "tic", "qpdup", "qrdel",
                                 "bfb", "dm", "chromoplexy", "chromothripsis",
                                 "tyfonas", "rigma", "pyrgo", "cpxdm"),
-                   pad = 5e5,
+                   amp.thresh = 2,
+                   ploidy = 2,
+                   pad = 0.5,
                    height = 1000,
                    width = 1000,
-                   outdir = "./") {
+                   outdir = "./",
+                   verbose = TRUE) {
     if (!file.exists(drivers.fname)) {
         stop("drivers.fname does not exist")
     }
@@ -271,17 +381,34 @@ cn.plot = function(drivers.fname = NULL,
             gt = c(agt, gt)
         }
 
+        ## grab windows
+        if (verbose) {
+            message("Grabbing windows for plotting")
+        }
+        win.gr = grab.window(gr = drivers.gr, complex.fname = complex.fname,
+                             return.type = "GRanges", amp.thresh = amp.thresh,
+                             ploidy = ploidy, ev.types = ev.types)
+        drivers.gr$win = win.gr$win ## copy over plot window possibly return vector in the future
+
         ## make one plot per range in drivers gr
         pts = lapply(1:length(drivers.gr),
                      function(ix) {
                          ## prepare window
-                         win = drivers.gr[ix]
+                         if (is.null(drivers.gr$win) || is.na(drivers.gr$win[ix])) {
+                             win = drivers.gr[ix]
+                         } else {
+                             win = parse.grl(drivers.gr$win[ix]) %>% stack %>% gr.stripstrand
+                         }
                          if (pad > 0 & pad <= 1) {
                              adjust = pmax(5e5, pad * width(win))
+                             message(gr.string(win))
+                             message("adjust size: ", adjust)
                              win = GenomicRanges::trim(win + adjust)
+                             message(gr.string(win))
                          } else {
                              win = GenomicRanges::trim(win + pad)
                          }
+                         message(win)
                          ppng(plot(gt, win, legend.params = list(plot = FALSE)),
                               title = drivers.gr$gene_name[ix], ## title is the gene name
                               filename = drivers.dt$plot.fname[ix],
