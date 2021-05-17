@@ -1208,3 +1208,64 @@ rna.waterfall.plot = function(tpm.cohort = NULL,
     ppng(print(pt), filename = out.fn)
 }
 
+#' @name kallisto.preprocess
+#' @title kallisto.preprocess
+#'
+#' @description
+#'
+#' preprocess kallisto raw tsv file for downstream analysis
+#' 
+#' @param kallisto.fname (character) path to kallisto output
+#' @param pair (character) id
+#' @param gngt.fname (character) gencode gTrack file name
+#'
+#' @return data.table with columns gene, pair
+kallisto.preprocess = function(kallisto.fname,
+                               pair = NULL,
+                               gngt.fname = NULL) {
+
+    ## check files all valid
+    if (is.null(kallisto.fname) || !file.exists(kallisto.fname)) {
+        stop("kallisto.fname not valid")
+    }
+
+    if (is.null(pair)) {
+        stop("pair cannot be NULL")
+    }
+
+    if (is.null(gngt.fname) || !file.exists(gngt.fname)) {
+        stop("gngt.fname cannot be NULL")
+    }
+
+    kallisto.dt = fread(kallisto.fname, header = TRUE)
+
+    ## check if empty
+    if (nrow(kallisto.dt) == 0) {
+        out.dt = data.table(gene = c(), tmp = c())
+        return(setnames(out.dt, "tmp", pair))
+    }
+
+    ## check if file is already ok
+    outcols = c("gene", pair)
+    if (all(outcols %in% colnames(kallisto.dt))) {
+        return (kallisto.dt[, ..outcols])
+    }
+
+    ## check if target_id and tpm are in kallisto
+    reqcols = c("target_id", "tpm")
+    if (!all(reqcols %in% colnames(kallisto.dt))) {
+        stop("required columns target_id and tpm missing from kallisto output")
+    }
+
+    ## grab correct gene for target id
+    ge.data = stack(readRDS(gngt.fname)@data[[1]])
+    kallisto.dt[, gene := ge.data$gene_name[match(target_id, ge.data$transcript_id)]]
+
+    ## subset for high expression and sum transcripts associated with the same gene
+    kallisto.dt = kallisto.dt[tpm > 0 & !is.na(tpm),][, .(tpm = sum(tpm)), by = gene]
+
+    ## reset tpm column
+    setnames(kallisto.dt, "tpm", pair)
+
+    return(kallisto.dt[!is.na(gene), ..outcols])
+}
