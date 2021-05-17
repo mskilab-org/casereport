@@ -87,6 +87,23 @@ if (!opt$knit_only){
         }
     }
 
+    message("Checking for RNA expression input")
+    if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {
+
+        ## save reformatted TPM data
+        tpm.fn = file.path(opt$outdir, "tpm.txt")
+
+        tpm.dt = kallisto.preprocess(opt$tpm,
+                                     pair = opt$pair,
+                                     gngt.fname = file.path(libdir, "data", "gt.ge.hg19.rds"))
+
+        ## check for and process kallisto input
+        fwrite(tpm.dt, tpm.fn)
+        opt$tpm = tpm.fn
+
+        message("Found and preprocessed TPM input")
+    }
+
     message('Calling CNVs for oncogenes and tumor suppressor genes')
     ## # get the ncn data from jabba
     genes_cn.fn = paste0(opt$outdir, '/genes_cn.rds')
@@ -396,12 +413,7 @@ if (!opt$knit_only){
         if (is.element(opt$pair, colnames(tpm_cohort))){
             message("Found this sample in the cohort expression matrix")
             if (file.good(opt$tpm)){
-                ## tpm = fread(opt$tpm, header = TRUE)
-
-                ## wrapper function for compatiblity with kallisto raw output
-                tpm = kallisto.preprocess(opt$tpm,
-                                          pair = opt$pair,
-                                          gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"))
+                tpm = fread(opt$tpm, header = TRUE)
                 
                 message("Found this sample's input expression matrix, overwriting...")
                 tpm_cohort[[opt$pair]] = NULL
