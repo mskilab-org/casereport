@@ -389,6 +389,20 @@ There are xx high quality loose ends in this sample.
 
 ***
 # Purity and ploidy estimation
+Here is the fitting of purity and ploidy values to the distribution of
+a random sample of primary segment coverage intensities with
+replacement. A good fit should have the red vertical lines (integer CN
+grid) align well with the peaks in the raw intensity distribution
+(black histogram).
+
+
+```{r ppfit, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+if (file.exists(paste0(params$outdir, "/ppfit.hist.png"))){
+    cat(
+        paste0("![](", paste0(params$outdir, "/ppfit.hist.png"),")"), "\n\n"
+    )
+}
+```
 
 ***
 # Junction read support

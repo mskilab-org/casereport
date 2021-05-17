@@ -1208,3 +1208,329 @@ rna.waterfall.plot = function(tpm.cohort = NULL,
     ppng(print(pt), filename = out.fn)
 }
 
+
+####################################################################
+#' ppgrid
+#'
+#' least squares grid search for purity and ploidy modes
+#'
+#' @param segstats GRanges object of intervals with meta data fields "mean" and "sd" (i.e. output of segstats function)
+#' @param allelic logical flag, if TRUE will also look for mean_high, sd_high, mean_low, sd_low variables and choose among top solutions from top copy number according to the best allelic fit
+#' @param purity.min min purity value allowed
+#' @param purity.max max purity value allowed
+#' @param ploidy.min min ploidy value allowed
+#' @param ploidy.max max ploidy value allowed
+#' @param ploidy.step grid length of ploidy values
+#' @param purity.step grid length of purity values
+#' @param plot whether to plot the results to file
+#' @param verbose print intermediate outputs
+#' @param mc.cores integer number of cores to use (default 1)
+#' @param return.all return the log likelihood matrix
+#' @return data.frame with top purity and ploidy solutions and associated gamma and beta values, for use in downstream jbaMI
+############################################
+ppgrid = function(segstats,
+                  allelic = FALSE,
+                  purity.min = 0.01,
+                  purity.max = 1.0,
+                  ploidy.step = 0.01,
+                  purity.step = 0.01,
+                  ploidy.min = 1.2, # ploidy bounds (can be generous)
+                  ploidy.max = 6,
+                  plot = F,
+                  verbose = F,
+                  mc.cores = 1,
+                  return.nll = FALSE){
+    if (verbose)
+        jmessage('setting up ppgrid matrices .. \n')
+
+    if (is.na(ploidy.min)) ploidy.min = 1.2
+    if (is.na(ploidy.max)) ploidy.max = 6
+    if (is.na(purity.min)) purity.min = 0.01
+    if (is.na(purity.max)) purity.max = 1
+
+    ##  purity.guesses = seq(0, 1, purity.step)
+    purity.guesses = seq(pmax(0, purity.min), pmin(1.00, purity.max), purity.step)
+    ## ploidy.guesses = seq(pmin(0.5, ploidy.min), pmax(10, ploidy.max), ploidy.step)
+    ploidy.guesses = seq(pmax(0.5, ploidy.min), pmax(0.5, ploidy.max), ploidy.step)
+
+    if (allelic)
+        if (!all(c('mean_high', 'mean_low', 'sd_high', 'sd_low') %in% names(values(segstats))))
+        {
+            jwarning('If allelic = TRUE then must have meta data fields mean_high, mean_low, sd_high, sd_low in input segstats')
+            allelic = FALSE
+        }
+
+    if (is.null(segstats$mean))
+        jerror('segstats must have field $mean')
+
+    segstats = segstats[!is.na(segstats$mean) & !is.na(segstats$sd)]
+
+    if (!is.null(segstats$ncn))
+        segstats = segstats[segstats$ncn==2, ]
+
+    ## if (is.null(segstats$ncn))
+    ##     ncn = rep(2, length(mu))
+    ## else
+    ##     ncn = segstats$ncn
+
+    if (any(tmpix <-is.infinite(segstats$mean) | is.infinite(segstats$sd)))
+    {
+      segstats$sd[tmpix] = segstats$mean[tmpix] = NA
+    }
+    segstats = segstats[!is.na(segstats$mean) & !is.na(segstats$sd), ]
+    if (length(segstats)==0)
+      jerror('No non NA segments provided')
+
+    mu = segstats$mean
+    w = as.numeric(width(segstats))
+    Sw = sum(as.numeric(width(segstats)))
+    sd = segstats$sd
+    m0 = sum(as.numeric(mu*w))/Sw
+
+    if (verbose)
+        cat(paste(c(rep('.', length(purity.guesses)), '\n'), collapse = ''))
+
+    NLL = matrix(unlist(parallel::mclapply(seq_along(purity.guesses), function(i)
+    {
+        if (verbose)
+            cat('.')
+        nll = rep(NA, length(ploidy.guesses))
+        for (j in seq_along(ploidy.guesses))
+        {
+            alpha = purity.guesses[i]
+            tau = ploidy.guesses[j]
+            gamma = 2/alpha - 2
+            beta = (tau + gamma)/m0 
+            v = pmax(0, round(beta*mu-gamma))
+            nll[j] = sum((v-beta*mu+gamma)^2/((sd)^2))
+        }
+        return(nll)
+    }, mc.cores = mc.cores)), nrow = length(purity.guesses), byrow = T)
+
+    dimnames(NLL) = list(as.character(purity.guesses), as.character(ploidy.guesses))
+
+  if (verbose)
+    cat('\n')
+
+    ## rix = as.numeric(rownames(NLL))>=purity.min & as.numeric(rownames(NLL))<=purity.max
+    ## cix = as.numeric(colnames(NLL))>=ploidy.min & as.numeric(colnames(NLL))<=ploidy.max
+    ## NLL = NLL[rix, cix, drop = FALSE]
+
+    a = rep(NA, nrow(NLL));
+    b = rep(NA, ncol(NLL)+2)
+    b.inf = rep(Inf, ncol(NLL)+2)
+    #  a = rep(Inf, nrow(NLL));
+    #  b = rep(Inf, ncol(NLL)+2)
+    NLLc = rbind(b, cbind(a, NLL, a), b) ## padded NLL and all of its shifts
+    NLLul = rbind(cbind(NLL, a, a), b.inf, b)
+    NLLuc = rbind(cbind(a, NLL, a), b.inf, b)
+    NLLur = rbind(cbind(a, a, NLL), b.inf, b)
+    NLLcl = rbind(b, cbind(NLL, a, a), b)
+    NLLcr = rbind(b, cbind(a, a, NLL), b)
+    NLLll = rbind(b, b, cbind(NLL, a, a))
+    NLLlc = rbind(b, b, cbind(a, NLL, a))
+    NLLlr = rbind(b, b, cbind(a, a, NLL))
+
+    if (min(c(ncol(NLL), nrow(NLL)))>1) ## up up down down left right left right ba ba start
+        M = (NLLc < NLLul &
+             NLLc < NLLuc &
+             NLLc < NLLur &
+             NLLc < NLLcl &
+             NLLc < NLLcr &
+             NLLc < NLLll &
+             NLLc < NLLlc &
+             NLLc < NLLlr)[-c(1, nrow(NLLc)),
+                           -c(1, ncol(NLLc)),
+                           drop = FALSE]
+    else if (ncol(NLL)==1) ## one column, only go up and down
+        M = (NLLc < NLLuc & NLLc < NLLlc)[-c(1, nrow(NLLc)), -c(1, ncol(NLLc)), drop = FALSE]
+    else ## only row, only go left right
+        M = (NLLc < NLLcl & NLLc < NLLcr)[-c(1, nrow(NLLc)), -c(1, ncol(NLLc)), drop = FALSE]
+
+    if (length(M)>1)
+    {
+        ix = Matrix::which(M, arr.ind=T);
+        if (nrow(ix)>1)
+        {
+            C = hclust(d = dist(ix), method = 'single')
+            cl = cutree(C, h = min(c(nrow(NLL), ncol(NLL), 2)))
+            minima = ix[vaggregate(1:nrow(ix), by = list(cl), function(x) x[which.min(NLL[ix[x, drop = FALSE]])]), , drop = FALSE]
+        }
+        else
+            minima = ix[1,, drop = FALSE]
+    }
+    else
+        minima = cbind(1,1)
+
+    out = data.frame(purity = as.numeric(rownames(NLL)[minima[,1]]), ploidy = as.numeric(colnames(NLL)[minima[,2]]), NLL = NLL[minima],
+                     i = minima[,1], j = minima[,2])
+
+    out = out[order(out$NLL), , drop = FALSE]
+    rownames(out) = 1:nrow(out)
+    ## Saturday, Sep 02, 2017 10:33:26 PM
+    ## Noted floating point error, use the epsilon trick to replace '>='
+    ## out = out[out$purity>=purity.min & out$purity<=purity.max & out$ploidy>=ploidy.min & out$ploidy<=ploidy.max, ]
+    eps = 1e9
+    out = out[out$purity - purity.min >= -eps &
+              out$purity - purity.max <= eps &
+              out$ploidy - ploidy.min >= -eps &
+              out$ploidy - ploidy.max <= eps, ]
+    out$gamma = 2/out$purity -2
+    out$beta = (out$ploidy + out$gamma)/m0
+    out$mincn = mapply(function(gamma, beta) min(round(beta*mu-gamma)), out$gamma, out$beta)
+    out$maxcn = mapply(function(gamma, beta) max(round(beta*mu-gamma)), out$gamma, out$beta)
+
+    ## group solutions with (nearly the same) slope (i.e. 1/beta), these should have almost identical
+    ## NLL (also take into account in-list distance just be safe)
+    if (nrow(out)>1)
+        out$group = cutree(hclust(d = dist(cbind(100/out$beta, 1:nrow(out)), method = 'manhattan'), method = 'single'), h = 2)
+    else
+        out$group = 1
+    out = out[out$group<=3, ,drop = FALSE] ## only pick top 3 groups
+
+    if (allelic) ## if allelic then use allelic distance to rank best solution in group
+    {
+        ## remove all NA allelic samples
+        segstats = segstats[!is.na(segstats$mean_high) & !is.na(segstats$sd_high) & !is.na(segstats$mean_low) & !is.na(segstats$sd_low)]
+        out$NLL.allelic = NA
+        mu = cbind(segstats$mean_high, segstats$mean_low)
+        w = matrix(rep(as.numeric(width(segstats)), 2), ncol = 2, byrow = TRUE)
+        Sw = sum(as.numeric(width(segstats)))*2
+        sd = cbind(segstats$sd_high, segstats$sd_low)
+        m0 = sum(as.numeric(mu*w))/Sw
+
+        if (verbose)
+            cat(paste(c(rep('.', length(purity.guesses)), '\n'), collapse = ''))
+
+        for (i in 1:nrow(out))
+        {
+          if (verbose)
+            {
+              jmessage(sprintf('Evaluating alleles for solution %s of %s\n', i, nrow(out)))
+            }
+            alpha = out$purity[i]
+            tau = out$ploidy[i]
+                                        #                  gamma = 2/alpha - 2
+            gamma = 1/alpha - 1 ## 1 since we are looking at hets
+            beta = (tau + gamma)/m0 ## replaced with below 9/10/14
+                                        #          beta = ( tau + tau_normal * gamma /2 ) / m0
+                                        #          v = pmax(0, round(beta*mu-ncn*gamma/2))
+            v = pmax(0, round(beta*mu-gamma))
+
+            vtot = round(out$beta[i]*segstats$mean-out$gamma[i])
+            vlow.mle = rep(NA, length(vtot))
+
+            for (j in seq_along(vlow.mle))
+            {
+                if (vtot[j]==0)
+                    vlow.mle[j] = 0
+                else
+                {
+                    vlow = 0:floor(vtot[j]/2)
+                    vhigh = vtot[j]-vlow
+                    tmp.nll = cbind((vlow-beta*mu[j,2]+gamma)^2/(sd[j,2])^2, (vhigh-beta*mu[j, 1]+gamma)^2/((sd[j,1])^2))
+                    vlow.mle[j] = vlow[which.min(rowSums(tmp.nll))]
+                }
+            }
+
+            vlow.mle = apply(cbind(mu, sd, vtot), 1, function(x) {
+                tot = x[5]
+                if (tot == 0)
+                    return(0)
+                else
+                {
+                    vlow = 0:floor(tot/2)
+                    vhigh = tot-vlow
+                    muh = x[1]
+                    mul = x[2]
+                    sdh = x[3]
+                    sdl = x[4]
+                    tmp.nll = cbind((vlow-beta*mul+gamma)^2/(sdl)^2, (vhigh-beta*muh+gamma)^2/((sdh)^2))
+                    return(vlow[which.min(rowSums(tmp.nll))])
+                }
+            })
+
+            out$NLL.allelic[i] = sum((cbind(vtot-vlow.mle, vlow.mle)-beta*mu+gamma)^2/sd^2)
+        }
+
+        out$NLL.tot = out$NLL
+        out$NLL = out$NLL.tot + out$NLL.allelic
+        out.all = out
+        ix = vaggregate(1:nrow(out), by = list(out$group), FUN = function(x) x[order(abs(out$NLL[x]))][1])
+    } else ## otherwise choose the one that gives the lowest magnitude copy number
+    {
+        out.all = out
+        ix = vaggregate(1:nrow(out), by = list(out$group), FUN = function(x) x[order(abs(out$mincn[x]), out$mincn[x]<0)][1])
+    }
+
+    out = out[ix, , drop = FALSE]
+    out$NLL = vaggregate(out$NLL, by = list(out$group), FUN = min)
+
+    out.all$keep = 1:nrow(out.all) %in% ix ## keep track of other ploidy group peaks for drawing purposes
+    out.all = out.all[out.all$group %in% out$group, ] ## only draw the groups in the top solution
+    out = out.all;
+    out = out[order(out$group, !out$keep, out$NLL), ]
+    out$rank = NA
+    out$rank[out$keep] = 1:sum(out$keep)
+    out$keep = out$i = out$j = NULL
+    rownames(out) = NULL
+    if (return.nll){
+        out = list(out = out, NLL = NLL)
+    }
+    return(out)
+}
+
+
+## diagnostic function used by karyograph_stub
+#' @name ggplot_ppfit
+#' @rdname internal
+ggplot_ppfit = function(seg, purity, ploidy, beta = NULL, gamma = NULL, ploidy_normal = 2, xlim = c(-Inf, Inf)){
+    tmp = seg  ## only plot seg that we haven't fixed SD for and that have normal cn 1, to minimize confusion
+    dupval = sort(table(tmp$mean), decreasing = TRUE)[1]
+    if (!is.na(dupval))
+        if (dupval>5)
+            tmp = tmp[-which(as.character(tmp$mean) == names(dupval))]
+
+    if (length(tmp)==0)
+        return()
+
+    ## sampling random loci to plot not segments
+    ## segsamp = pmin(sample(tmp$mean, 1e6, replace = T, prob = width(tmp)), xlim[2])
+    tmp = tmp %Q% (!is.na(mean))
+    segsamp = sample(tmp[, "mean"], 1e6, replace = T, prob = width(tmp)) %>% gr2dt
+    segsamp[, mean := pmax(xlim[1], pmin(mean, xlim[2]))]
+    segsamp = segsamp[!is.na(mean)]
+
+    mu = seg$mean
+    w = width(seg)
+    Sw = sum(as.numeric(width(seg)))
+    sd = seg$sd
+    m0 = sum(as.numeric(mu*w))/Sw
+    alpha = purity
+    tau = ploidy
+    ncn = rep(2, length(mu))
+    
+    beta = (tau + ploidy_normal * gamma / 2 ) / m0
+    gamma = 2/alpha - 2
+    grids = 1/beta*(0:1000) + gamma/beta
+    grids = grids[which(grids < segsamp[, max(mean)])]
+
+    
+    h = ggplot(segsamp, aes(x = mean)) +
+        geom_histogram(bins = 1000) +
+        geom_vline(xintercept = grids, lty = 2, color = alpha("red", 0.8), lwd = 0.5) +
+        ## scale_x_continuous(limits = c(0, segsamp[, quantile(mean, 0.99)])) +
+        labs(x = "Segment intensity",
+             title = sprintf('Purity: %.2f Ploidy: %.2f Beta: %.2f Gamma: %.2f', purity, ploidy, beta, gamma)) +
+        theme_minimal(12)
+    
+    return(h)
+    ## ppdf(print(h))
+    
+    ## hist(
+    ##     pmax(xlim[1], pmin(xlim[2], segsamp)),
+    ##     1000, xlab = 'Segment intensity',
+    ##     main = sprintf('Purity: %s Ploidy: %s Beta: %s Gamma: %s', kag$purity, kag$ploidy, round(kag$beta,2), round(kag$gamma,2)),
+    ##     xlim = c(pmax(0, xlim[1]), pmin(xlim[2], max(segsamp, na.rm = T))))
+    ## abline(v = 1/kag$beta*(0:1000) + kag$gamma/kag$beta, col = alpha('red', 0.3), lty = c(4, rep(2, 1000)))
+}
