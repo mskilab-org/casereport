@@ -233,6 +233,7 @@ if (!opt$knit_only){
         gg.gt$ylab = "CN"
         gg.gt$y0 = 0
         gg.gt$y1 = y1
+        gg.gt$gap = 1e7 ## gap between chromosomes
 
         ## coverage gTrack formatting
         cvgt$yaxis.pretty = 4
@@ -366,6 +367,8 @@ if (!opt$knit_only){
     cn.gallery.fn = file.path(opt$outdir, "cn.gallery.txt")
     if (!check_file(cn.gallery.fn, overwrite = opt$overwrite)) {
         message("preparing CN gallery")
+        ## grab ploidy
+        pl = readRDS(opt$jabba_rds)$ploidy
         cn.slickr.dt = cn.plot(drivers.fname = driver.genes.cnv.fn,
                                opt$complex,
                                cvgt.fname = cvgt_fn,
@@ -374,8 +377,10 @@ if (!opt$knit_only){
                                agt.fname = agt_fn,
                                server = opt$server,
                                pair = opt$pair,
+                               amp.thresh = opt$amp_thresh,
+                               ploidy = pl,
                                pad = 0.5,
-                               height = 1200,
+                               height = 1600,
                                width = 1000,
                                outdir = opt$outdir)
         fwrite(cn.slickr.dt, cn.gallery.fn)
@@ -445,7 +450,9 @@ if (!opt$knit_only){
         ## expression change gallery
         expr.gallery.fn = file.path(opt$outdir, "expr.gallery.txt")
         if (!check_file(expr.gallery.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
-            message("preparing CN gallery")
+            message("preparing expression gallery")
+            #grab ploidy
+            pl = readRDS(opt$jabba_rds)$ploidy
             expr.slickr.dt = cn.plot(drivers.fname = cool.exp.fn,
                                      opt$complex,
                                      cvgt.fname = cvgt_fn,
@@ -454,13 +461,15 @@ if (!opt$knit_only){
                                      agt.fname = agt_fn,
                                      server = opt$server,
                                      pair = opt$pair,
+                                     amp.thresh = opt$amp_thresh,
+                                     ploidy = pl,
                                      pad = 0.5,
-                                     height = 1200,
+                                     height = 1600,
                                      width = 1000,
                                      outdir = opt$outdir)
             fwrite(expr.slickr.dt, expr.gallery.fn)
         } else {
-            message("Expressiong gallery files already exist")
+            message("expression gallery files already exist")
         }
         waterfall.fn = file.path(opt$outdir, "waterfall.png")
         if (!check_file(waterfall.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
