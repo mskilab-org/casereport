@@ -1261,8 +1261,9 @@ kallisto.preprocess = function(kallisto.fname,
     ge.data = stack(readRDS(gngt.fname)@data[[1]])
     kallisto.dt[, gene := ge.data$gene_name[match(target_id, ge.data$transcript_id)]]
 
-    ## subset for high expression and sum transcripts associated with the same gene
-    kallisto.dt = kallisto.dt[tpm > 0 & !is.na(tpm),][, .(tpm = sum(tpm)), by = gene]
+    ## subset for high expression and max transcript for that gene
+    ## not perfect, but potentially helps to prevent double-counting co-expressed exons
+    kallisto.dt = kallisto.dt[tpm > 0 & !is.na(tpm),][, .(tpm = max(tpm)), by = gene]
 
     ## reset tpm column
     setnames(kallisto.dt, "tpm", pair)
