@@ -15,7 +15,7 @@ if (!exists("opt")){
         make_option(c("--deconstruct_sigs"), type = "character", default = NA_character_, help = "deconstruct_sigs module output, RDS"),
         make_option(c("--deconstruct_variants"), type = "character", default = NA_character_, help = "deconstruct_sigs module variant output, TXT"),
         make_option(c("--sigs_cohort"), type = "character", default = NA_character_, help = "variant count for each signature in a cohort"),
-        make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample"),
+        make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample (raw kallisto output acceptable)"),
         make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
         make_option(c("--hrd_results"), type = "character", default = NA_character_, help = "The comprehensive HRDetect module results"),
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
@@ -85,6 +85,23 @@ if (!opt$knit_only){
             gg = events(gG(jabba = jabba))
             saveRDS(gg, paste0(opt$outdir, "/complex.rds"))
         }
+    }
+
+    message("Checking for RNA expression input")
+    if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {
+
+        ## save reformatted TPM data
+        tpm.fn = file.path(opt$outdir, "tpm.txt")
+
+        tpm.dt = kallisto.preprocess(opt$tpm,
+                                     pair = opt$pair,
+                                     gngt.fname = file.path(libdir, "data", "gt.ge.hg19.rds"))
+
+        ## check for and process kallisto input
+        fwrite(tpm.dt, tpm.fn)
+        opt$tpm = tpm.fn
+
+        message("Found and preprocessed TPM input")
     }
 
     message('Calling CNVs for oncogenes and tumor suppressor genes')
@@ -397,6 +414,7 @@ if (!opt$knit_only){
             message("Found this sample in the cohort expression matrix")
             if (file.good(opt$tpm)){
                 tpm = fread(opt$tpm, header = TRUE)
+                
                 message("Found this sample's input expression matrix, overwriting...")
                 tpm_cohort[[opt$pair]] = NULL
                 tpm_cohort = data.table::merge.data.table(
