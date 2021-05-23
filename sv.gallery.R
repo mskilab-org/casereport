@@ -359,7 +359,7 @@ cn.plot = function(drivers.fname = NULL,
         gngt$yaxis.cex = 0.8
 
         ## form gencode gTrack for just over/underexpressed genes
-        drivers.gt.data = gt.ge@data[[1]][names(gt.ge@data[[1]]) %in% drivers.dt[, gene_name]]
+        drivers.gt.data = gngt@data[[1]][names(gngt@data[[1]]) %in% drivers.dt[, gene_name]]
         drivers.gt = gTrack(drivers.gt.data,
                             labels.suppress = FALSE,
                             labels.suppress.gr = TRUE,
