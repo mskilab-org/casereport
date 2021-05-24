@@ -214,7 +214,10 @@ DT::datatable(driver.genes.expr, options = list(scrollX = TRUE))
 
 ## Waterfall plot
 ```{r, driver-waterfall, results = "asis", max.width = "100%"}
-knitr::include_graphics(file.path(params$outdir, "waterfall.png"))
+waterfall.fn = file.path(params$outdir, "waterfall.png")
+if (file.exists(waterfall.fn)) {
+   knitr::include_graphics(waterfall.fn)
+}
 ```
 
 ## Gallery {.tabset .tabset-fade .tabset-pills}
