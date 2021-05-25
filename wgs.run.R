@@ -95,7 +95,7 @@ if (!opt$knit_only){
 
         tpm.dt = kallisto.preprocess(opt$tpm,
                                      pair = opt$pair,
-                                     gngt.fname = file.path(libdir, "data", "gt.ge.hg19.rds"))
+                                     gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"))
 
         ## check for and process kallisto input
         fwrite(tpm.dt, tpm.fn)

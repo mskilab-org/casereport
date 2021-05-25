@@ -1063,7 +1063,7 @@ grab.agtrack = function(agt.fname = NULL,
 
     ## make gTrack
     agt = gTrack(agt.gr, y.field = "cn", name = name, 
-                 ylab = "CN",
+                 ylab = "CN", y0 = 0,
                  y.cap = FALSE, labels.suppress = TRUE,
                  circles = TRUE, lwd.border = lwd.border,
                  ...)
