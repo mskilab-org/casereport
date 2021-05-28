@@ -1270,3 +1270,116 @@ kallisto.preprocess = function(kallisto.fname,
 
     return(kallisto.dt[!is.na(gene), ..outcols])
 }
+
+#' @name grab.gene.ranges
+#' @title grab.gene.ranges
+#'
+#' @param gngt.fname (character) gencode gTrack file name
+#' @param genes (character) vector of gene symbols
+#'
+#' @return GRanges with metadata column gene_name
+grab.gene.ranges = function(gngt.fname, genes = as.character()) {
+
+    if (!file.exists(gngt.fname)) {
+        stop("Gencode gTrack does not exist")
+    }
+    if (is.null(genes) || length(genes) == 0) {
+        stop("genes empty")
+    }
+
+    gngt = readRDS(gngt.fname)
+
+    ge.stacked = gngt@data[[1]] %>% range %>% stack
+    drivers.ge.dt = gr2dt(ge.stacked %Q% (name %in% genes))
+    drivers.ge.dt[, gene_name := name]
+    drivers.gr = dt2gr(drivers.ge.dt)
+
+    return(drivers.gr)
+}
+
+
+#' @name filter.snpeff
+#' @title filter.snpeff
+#'
+#' @param vcf (character) vcf file name
+#' @param gngt.fname (character) gencode gTrack file name
+#' @param cgc.fname (character) cgc.tsv with columns "Gene Symbol" and "Tier"
+#' @param verbose (logical) default FALSE
+#'
+#' @return data.table with columns gene, seqnames, pos, REF, ALT, variant.p, vartype, annotation
+filter.snpeff = function(vcf, gngt.fname, cgc.fname, verbose = FALSE) {
+
+    dummy.out = data.table(
+        gene = character(),
+        seqnames = character(),
+        pos = numeric(),
+        REF = character(),
+        ALT = character(),
+        variant.p = character(),
+        vartype = character(),
+        annotation = character()
+     )
+        
+    if (!file.exists(vcf)) {
+        stop("vcf file missing")
+    }
+    if (!file.exists(gngt.fname)) {
+        stop("gencode gtrack file missing")
+    }
+
+    require(skitools)
+    if (verbose) {
+        message("Reading VCF")
+    }
+
+    if (grepl("bcf", vcf)) {
+        vcf.gr = grok_bcf(vcf, long = TRUE)
+    } else if (grepl("vcf", vcf)) {
+        vcf.gr = grok_vcf(vcf, long = TRUE)
+    } else {
+        stop("Invalid file type")
+    }
+
+    if (!("impact" %in% names(values(vcf.gr)))) {
+        warning("Missing impact column! Returning all variants")
+    } else {
+        vcf.gr = vcf.gr %Q% (!impact %in% c("LOW", "MODIFIER"))
+    }
+
+    if (length(vcf.gr) == 0) {
+        if (verbose) {
+            message("No high impact variants")
+        }
+        return (dummy.out)
+    }
+
+    if (verbose) {
+        message("Found ", length(vcf.gr), " variants, overlapping with genes")
+    }
+
+    genes = fread(cgc.fname)[Tier == 1, ][["Gene Symbol"]]
+
+    if (length(genes) == 0) {
+        if (verbose) {
+            message("No high impact variants")
+        }
+        return (dummy.out)
+    }
+
+    genes.gr = grab.gene.ranges(gngt.fname, genes)
+    vcf.gr = vcf.gr %*% genes.gr
+
+    if (length(vcf.gr) == 0) {
+
+        if (verbose) {
+            message("No SNPs in cancer genes")
+        }
+        return (dummy.out)
+    }
+
+    vcf.dt = as.data.table(vcf.gr)[, .(gene = gene_name,
+                                       seqnames, pos = start, impact,
+                                       REF, ALT, variant.p, vartype, annotation)]
+    return(unique(vcf.dt))
+}
+        
