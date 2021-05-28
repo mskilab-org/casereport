@@ -1301,13 +1301,19 @@ grab.gene.ranges = function(gngt.fname, genes = as.character()) {
 #' @name filter.snpeff
 #' @title filter.snpeff
 #'
+#' @description
+#'
+#' Overlaps annotated VCF with genes provided in delimited file and returns results as data.table
+#' If VCF doesn't exist or is not provided returns an empty data.table
+#' 
 #' @param vcf (character) vcf file name
 #' @param gngt.fname (character) gencode gTrack file name
 #' @param cgc.fname (character) cgc.tsv with columns "Gene Symbol" and "Tier"
+#' @param ref.name (character) one of hg19 or hg38
 #' @param verbose (logical) default FALSE
 #'
 #' @return data.table with columns gene, seqnames, pos, REF, ALT, variant.p, vartype, annotation
-filter.snpeff = function(vcf, gngt.fname, cgc.fname, verbose = FALSE) {
+filter.snpeff = function(vcf, gngt.fname, cgc.fname, ref.name = "hg19", verbose = FALSE) {
 
     dummy.out = data.table(
         gene = character(),
@@ -1317,14 +1323,19 @@ filter.snpeff = function(vcf, gngt.fname, cgc.fname, verbose = FALSE) {
         ALT = character(),
         variant.p = character(),
         vartype = character(),
+        impact = character(),
         annotation = character()
      )
         
-    if (!file.exists(vcf)) {
-        stop("vcf file missing")
+    if (is.null(vcf) || is.na(vcf) || !file.exists(vcf)) {
+        warning("vcf file missing")
+        return(dummy.out)
     }
     if (!file.exists(gngt.fname)) {
         stop("gencode gtrack file missing")
+    }
+    if (!ref.name %in% c("hg19", "hg38")) {
+        stop("invalid ref.name")
     }
 
     require(skitools)
@@ -1354,10 +1365,29 @@ filter.snpeff = function(vcf, gngt.fname, cgc.fname, verbose = FALSE) {
     }
 
     if (verbose) {
+        message("Grabbing relevant isoforms..")
+    }
+
+    if (ref.name == "hg19") {
+        isoforms = fread(cgc.fname)[["GRCh37 RefSeq"]]
+    } else {
+        isoforms = fread(cgc.fname)[["GRCh38 RefSeq"]]
+    }
+
+    vcf.gr = vcf.gr %Q% (feature_id %in% isoforms)
+
+    if (length(vcf.gr) == 0) {
+        if (verbose) {
+            message("No high impact variants")
+        }
+        return (dummy.out)
+    }
+
+    if (verbose) {
         message("Found ", length(vcf.gr), " variants, overlapping with genes")
     }
 
-    genes = fread(cgc.fname)[Tier == 1, ][["Gene Symbol"]]
+    genes = fread(cgc.fname)[["Hugo Symbol"]]
 
     if (length(genes) == 0) {
         if (verbose) {

@@ -18,6 +18,8 @@ if (!exists("opt")){
         make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample (raw kallisto output acceptable)"),
         make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
         make_option(c("--hrd_results"), type = "character", default = NA_character_, help = "The comprehensive HRDetect module results"),
+        make_option(c("--snpeff_snv"), type = "character", default = NA_character_, help = "snpeff snv results"),
+        make_option(c("--snpeff_indel"), type = "character", default = NA_character_, help = "snpeff indel results"),
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
         make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
@@ -29,6 +31,7 @@ if (!exists("opt")){
                     help = "Threshold over ploidy to call deletion"),
         make_option(c("--server"), type = "character", default = "https://mskilab.com/gGraph/", help = "URL of the gGnome.js browser"),
         make_option(c("--tumor_type"), type = "character", default = "", help = "tumor type"),
+        make_option(c("--ref"), type = "character", default = "hg19", help = "one of 'hg19', 'hg38'"),
         make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir")
     )
     parseobj = OptionParser(option_list = option_list)
@@ -290,6 +293,30 @@ if (!opt$knit_only){
              width = 1000)
     } else {
         message("Whole genome circos plot already exists")
+    }
+
+    ## ##################
+    ## Driver gene mutations
+    ## ##################
+    driver.mutations.fname = file.path(opt$outdir, "driver.mutations.txt")
+    if (opt$overwrite | !file.exists(driver.mutations.fname)) {
+        cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers),
+                           file.path(opt$libdir, "data", "cancerGeneList.tsv"),
+                           opt$drivers)
+        snv.dt = filter.snpeff(vcf = opt$snpeff_snv,
+                               gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                               cgc.fname = cgc.fname,
+                               ref.name = opt$ref,
+                               verbose = TRUE)
+        indel.dt = filter.snpeff(vcf = opt$snpeff_indel,
+                               gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                               cgc.fname = cgc.fname,
+                               ref.name = opt$ref,
+                               verbose = TRUE)
+        driver.mutations.dt = rbind(snv.dt, indel.dt, use.names =  TRUE, fill = TRUE)
+        fwrite(driver.mutations.dt, driver.mutations.fname)
+    } else {
+        message("Driver mutations file already exists")
     }
 
     ## ##################
