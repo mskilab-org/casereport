@@ -1340,7 +1340,7 @@ filter.snpeff = function(vcf, gngt.fname, cgc.fname, ref.name = "hg19", verbose 
 
     require(skitools)
     if (verbose) {
-        message("Reading VCF")
+        message("Reading input")
     }
 
     if (grepl("bcf", vcf)) {
@@ -1374,14 +1374,18 @@ filter.snpeff = function(vcf, gngt.fname, cgc.fname, ref.name = "hg19", verbose 
         isoforms = fread(cgc.fname)[["GRCh38 RefSeq"]]
     }
 
-    vcf.gr = vcf.gr %Q% (feature_id %in% isoforms)
+    ## vcf.gr = vcf.gr %Q% (feature_id %in% isoforms)
+    ## deduplicate variants, preferably keeping documented isoforms
+    vcf.gr = vcf.gr %Q%
+        (order(!feature_id %in% isoforms, decreasing = FALSE)) %Q%
+        (!duplicated(paste(CHROM, POS)))
 
-    if (length(vcf.gr) == 0) {
-        if (verbose) {
-            message("No high impact variants")
-        }
-        return (dummy.out)
-    }
+    ## if (length(vcf.gr) == 0) {
+    ##     if (verbose) {
+    ##         message("No high impact variants")
+    ##     }
+    ##     return (dummy.out)
+    ## }
 
     if (verbose) {
         message("Found ", length(vcf.gr), " variants, overlapping with genes")
