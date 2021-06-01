@@ -299,21 +299,80 @@ if (!opt$knit_only){
     ## Driver gene mutations
     ## ##################
     driver.mutations.fname = file.path(opt$outdir, "driver.mutations.txt")
+    snv.bcf.fname = file.path(opt$outdir, "snpeff", "snv", "annotated.bcf")
+    indel.bcf.fname = file.path(opt$outdir, "snpeff", "indel", "annotated.bcf")
     if (opt$overwrite | !file.exists(driver.mutations.fname)) {
+
+        ## ################
+        ## read cgc gene list
+        ## ################
+        
         cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers),
                            file.path(opt$libdir, "data", "cancerGeneList.tsv"),
                            opt$drivers)
-        snv.dt = filter.snpeff(vcf = opt$snpeff_snv,
-                               gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
-                               cgc.fname = cgc.fname,
-                               ref.name = opt$ref,
-                               verbose = TRUE)
-        indel.dt = filter.snpeff(vcf = opt$snpeff_indel,
-                               gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
-                               cgc.fname = cgc.fname,
-                               ref.name = opt$ref,
-                               verbose = TRUE)
-        driver.mutations.dt = rbind(snv.dt, indel.dt, use.names =  TRUE, fill = TRUE)
+
+        ## ################
+        ## run SnpEff
+        ## ################
+        
+        if ( (!is.null(opt$snpeff_snv)) && file.exists(opt$snpeff_snv)) {
+
+            message("Running SNV SnpEff")
+            snpeff.libdir = file.path(opt$libdir, "SnpEff_module")
+            snpeff.ref = opt$ref
+            snpeff.vcf = opt$snpeff_snv
+            snpeff.outdir = file.path(opt$outdir, "snpeff", "snv")
+
+            snpeff.cm = paste("sh", file.path(snpeff.libdir, "run.sh"),
+                              snpeff.libdir,
+                              snpeff.ref,
+                              snpeff.vcf,
+                              snpeff.outdir)
+
+            system(snpeff.cm)
+
+            ## grab annotations
+            snv.dt = filter.snpeff(vcf = snv.bcf.fname, ##opt$snpeff_snv,
+                                   gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                   cgc.fname = cgc.fname,
+                                   ref.name = opt$ref,
+                                   verbose = TRUE)            
+        } else {
+            message("SNV vcf does not exist")
+        }
+        if ( (!is.null(opt$snpeff_indel)) && file.exists(opt$snpeff_indel)) {
+
+            message("Running indel SnpEff")
+            snpeff.libdir = file.path(opt$libdir, "SnpEff_module")
+            snpeff.ref = opt$ref
+            snpeff.vcf = opt$snpeff_indel
+            snpeff.outdir = file.path(opt$outdir, "snpeff", "indel")
+
+            snpeff.cm = paste("sh", file.path(snpeff.libdir, "run.sh"),
+                              snpeff.libdir,
+                              snpeff.ref,
+                              snpeff.vcf,
+                              snpeff.outdir)
+
+            system(snpeff.cm)
+
+            indel.dt = filter.snpeff(vcf = indel.bcf.fname, ## opt$snpeff_indel,
+                                     gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                     cgc.fname = cgc.fname,
+                                     ref.name = opt$ref,
+                                     verbose = TRUE)
+
+        } else {
+            message("indel snv does not exist")
+        }
+
+        if (!is.null(snv.dt) & !is.null(indel.dt)) {
+            driver.mutations.dt = rbind(snv.dt, indel.dt, use.names =  TRUE, fill = TRUE)
+        } else if (!is.null(snv.dt)) {
+            driver.mutations.dt = snv.dt
+        } else {
+            driver.mutations.dt = data.table()
+        }
         fwrite(driver.mutations.dt, driver.mutations.fname)
     } else {
         message("Driver mutations file already exists")
