@@ -18,6 +18,8 @@ if (!exists("opt")){
         make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample (raw kallisto output acceptable)"),
         make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
         make_option(c("--hrd_results"), type = "character", default = NA_character_, help = "The comprehensive HRDetect module results"),
+        make_option(c("--snpeff_snv"), type = "character", default = NA_character_, help = "snpeff snv results"),
+        make_option(c("--snpeff_indel"), type = "character", default = NA_character_, help = "snpeff indel results"),
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
         make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
@@ -29,6 +31,8 @@ if (!exists("opt")){
                     help = "Threshold over ploidy to call deletion"),
         make_option(c("--server"), type = "character", default = "https://mskilab.com/gGraph/", help = "URL of the gGnome.js browser"),
         make_option(c("--tumor_type"), type = "character", default = "", help = "tumor type"),
+        make_option(c("--ref"), type = "character", default = "hg19", help = "one of 'hg19', 'hg38'"),
+        make_option(c("--snpeff_config"), type = "character", default = "~/modules/SnpEff/snpEff.config", help = "snpeff.config file path"),
         make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir")
     )
     parseobj = OptionParser(option_list = option_list)
@@ -95,7 +99,7 @@ if (!opt$knit_only){
 
         tpm.dt = kallisto.preprocess(opt$tpm,
                                      pair = opt$pair,
-                                     gngt.fname = file.path(libdir, "data", "gt.ge.hg19.rds"))
+                                     gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"))
 
         ## check for and process kallisto input
         fwrite(tpm.dt, tpm.fn)
@@ -290,6 +294,95 @@ if (!opt$knit_only){
              width = 1000)
     } else {
         message("Whole genome circos plot already exists")
+    }
+
+    ## ##################
+    ## Driver gene mutations
+    ## ##################
+    driver.mutations.fname = file.path(opt$outdir, "driver.mutations.txt")
+    snv.bcf.fname = file.path(opt$outdir, "snpeff", "snv", "annotated.bcf")
+    indel.bcf.fname = file.path(opt$outdir, "snpeff", "indel", "annotated.bcf")
+    if (opt$overwrite | !file.exists(driver.mutations.fname)) {
+
+        ## ################
+        ## read cgc gene list
+        ## ################
+        
+        cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers),
+                           file.path(opt$libdir, "data", "cancerGeneList.tsv"),
+                           opt$drivers)
+
+        ## ################
+        ## run SnpEff
+        ## ################
+        
+        if ( (!is.null(opt$snpeff_snv)) && file.exists(opt$snpeff_snv)) {
+
+            message("Running SNV SnpEff")
+            snpeff.libdir = normalizePath(file.path(opt$libdir, "SnpEff_module"))
+            snpeff.ref = opt$ref
+            snpeff.vcf = normalizePath(opt$snpeff_snv)
+            snpeff.outdir = normalizePath(file.path(opt$outdir, "snpeff", "snv"))
+            snpeff.config = normalizePath(opt$snpeff_config)
+
+            snpeff.cm = paste("sh", file.path(snpeff.libdir, "run.sh"),
+                              snpeff.libdir,
+                              snpeff.ref,
+                              snpeff.vcf,
+                              snpeff.outdir,
+                              snpeff.config)
+
+            system(snpeff.cm)
+
+            ## grab annotations
+            snv.dt = filter.snpeff(vcf = snv.bcf.fname, ##opt$snpeff_snv,
+                                   gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                   cgc.fname = cgc.fname,
+                                   ref.name = opt$ref,
+                                   verbose = TRUE)            
+        } else {
+            message("SNV vcf does not exist")
+            snv.dt = NULL
+        }
+        if ( (!is.null(opt$snpeff_indel)) && file.exists(opt$snpeff_indel)) {
+
+            message("Running indel SnpEff")
+            snpeff.libdir = file.path(opt$libdir, "SnpEff_module")
+            snpeff.ref = opt$ref
+            snpeff.vcf = opt$snpeff_indel
+            snpeff.outdir = file.path(opt$outdir, "snpeff", "indel")
+            snpeff.config = normalizePath(opt$snpeff_config)
+
+            snpeff.cm = paste("sh", file.path(snpeff.libdir, "run.sh"),
+                              snpeff.libdir,
+                              snpeff.ref,
+                              snpeff.vcf,
+                              snpeff.outdir,
+                              snpeff.config)
+
+            system(snpeff.cm)
+
+            indel.dt = filter.snpeff(vcf = indel.bcf.fname, ## opt$snpeff_indel,
+                                     gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                     cgc.fname = cgc.fname,
+                                     ref.name = opt$ref,
+                                     verbose = TRUE)
+
+        } else {
+            message("indel snv does not exist")
+            indel.dt = NULL
+        }
+
+        if (!is.null(snv.dt) & !is.null(indel.dt)) {
+            driver.mutations.dt = rbind(snv.dt, indel.dt, use.names =  TRUE, fill = TRUE)
+        } else if (!is.null(snv.dt)) {
+            driver.mutations.dt = snv.dt
+        } else {
+            driver.mutations.dt = data.table()
+        }
+        fwrite(driver.mutations.dt, driver.mutations.fname)
+    } else {
+        message("Driver mutations file already exists")
     }
 
     ## ##################
