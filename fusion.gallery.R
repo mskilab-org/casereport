@@ -512,6 +512,9 @@ fusion.table = function(fusions.fname = NULL,
 #' @param ref_bwa (character or RSeqLib::BWA) a path to an RDS containing the RSeqLib::BWA object for the reference genome
 #' @param ref_seq (character or DNAStringSet) DNAStringSet or a path to an RDS containing the Biostrings::DNAStringSet object for the reference genome
 #' @param tumor.bam (character) path to the tumor BAM file. This is only used when show.junction.support == TRUE.
+#' @param titles (charachter or vector of class charachter) titles for the plots. Must be of same length as fs.
+#' @param additional.gt (gTrack) a gTrack object to append when plotting
+#' @param plot.type either 'png' or 'pdf'
 #'
 #' @return gWalk with additional columns plot.fname (input to slickR)
 fusion.plot = function(fs = NULL,
@@ -531,6 +534,8 @@ fusion.plot = function(fs = NULL,
                        ref_bwa = NULL,
                        ref_seq = NULL,
                        tumor.bam = NULL,
+                       titles = NULL,
+                       additional.gt = NULL,
                        plot.type = 'png') {
 
     if (!inherits(cvgt, 'gTrack') & !is.null(cvgt)){
@@ -593,6 +598,9 @@ fusion.plot = function(fs = NULL,
             message('Setting show.junction.support to FALSE since not all required info was provided. See help menu.')
             show.junction.support = FALSE
         }
+    }
+    if (length(titles) > 0 & length(titles) != length(fs)){
+        stop('titles must be a list with the same length as the number of walks in the provided fusions object.')
     }
 
     gngt$xaxis.chronly = TRUE
@@ -702,10 +710,19 @@ fusion.plot = function(fs = NULL,
                                 if (is.null(width)) width = 10
                             }
 
+                            if (length(titles) == 0){
+                                ttl = paste(fs$dt$genes[ix], "|", "walk", fs$dt$walk.id[ix])
+                            } else {
+                                ttl = titles[ix]
+                            }
+
+                            if (!is.null(additional.gt)){
+                                gt = c(additional.gt, gt)
+                            }
                                 plot.fun(plot(gt,
                                      win,
                                      legend.params = list(plot = FALSE)),
-                                     title = paste(fs$dt$genes[ix], "|", "walk", fs$dt$walk.id[ix]),
+                                     title = ttl,
                                      filename = fn,
                                      height = height,
                                      width = width)
