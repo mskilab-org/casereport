@@ -70,11 +70,11 @@ message("Loaded gGraph")
 # `r paste(params$pair, params$tumor_type, sep = ", ")`
 
 This is a `r params$tumor_type` sample. Estimated **purity** is 
-**`r format(jb$purity, digits = 2)`** 
-and **ploidy** is **`r format(jb$ploidy, digits = 2)`**. `r format(round(summary.list$cna_frac * 100, 2), nsmall = 2)` percent of the genome shows copy number alterations (CNA, defined as CN < `r params$del_thresh` or
->= `r params$amp_thresh` times the ploidy). 
+**`r format(jb$purity, digits = 2)`** and **ploidy** is **`r format(jb$ploidy, digits = 2)`**. 
 
-Over the whole genome, the number of somatic SNV/INDEL is `r format(round(summary.list$mut_count, 2), nsmall = 2)`, or **Tumor Mutation Burden (TMB)** of **`r format(round(summary.list$mut_per_mbp, 2), 2)` per Mbp**. The total **junction burden** is **`r length(jj)`**.
+`r format(round(summary.list$cna_frac * 100, 2), nsmall = 2)`% of the genome shows copy number alterations (CNA), defined as CN < `r params$del_thresh` >= `r params$amp_thresh` times the ploidy. 
+
+The number of somatic SNV/INDELs genome-wide is `r format(round(summary.list$mut_count, 2), nsmall = 2)`. The **Tumor Mutation Burden (TMB)** is **`r format(round(summary.list$mut_per_mbp, 2), 2)` per Mbp**. The total **junction burden** is **`r length(jj)`**.
 
 ***
 # Whole genome view {.tabset .tabset-fade .tabset-pills}
