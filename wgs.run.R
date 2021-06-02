@@ -403,6 +403,8 @@ if (!opt$knit_only){
                                            pad = 0.5,
                                            height = 2000,
                                            width = 1000,
+                                           server = opt$server,
+                                           pair = opt$pair,
                                            outdir = opt$outdir)
 
         ## make sure data table is not empty

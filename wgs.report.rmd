@@ -72,9 +72,9 @@ message("Loaded gGraph")
 This is a `r params$tumor_type` sample. Estimated **purity** is 
 **`r format(jb$purity, digits = 2)`** and **ploidy** is **`r format(jb$ploidy, digits = 2)`**. 
 
-`r format(round(summary.list$cna_frac * 100, 2), nsmall = 2)`% of the genome shows copy number alterations (CNA), defined as CN < `r params$del_thresh` >= `r params$amp_thresh` times the ploidy. 
+`r format(round(summary.list$cna_frac * 100, 2), nsmall = 2)`% of the genome shows copy number alterations (CNA), defined as CN at most `r params$del_thresh` times ploidy (deletions) or at least `r params$amp_thresh` times ploidy (amplifications). 
 
-The number of somatic SNV/INDELs genome-wide is `r format(round(summary.list$mut_count, 2), nsmall = 2)`. The **Tumor Mutation Burden (TMB)** is **`r format(round(summary.list$mut_per_mbp, 2), 2)` per Mbp**. The total **junction burden** is **`r length(jj)`**.
+The total number of somatic SNV/INDELs genome-wide is `r format(round(summary.list$mut_count, 0), nsmall = 0)`. The **Tumor Mutation Burden (TMB)** is **`r format(round(summary.list$mut_per_mbp, 2), 2)` per Mbp**. The total **junction burden** is **`r length(jj)`**.
 
 ***
 # Whole genome view {.tabset .tabset-fade .tabset-pills}
@@ -108,7 +108,7 @@ DT::datatable(driver.genes.cnv, options = list(scrollX = TRUE))
 
 ## Gallery {.tabset .tabset-fade .tabset-pills}
 
-```{r cn-tabset, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+```{r cn-tabset, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
 cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
 if (nrow(cn.gallery.dt) > 0) {
     cat("\n")
@@ -139,7 +139,7 @@ if (nrow(cn.gallery.dt) > 0) {
 ## Known fusions
 Fusions in which at least one involved gene is an oncogene or tumor suppressor.
 
-```{r, driver-fusions-table, results = "asis", out.width= "100%"}
+```{r, driver-fusions-table, results = "asis", out.width= "100%", max.height = 800}
 driver.fusions.fname = file.path(params$outdir, "fusions.driver.txt")
 if (file.exists(driver.fusions.fname)) {
    driver.fusions.dt = fread(driver.fusions.fname)
@@ -160,9 +160,13 @@ if (nrow(fusions.gallery.dt) > 0) {
         cat("###", paste0(g, "<br>","\n"))
 	cat(
 		paste0('<p>',
+			'<a href="',
+			fusions.gallery.dt[genes == g, plot.link],
+			'">',
 			'<img src="',
 			fusions.gallery.dt[genes == g, plot.fname],
 			'" width="75%" />',
+			'</a>',
 			'</p>'
 		)
 	)
@@ -190,7 +194,7 @@ if (file.exists(other.fusions.fname)) {
 if (file.exists(other.fusions.fname)) {
    other.fusions.dt = fread(other.fusions.fname)
    if (nrow(other.fusions.dt) > 0) {
-      slick_up = slickR(obj = other.fusions.dt$plot.fname, height = 800, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+      slick_up = slickR(obj = other.fusions.dt$plot.fname, height = 800, width = "95%", objLinks = other.fusions.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
 slick_up
 	}
 }
@@ -220,7 +224,7 @@ if (file.exists(waterfall.fn)) {
 
 ## Gallery {.tabset .tabset-fade .tabset-pills}
 
-```{r expression, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+```{r expression, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
 if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
     cool.exp = readRDS(paste0(params$outdir, "/cool.expr.rds"))
     expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
@@ -300,7 +304,7 @@ if (file.exists(paste0(params$outdir, "/sig.composition.png"))) {
 cat ("\n<br>\n")
 ```
 
-```{r, HRDetect, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+```{r, HRDetect, results = "asis", echo = FALSE, out.width="100%", fig.align = "center", max.height = 800}
 if (file.exists(paste0(params$outdir, "/hrdetect.rds"))){
     cat("# HRDetect prediction (homologous recombination deficiency)\n")
     cat("Applying the [HRDetect](https://doi.org/10.1038/nm.4292) model, we
