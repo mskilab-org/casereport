@@ -534,8 +534,6 @@ fusion.plot = function(fs = NULL,
     this.complex = readRDS(complex.fname)
     
     this.complex.gt = this.complex$gt
-    gg.max.cn = max(this.complex$nodes$dt$cn, na.rm = TRUE)
-    y1 = ceiling(gg.max.cn / 10) * 10
 
     ## format gTracks
     cvgt$ylab = "CN"
@@ -543,14 +541,12 @@ fusion.plot = function(fs = NULL,
     cvgt$yaxis.pretty = 3
     cvgt$xaxis.chronly = TRUE
     cvgt$y0 = 0
-    cvgt$y1 = y1
 
     this.complex.gt$ylab = "CN"
     this.complex.gt$name = "JaBbA"
     this.complex.gt$yaxis.pretty = 3
     this.complex.gt$chronly = TRUE
     this.complex.gt$y0 = 0
-    this.complex.gt$y1 = y1
 
     gngt$xaxis.chronly = TRUE
     gngt$name = "genes"
@@ -563,7 +559,7 @@ fusion.plot = function(fs = NULL,
             agt$yaxis.pretty = 3
             agt$xaxis.chronly = TRUE
             agt$y0 = 0
-            agt$y1 = y1
+
         } else {
             agt = NULL
         }
