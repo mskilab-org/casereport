@@ -427,7 +427,7 @@ fusion.table = function(fusions.fname = NULL,
     }
 
     ## Cancer Gene Census genes
-    cgc.gene.symbols = fread(cgc.fname)[["Gene Symbol"]]
+    cgc.gene.symbols = fread(cgc.fname)[Tier == 1, ][["Gene Symbol"]]
 
     ## annotate genes if they are in cgc
     cgc.dt = rbindlist(
