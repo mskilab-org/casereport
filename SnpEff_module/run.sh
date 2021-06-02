@@ -12,6 +12,7 @@
     REF=$2
     VCF=$3
     OUTDIR=$4
+    CONFIG=$5
 
     echo "Input VCF: $3"
 
@@ -36,7 +37,8 @@
     annvcf=$OUTDIR/annotated.vcf
     annbcf=$OUTDIR/annotated.bcf
 
-    cmd="java -Xmx4g -XX:ParallelGCThreads=1 -jar $LIBDIR/snpEff.jar -c $LIBDIR/snpEff.config  -v $REF input.vcf > $annvcf"
+    #cmd="java -Xmx4g -XX:ParallelGCThreads=1 -jar $LIBDIR/snpEff.jar -c $LIBDIR/snpEff.config  -v $REF input.vcf > $annvcf"
+    cmd="java -Xmx4g -XX:ParallelGCThreads=1 -jar $LIBDIR/snpEff.jar -c $CONFIG  -v $REF input.vcf > $annvcf"
     if { [ ! -e $annvcf ] &&
 	     echo "$(date) Running $(echo $cmd)" &&
 	     eval $cmd; }; then

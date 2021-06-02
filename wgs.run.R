@@ -32,6 +32,7 @@ if (!exists("opt")){
         make_option(c("--server"), type = "character", default = "https://mskilab.com/gGraph/", help = "URL of the gGnome.js browser"),
         make_option(c("--tumor_type"), type = "character", default = "", help = "tumor type"),
         make_option(c("--ref"), type = "character", default = "hg19", help = "one of 'hg19', 'hg38'"),
+        make_option(c("--snpeff_config"), type = "character", default = "~/modules/SnpEff/snpEff.config", help = "snpeff.config file path"),
         make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir")
     )
     parseobj = OptionParser(option_list = option_list)
@@ -318,16 +319,18 @@ if (!opt$knit_only){
         if ( (!is.null(opt$snpeff_snv)) && file.exists(opt$snpeff_snv)) {
 
             message("Running SNV SnpEff")
-            snpeff.libdir = file.path(opt$libdir, "SnpEff_module")
+            snpeff.libdir = normalizePath(file.path(opt$libdir, "SnpEff_module"))
             snpeff.ref = opt$ref
-            snpeff.vcf = opt$snpeff_snv
-            snpeff.outdir = file.path(opt$outdir, "snpeff", "snv")
+            snpeff.vcf = normalizePath(opt$snpeff_snv)
+            snpeff.outdir = normalizePath(file.path(opt$outdir, "snpeff", "snv"))
+            snpeff.config = normalizePath(opt$snpeff_config)
 
             snpeff.cm = paste("sh", file.path(snpeff.libdir, "run.sh"),
                               snpeff.libdir,
                               snpeff.ref,
                               snpeff.vcf,
-                              snpeff.outdir)
+                              snpeff.outdir,
+                              snpeff.config)
 
             system(snpeff.cm)
 
@@ -339,6 +342,7 @@ if (!opt$knit_only){
                                    verbose = TRUE)            
         } else {
             message("SNV vcf does not exist")
+            snv.dt = NULL
         }
         if ( (!is.null(opt$snpeff_indel)) && file.exists(opt$snpeff_indel)) {
 
@@ -347,12 +351,14 @@ if (!opt$knit_only){
             snpeff.ref = opt$ref
             snpeff.vcf = opt$snpeff_indel
             snpeff.outdir = file.path(opt$outdir, "snpeff", "indel")
+            snpeff.config = normalizePath(opt$snpeff_config)
 
             snpeff.cm = paste("sh", file.path(snpeff.libdir, "run.sh"),
                               snpeff.libdir,
                               snpeff.ref,
                               snpeff.vcf,
-                              snpeff.outdir)
+                              snpeff.outdir,
+                              snpeff.config)
 
             system(snpeff.cm)
 
@@ -364,6 +370,7 @@ if (!opt$knit_only){
 
         } else {
             message("indel snv does not exist")
+            indel.dt = NULL
         }
 
         if (!is.null(snv.dt) & !is.null(indel.dt)) {
