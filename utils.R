@@ -1540,3 +1540,180 @@ create.summary = function(jabba_rds,
 
     return(out)
 }
+
+#' @name grab.hets
+#' @title grab.hets
+#'
+#' @description
+#'
+#' returns allele gtrack given sites.txt from het pileup
+#'
+#' @param agt.fname (character) path to sites.txt
+#' @param min.frac (numeric) between 0 and 1, min frequency in normal to count as het site
+#' @param max.frac (numeric) between 0 and 1, max frequency in normal to count as het site
+#' 
+#' @return allele gTrack
+grab.hets = function(agt.fname = NULL,
+                     min.frac = 0.2,
+                     max.frac = 0.8)
+{
+    if (is.null(agt.fname) || !file.exists(agt.fname)) {
+        stop("agt.fname does not exist")
+    }
+
+    ## prepare and filter
+    agt.dt = fread(agt.fname)[alt.frac.n > min.frac & alt.frac.n < max.frac,]
+    ## add major and minor
+    agt.dt[, which.major := ifelse(alt.count.t > ref.count.t, "alt", "ref")]
+    agt.dt[, major.count := ifelse(which.major == "alt", alt.count.t, ref.count.t)]
+    agt.dt[, minor.count := ifelse(which.major == "alt", ref.count.t, alt.count.t)]
+
+    ## melt the data frame
+    agt.melted = rbind(agt.dt[, .(seqnames, start, end, count = major.count, allele = "major")],
+                       agt.dt[, .(seqnames, start, end, count = minor.count, allele = "minor")]
+                       )
+
+    ## make GRanges
+    agt.gr = dt2gr(agt.melted[, .(seqnames, start, end, count, allele)])
+
+    return (agt.gr)
+}
+
+
+#' @name pp_plot
+#' @title pp_plot
+#'
+#' @details
+#'
+#' create histogram of estimated copy number given purity and ploidy
+#'
+#' @param jabba_rds (character) JaBbA output
+#' @param cov.fname (character) path to coverage GRanges (supply if allele = FALSE)
+#' @param hets.fname (character) path to sites.txt (supply if allele = TRUE)
+#' @param allele (logical) allelic CN? default FALSE
+#' @param field (character) default ratio if allele is FALSE and count if allele is TRUE
+#' @param plot.min (numeric) minimum CN default -2
+#' @param plot.max (numeric) max CN (factor times ploidy) default 2
+#' @param bins (numeric) number of histogram bins default 500
+#' @param height (numeric) plot height
+#' @param width (numeric) plot width
+#' @param output.fname (character) path of output directory
+#' @param verbose (logical)
+#'
+#' @return output.fname
+pp_plot = function(jabba_rds = NULL,
+                   cov.fname = NULL,
+                   hets.fname = NULL,
+                   allele = FALSE,
+                   field = NULL,
+                   plot.min = -2,
+                   plot.max = 2,
+                   bins = 500,
+                   height = 800,
+                   width = 800,
+                   output.fname = "./plot.png",
+                   verbose = FALSE) {
+
+    if (is.null(jabba_rds) || !file.exists(jabba_rds)) {
+        stop("jabba_rds does not exist")
+    }
+    jab = readRDS(jabba_rds)
+    if (!allele) {
+        if (is.null(cov.fname) || !file.exists(cov.fname)) {
+            stop("cov.fname not supplied and allele = TRUE")
+        }
+        if (!grepl(pattern = "rds", x = cov.fname)) {
+            stop("cov.fname must be .rds file containing GRanges object")
+        }
+        cov = readRDS(cov.fname)
+        if (!inherits(cov, "GRanges")) {
+            stop("cov is not GRanges")
+        }
+        if (length(cov) == 0) {
+            stop("empty GRanges")
+        }
+        if (is.null(field)) {
+            field = "ratio"
+        }
+        if (!(field %in% names(values(cov)))) {
+            stop("cov missing required field")
+        }
+        if (verbose) {
+            message("Grabbing coverage and converting rel2abs")
+        }
+        cov$cn = rel2abs(cov, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = FALSE)
+        eqn = rel2abs(cov, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = FALSE, return.params = TRUE)
+        dt = as.data.table(cov)
+    } else {
+        if (is.null(hets.fname) || !file.exists(hets.fname)) {
+            stop("hets.fname not supplied")
+        }
+        hets = grab.hets(hets.fname)
+        if (is.null(field)) {
+            field = "count"
+        }
+        if (!field %in% names(values(hets))) {
+            stop("hets missing required field")
+        }
+        if (verbose) {
+            message("Grabbing hets and converting rel2abs")
+        }
+        hets$cn = rel2abs(hets, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = TRUE)
+        eqn = rel2abs(hets, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = TRUE, return.params = TRUE)
+        dt = as.data.table(hets)
+    }
+
+    maxval = plot.max * jab$ploidy # max dosage
+    minval = plot.min ## min dosage
+
+    ## remove things with weird ploidy
+    dt = dt[cn < maxval & cn > minval & grepl("[0-9]", seqnames)==TRUE]
+
+    if (verbose) {
+        message("Making histogram for ", nrow(dt), " points")
+    }
+
+    if (!allele) {
+
+        pt = ggplot(dt, aes(x = cn)) +
+            geom_histogram(fill = "gray", bins = bins, alpha = 0.8) +
+            scale_x_continuous(breaks = 0:floor(maxval),
+                               labels = 0:floor(maxval) %>% as.character,
+                               sec.axis = sec_axis(trans = ~(. - eqn["intercept"])/eqn["slope"],
+                                                   name = field)) +
+            geom_vline(xintercept = 0:floor(maxval), color = "red", linetype = "longdash") +
+            labs(x = "Estimated CN", y = "count") +
+            theme_bw() +
+            theme(legend.position = "none",
+                  axis.title = element_text(size = 20, family = "sans"),
+                  axis.text.x = element_text(size = 20, family = "sans"),
+                  axis.text.y = element_text(size = 14, family = "sans"))
+
+    } else {
+
+        pt = ggplot(dt, aes(x = cn)) +
+            geom_histogram(fill = "gray", bins = bins, alpha = 0.8) +
+            scale_x_continuous(breaks = 0:floor(maxval),
+                               labels = 0:floor(maxval) %>% as.character,
+                               sec.axis = sec_axis(trans = ~(. - eqn["intercept"])/eqn["slope"],
+                                                   name = field)) +
+            geom_vline(xintercept = 0:floor(maxval), color = "red", linetype = "longdash") +
+            labs(x = "Estimated CN", y = "count") +
+            facet_grid(row = vars(allele)) +
+            theme_bw() +
+            theme(legend.position = "none",
+                  axis.title = element_text(size = 20, family = "sans"),
+                  axis.text.x = element_text(size = 20, family = "sans"),
+                  axis.text.y = element_text(size = 14, family = "sans"),
+                  strip.text.y = element_text(size = 20, family = "sans"))
+
+    }
+
+    if (verbose) {
+        message("Saving results to: ", normalizePath(output.fname))
+    }
+    
+    ppng(print(pt), filename = normalizePath(output.fname), height = height, width = width)
+
+    return(output.fname)
+}

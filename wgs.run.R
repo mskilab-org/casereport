@@ -91,6 +91,48 @@ if (!opt$knit_only){
         }
     }
 
+    ###################
+    ## purity/ploidy QC plots
+    ##
+    ###################
+    cn.plot.fname = normalizePath(file.path(opt$outdir, "cn.pp.png"))
+    allele.plot.fname = normalizePath(file.path(opt$outdir, "allele.pp.png"))
+    if (!file.exists(cn.plot.fname) || opt$overwrite) {
+        message("generating total CN purity/ploidy plots")
+        pp_plot(jabba_rds = opt$jabba_rds,
+                cov.fname = opt$cbs_cov_rds,
+                hets.fname = opt$het_pileups_wgs,
+                allele = FALSE,
+                field = "ratio",
+                plot.min = -2,
+                plot.max = 2,
+                bins = 500,
+                height = 800,
+                width = 800,
+                output.fname = cn.plot.fname,
+                verbose = TRUE)
+    } else {
+        message("total CN purity/ploidy plot exists!")
+    }
+    if (!file.exists(allele.plot.fname) || opt$overwrite) {
+        message("generating allele CN purity/ploidy plots")
+        pp_plot(jabba_rds = opt$jabba_rds,
+                cov.fname = opt$cbs_cov_rds,
+                hets.fname = opt$het_pileups_wgs,
+                allele = TRUE,
+                field = "count",
+                plot.min = -2,
+                plot.max = 2,
+                bins = 500,
+                height = 800,
+                width = 800,
+                output.fname = allele.plot.fname,
+                verbose = TRUE)
+    } else {
+        message("allele CN purity/ploidy plot exists!")
+    }
+    
+
     message("Checking for RNA expression input")
     if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {
 
@@ -707,31 +749,13 @@ if (!opt$knit_only){
                       axis.text.x = element_text(size = 15, family = "sans"),
                       axis.text.y = element_text(size = 20, family = "sans"))
 
-            ## theme(
-            ##     text = element_text(size = 32),
-            ##     axis.text.x
-            ##     legend.position = "none"
-            ##     ## axis.text.x = element_text(angle = 45, hjust = 1)
-            ## )
-
-            ppng(print(sigbar), filename = paste0(opt$outdir, "/sig.composition.png"), height = 800, width = 800)
+            ppng(print(sigbar),
+                 filename = paste0(opt$outdir, "/sig.composition.png"),
+                 height = 800, width = 800)
             
             
         } else {
             message("signature compsition plot already exists")
-            ## png(filename = "sig.composition.png", width = 800, height= 1200)
-            ## individual sample compositions
-            ## sct[, Signature := forcats::fct_reorder(Signature, sig_count)]
-            ## sigbar = ggplot(
-            ##     sct[order(sig_count)],
-            ##     aes(x = Signature, y = sig_count)) +
-            ##     geom_bar(stat = "identity") +
-            ##     theme_minimal() +
-            ##     theme(text = element_text(size = 32),
-            ##           axis.text.x = element_text(angle = 45, hjust = 1)) +
-            ##     coord_flip()
-            ## print(sigbar)
-            ## dev.off()
         }
     } else {
         message("deconstruct sigs not supplied")
