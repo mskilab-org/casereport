@@ -1595,6 +1595,7 @@ grab.hets = function(agt.fname = NULL,
 #' @param plot.min (numeric) minimum CN default -2
 #' @param plot.max (numeric) max CN (factor times ploidy) default 2
 #' @param bins (numeric) number of histogram bins default 500
+#' @param scatter (logical) default FALSE
 #' @param height (numeric) plot height
 #' @param width (numeric) plot width
 #' @param output.fname (character) path of output directory
@@ -1608,6 +1609,7 @@ pp_plot = function(jabba_rds = NULL,
                    field = NULL,
                    plot.min = -2,
                    plot.max = 2,
+                   scatter = FALSE,
                    bins = 500,
                    height = 800,
                    width = 800,
@@ -1642,8 +1644,22 @@ pp_plot = function(jabba_rds = NULL,
             message("Grabbing coverage and converting rel2abs")
         }
         cov$cn = rel2abs(cov, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = FALSE)
+        ## get mean CN over JaBbA segments
+        if (verbose) {
+            message("computing mean over jabba segments")
+        }
+        segs = gr.stripstrand(jab$segstats %Q% (strand(jab$segstats)=="+"))[, c()]
+        segs = gr.val(segs, cov[, "cn"], val = "cn", mean = TRUE, na.rm = TRUE)
+        if (verbose) {
+            message("tiling")
+        }
+        tiles = gr.tile(gr = segs, width = 1e4)
+        tiles = gr.val(tiles, segs[, "cn"], val = "cn", mean = TRUE, na.rm = TRUE)
+        if (verbose) {
+            message("Grabbing transformation slope and intercept")
+        }
         eqn = rel2abs(cov, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = FALSE, return.params = TRUE)
-        dt = as.data.table(cov)
+        dt = as.data.table(tiles)
     } else {
         if (is.null(hets.fname) || !file.exists(hets.fname)) {
             stop("hets.fname not supplied")
@@ -1660,7 +1676,20 @@ pp_plot = function(jabba_rds = NULL,
         }
         hets$cn = rel2abs(hets, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = TRUE)
         eqn = rel2abs(hets, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = TRUE, return.params = TRUE)
-        dt = as.data.table(hets)
+        if (verbose) {
+            message("computing mean over jabba segments")
+        }
+        segs = gr.stripstrand(jab$segstats %Q% (strand(jab$segstats)=="+"))[, c()]
+        major.segs = gr.val(segs, hets %Q% (allele == "major"), val = "cn", mean = TRUE, na.rm = TRUE)
+        minor.segs = gr.val(segs, hets %Q% (allele == "minor"), val = "cn", mean = TRUE, na.rm = TRUE)
+        if (verbose) {
+            message("Tiling")
+        }
+        tiles = gr.tile(gr = segs, width = 1e4)
+        major.tiles = gr.val(tiles, major.segs, val = "cn", mean = TRUE, na.rm = TRUE)
+        minor.tiles = gr.val(tiles, minor.segs, val = "cn", mean = TRUE, na.rm = TRUE)
+        dt = rbind(as.data.table(major.tiles)[, .(seqnames, start, end, allele = "major", cn)],
+                   as.data.table(minor.tiles)[, .(seqnames, start, end, allele = "minor", cn)])
     }
 
     maxval = plot.max * jab$ploidy # max dosage
@@ -1670,9 +1699,9 @@ pp_plot = function(jabba_rds = NULL,
     dt = dt[cn < maxval & cn > minval & grepl("[0-9]", seqnames)==TRUE]
 
     if (verbose) {
-        message("Making histogram for ", nrow(dt), " points")
+        message("Making plot for ", nrow(dt), " points")
     }
-
+    
     if (!allele) {
 
         pt = ggplot(dt, aes(x = cn)) +
@@ -1691,21 +1720,49 @@ pp_plot = function(jabba_rds = NULL,
 
     } else {
 
-        pt = ggplot(dt, aes(x = cn)) +
-            geom_histogram(fill = "gray", bins = bins, alpha = 0.8) +
-            scale_x_continuous(breaks = 0:floor(maxval),
-                               labels = 0:floor(maxval) %>% as.character,
-                               sec.axis = sec_axis(trans = ~(. - eqn["intercept"])/eqn["slope"],
-                                                   name = field)) +
-            geom_vline(xintercept = 0:floor(maxval), color = "red", linetype = "longdash") +
-            labs(x = "Estimated CN", y = "count") +
-            facet_grid(row = vars(allele)) +
-            theme_bw() +
-            theme(legend.position = "none",
-                  axis.title = element_text(size = 20, family = "sans"),
-                  axis.text.x = element_text(size = 20, family = "sans"),
-                  axis.text.y = element_text(size = 14, family = "sans"),
-                  strip.text.y = element_text(size = 20, family = "sans"))
+        if (scatter) {
+
+            dt = cbind(as.data.table(major.tiles)[, .(seqnames, start, end, major.cn = cn)],
+                       as.data.table(minor.tiles)[, .(minor.cn = cn)])
+            dt = dt[major.cn < maxval & minor.cn < maxval &
+                    major.cn > minval & minor.cn > minval &
+                    grepl("[0-9]", seqnames)==TRUE,]
+
+            pt = ggplot(dt, aes(x = major.cn, y = minor.cn)) +
+                geom_point(size = 2, alpha = 0.1, color = "gray") +
+                scale_x_continuous(breaks = 0:floor(maxval),
+                                   labels = 0:floor(maxval) %>% as.character,
+                                   sec.axis = sec_axis(trans = ~(. - eqn["intercept"])/eqn["slope"],
+                                                       name = paste("Major", field))) +
+                scale_y_continuous(breaks = 0:floor(maxval),
+                                   labels = 0:floor(maxval) %>% as.character,
+                                   sec.axis = sec_axis(trans = ~(. - eqn["intercept"])/eqn["slope"],
+                                                       name = paste("Major", field))) +
+                labs(x = "Major CN", y = "Minor CN") +
+                theme_bw() +
+                theme(legend.position = "none",
+                      axis.title = element_text(size = 20, family = "sans"),
+                      axis.text.x = element_text(size = 20, family = "sans"),
+                      axis.text.y = element_text(size = 14, family = "sans"))
+            
+        } else {
+
+            pt = ggplot(dt, aes(x = cn)) +
+                geom_histogram(fill = "gray", bins = bins, alpha = 0.8) +
+                scale_x_continuous(breaks = 0:floor(maxval),
+                                   labels = 0:floor(maxval) %>% as.character,
+                                   sec.axis = sec_axis(trans = ~(. - eqn["intercept"])/eqn["slope"],
+                                                       name = field)) +
+                geom_vline(xintercept = 0:floor(maxval), color = "red", linetype = "longdash") +
+                labs(x = "Estimated CN", y = "count") +
+                facet_grid(row = vars(allele)) +
+                theme_bw() +
+                theme(legend.position = "none",
+                      axis.title = element_text(size = 20, family = "sans"),
+                      axis.text.x = element_text(size = 20, family = "sans"),
+                      axis.text.y = element_text(size = 14, family = "sans"),
+                      strip.text.y = element_text(size = 20, family = "sans"))
+        }
 
     }
 
