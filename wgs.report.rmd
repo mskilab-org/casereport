@@ -407,14 +407,15 @@ There are xx high quality loose ends in this sample.
 
 ## Total CN
 
-```{r, total-cn, results = "asis", out.width = "100%", fig.align = "center"}
+```{r, total-cn, results = "asis", out.width = "45%", fig.align = "center"}
 knitr::include_graphics(file.path(params$outdir, "cn.pp.png"))
 ```
 
 ## Allelic CN
 
-```{r, allelic-cn, results = "asis", out.width = "45", fig.show = "hold", fig.align = "center"}
-knitr::include_graphics(c(file.path(params$outdir, "allele.scatter.png"), file.path(params$outdir, "allele.pp.png")))
+```{r, allelic-cn, echo = FALSE, out.width = "45%", out.height = "45%", fig.show = "hold", fig.align = "center"}
+knitr::include_graphics(c(file.path(params$outdir, "allele.scatter.png"), 
+						   file.path(params$outdir, "allele.pp.png")))
 ```
 
 ***

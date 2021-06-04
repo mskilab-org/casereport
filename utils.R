@@ -1737,7 +1737,7 @@ pp_plot = function(jabba_rds = NULL,
                 scale_y_continuous(breaks = 0:floor(maxval),
                                    labels = 0:floor(maxval) %>% as.character,
                                    sec.axis = sec_axis(trans = ~(. - eqn["intercept"])/eqn["slope"],
-                                                       name = paste("Major", field))) +
+                                                       name = paste("Minor", field))) +
                 labs(x = "Major CN", y = "Minor CN") +
                 theme_bw() +
                 theme(legend.position = "none",
