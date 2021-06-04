@@ -336,6 +336,8 @@ wgs.circos = function(junctions = jJ(),
 #' @param pad (numeric)
 #' @param height (numeric)
 #' @param width (numeric)
+#' @param server (character)
+#' @param pair (character)
 #' @param outdir (character)
 #'
 #' @return data.table
@@ -350,6 +352,8 @@ fusion.wrapper = function(fusions.fname = NULL,
                                        "chromothripsis", "tyfonas", "rigma", "pyrgo", "cpxdm"),
                           height = 1000,
                           width = 1000,
+                          server = "",
+                          pair = "",
                           pad = 1e5,
                           outdir = "./") {
 
@@ -366,6 +370,8 @@ fusion.wrapper = function(fusions.fname = NULL,
                                    pad = pad,
                                    height = height,
                                    width = width,
+                                   server = server,
+                                   pair = pair,
                                    outdir = outdir)
 
     return (filtered.fusions$dt)
@@ -503,6 +509,8 @@ fusion.table = function(fusions.fname = NULL,
 #' @param pad (numeric) gWalk pad for plotting default 1e5
 #' @param height (numeric) plot height default 1e3
 #' @param width (numeric) plot width default 1e3
+#' @param server (character) server url
+#' @param pair (character) pair id
 #' @param outdir (character) output directory
 #'
 #' @return gWalk with additional columns plot.fname (input to slickR)
@@ -514,6 +522,8 @@ fusion.plot = function(fs = NULL,
                        pad = 1e5,
                        height = 1e3,
                        width = 1e3,
+                       server = "",
+                       pair = "",
                        outdir = "./") {
 
     if (!file.exists(cvgt.fname)) {
@@ -534,8 +544,6 @@ fusion.plot = function(fs = NULL,
     this.complex = readRDS(complex.fname)
     
     this.complex.gt = this.complex$gt
-    gg.max.cn = max(this.complex$nodes$dt$cn, na.rm = TRUE)
-    y1 = ceiling(gg.max.cn / 10) * 10
 
     ## format gTracks
     cvgt$ylab = "CN"
@@ -543,14 +551,12 @@ fusion.plot = function(fs = NULL,
     cvgt$yaxis.pretty = 3
     cvgt$xaxis.chronly = TRUE
     cvgt$y0 = 0
-    cvgt$y1 = y1
 
     this.complex.gt$ylab = "CN"
     this.complex.gt$name = "JaBbA"
     this.complex.gt$yaxis.pretty = 3
     this.complex.gt$chronly = TRUE
     this.complex.gt$y0 = 0
-    this.complex.gt$y1 = y1
 
     gngt$xaxis.chronly = TRUE
     gngt$name = "genes"
@@ -563,7 +569,7 @@ fusion.plot = function(fs = NULL,
             agt$yaxis.pretty = 3
             agt$xaxis.chronly = TRUE
             agt$y0 = 0
-            agt$y1 = y1
+
         } else {
             agt = NULL
         }
@@ -571,45 +577,59 @@ fusion.plot = function(fs = NULL,
         agt = NULL
     }
 
-    plot.fnames = sapply(seq_along(fs),
-                         function (ix) {
-                             fn = file.path(outdir, "fusions", paste0("walk", fs$dt$walk.id[ix], ".png"))
-                             fs.gt = fs[ix]$gt
+    plot.dt = lapply(seq_along(fs),
+                     function (ix) {
+                         fn = file.path(outdir, "fusions", paste0("walk", fs$dt$walk.id[ix], ".png"))
+                         fs.gt = fs[ix]$gt
 
-                             ## formatting
-                             fs.gt$name = "gWalk"
-                             fs.gt$labels.suppress = TRUE
-                             fs.gt$labels.suppress.grl = TRUE
-                             fs.gt$xaxis.chronly = TRUE
+                         ## formatting
+                         fs.gt$name = "gWalk"
+                         fs.gt$labels.suppress = TRUE
+                         fs.gt$labels.suppress.grl = TRUE
+                         fs.gt$xaxis.chronly = TRUE
 
-                             if (is.null(agt)) {
-                                 gt = c(gngt, cvgt, this.complex.gt, fs.gt)
-                             } else {
-                                 gt = c(gngt, agt, cvgt, this.complex.gt, fs.gt)
-                             }
-                             gt$xaxis.chronly = TRUE
+                         if (is.null(agt)) {
+                             gt = c(gngt, cvgt, this.complex.gt, fs.gt)
+                         } else {
+                             gt = c(gngt, agt, cvgt, this.complex.gt, fs.gt)
+                         }
+                         gt$xaxis.chronly = TRUE
 
-                             ## format window
-                             win = fs[ix]$footprint
+                         ## format window
+                         win = fs[ix]$footprint
 
-                             if (pad > 0 & pad <= 1) {
-                                 adjust = pmax(1e5, pad * width(win))
-                                 win = GenomicRanges::trim(win + adjust)
-                             } else {
-                                 win = GenomicRanges::trim(win + pad)
-                             }
+                         ## grab plot link
+                         plot.link = paste0(server, "index.html?file=", pair, ".json&location=",
+                                            gr.string(win), "&view=")
 
-                             ppng(plot(gt,
-                                       win,
-                                       legend.params = list(plot = FALSE)),
-                                  title = paste(fs$dt$genes[ix], "|", "walk", fs$dt$walk.id[ix]),
-                                  filename = fn,
-                                  height = height,
-                                  width = width)
-                             return(fn)
-                         })
+                         if (pad > 0 & pad <= 1) {
+                             adjust = pmax(1e5, pad * width(win))
+                             win = GenomicRanges::trim(win + adjust)
+                         } else {
+                             win = GenomicRanges::trim(win + pad)
+                         }
 
-    fs$set(plot.fname = plot.fnames)
+                         ppng(plot(gt,
+                                   win,
+                                   legend.params = list(plot = FALSE)),
+                              title = paste(fs$dt$genes[ix], "|", "walk", fs$dt$walk.id[ix]),
+                              filename = fn,
+                              height = height,
+                              width = width)
+
+                         out.dt = data.table(
+                             id = ix,
+                             plot.fname = fn,
+                             plot.link = plot.link)
+                         
+                         return(out.dt)
+                     }) %>% rbindlist(use.names = TRUE)
+
+    plot.dt = unique(plot.dt, by = "id")
+
+    ## set plot link and file name as metadata in gWalk
+    fs$set(plot.fname = plot.dt$plot.fname, plot.link = plot.dt$plot.link)
+    
     return(fs)
 }
 

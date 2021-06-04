@@ -62,21 +62,19 @@ gg = readRDS(paste0(params$outdir, "/complex.rds"))
 jb = readRDS(params$jabba_rds)
 cvgt = readRDS(paste0(params$outdir, "/coverage.gtrack.rds"))
 jj = gg$junctions[type=="ALT"]
+summary.list = readRDS(normalizePath(file.path(params$outdir, "summary.rds")))
 message("Loaded gGraph")
 ```
 
 ***
 # `r paste(params$pair, params$tumor_type, sep = ", ")`
 
-This is a `r params$tumor_type` sample. Average read depth for the tumor
-sample is xx. Estimated purity is 
-`r format(jb$purity, digits = 2)` 
-and ploidy `r format(jb$ploidy, digits = 2)`. This sample has likely
-undergone whole genome doubling (WGD) xx time(s). xx percent of the
-genome shows copy number alterations (CNA, defined as CN < `r params$del_thresh` or
->= `r params$amp_thresh` times the ploidy). 
+This is a `r params$tumor_type` sample. Estimated **purity** is 
+**`r format(jb$purity, digits = 2)`** and **ploidy** is **`r format(jb$ploidy, digits = 2)`**. 
 
-Over the whole genome, the number of somatic SNV/INDEL is xx, or Tumor Mutation Burden (TMB) of xx per Mbp. The total junction burden is `r length(jj)`.
+`r format(round(summary.list$cna_frac * 100, 2), nsmall = 2)`% of the genome shows copy number alterations (CNA), defined as CN at most `r params$del_thresh` times ploidy (deletions) or at least `r params$amp_thresh` times ploidy (amplifications). 
+
+The total number of somatic SNV/INDELs genome-wide is `r format(round(summary.list$mut_count, 0), nsmall = 0)`. The **Tumor Mutation Burden (TMB)** is **`r format(round(summary.list$mut_per_mbp, 2), 2)` per Mbp**. The total **junction burden** is **`r length(jj)`**.
 
 ***
 # Whole genome view {.tabset .tabset-fade .tabset-pills}
@@ -110,7 +108,7 @@ DT::datatable(driver.genes.cnv, options = list(scrollX = TRUE))
 
 ## Gallery {.tabset .tabset-fade .tabset-pills}
 
-```{r cn-tabset, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+```{r cn-tabset, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
 cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
 if (nrow(cn.gallery.dt) > 0) {
     cat("\n")
@@ -141,7 +139,7 @@ if (nrow(cn.gallery.dt) > 0) {
 ## Known fusions
 Fusions in which at least one involved gene is an oncogene or tumor suppressor.
 
-```{r, driver-fusions-table, results = "asis", out.width= "100%"}
+```{r, driver-fusions-table, results = "asis", out.width= "100%", max.height = 800}
 driver.fusions.fname = file.path(params$outdir, "fusions.driver.txt")
 if (file.exists(driver.fusions.fname)) {
    driver.fusions.dt = fread(driver.fusions.fname)
@@ -162,9 +160,13 @@ if (nrow(fusions.gallery.dt) > 0) {
         cat("###", paste0(g, "<br>","\n"))
 	cat(
 		paste0('<p>',
+			'<a href="',
+			fusions.gallery.dt[genes == g, plot.link],
+			'">',
 			'<img src="',
 			fusions.gallery.dt[genes == g, plot.fname],
 			'" width="75%" />',
+			'</a>',
 			'</p>'
 		)
 	)
@@ -192,7 +194,7 @@ if (file.exists(other.fusions.fname)) {
 if (file.exists(other.fusions.fname)) {
    other.fusions.dt = fread(other.fusions.fname)
    if (nrow(other.fusions.dt) > 0) {
-      slick_up = slickR(obj = other.fusions.dt$plot.fname, height = 500, width = "95%") + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+      slick_up = slickR(obj = other.fusions.dt$plot.fname, height = 800, width = "95%", objLinks = other.fusions.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
 slick_up
 	}
 }
@@ -222,7 +224,7 @@ if (file.exists(waterfall.fn)) {
 
 ## Gallery {.tabset .tabset-fade .tabset-pills}
 
-```{r expression, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+```{r expression, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
 if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
     cool.exp = readRDS(paste0(params$outdir, "/cool.expr.rds"))
     expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
@@ -230,11 +232,6 @@ if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
     for (g in cool.exp[order(qt, decreasing = T), gene]){
         cat("\n")
         cat("###", cool.exp[g, paste0(gene, " (", direction, ")", "<br>", "\n")])
-        ## this.png = try(readPNG(file.path(
-        ##     params$outdir, cool.exp[g, paste0("/", gene, ".", direction, ".expr.png")]
-        ## )))
-        ## try(grid::grid.raster(this.png,width = 1.0, just = "center"))
-	## try just pasting the html to get side by side
 	cat(
 		paste0(
 			'<p float="left">',
@@ -248,17 +245,6 @@ if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
 			'</p>'
 		)
 	)
-        ## cat(
-        ##     paste0(
-        ##         "![](",
-        ##         params$outdir,
-        ##         cool.exp[g, paste0("/", gene, ".", direction, ".expr.png")],
-        ##         ")",
-	## 	"![](",
-	## 	expr.slickr.dt[gene_name == g, plot.fname],
-	## 	")"),
-        ##     "\n")
-        ## knitr::include_graphics()
         cat('\n', '<br>', '\n\n')
     }
 }
@@ -279,10 +265,8 @@ knitr::include_graphics(file.path(params$outdir, "ridgeplot.png"))
 ```{r, SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 ## read data table with plot png/URL
 sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
-slick_up = slickR(obj = sv.slickr.dt$plot.fname, height = 500, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+slick_up = slickR(obj = sv.slickr.dt$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
 slick_up
-## slick_down = slickR(obj = sv.slickr.dt$plot.fname, height = 100, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToScroll = 1,  slidesToShow = 3, centerMode = TRUE, focusOnSelect = TRUE)
-## slick_up %synch% slick_down
 ```
 
 # Driver SNVs/indels
@@ -320,7 +304,7 @@ if (file.exists(paste0(params$outdir, "/sig.composition.png"))) {
 cat ("\n<br>\n")
 ```
 
-```{r, HRDetect, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+```{r, HRDetect, results = "asis", echo = FALSE, out.width="100%", fig.align = "center", max.height = 800}
 if (file.exists(paste0(params$outdir, "/hrdetect.rds"))){
     cat("# HRDetect prediction (homologous recombination deficiency)\n")
     cat("Applying the [HRDetect](https://doi.org/10.1038/nm.4292) model, we

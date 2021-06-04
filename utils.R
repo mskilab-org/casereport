@@ -1745,4 +1745,88 @@ filter.snpeff = function(vcf, gngt.fname, cgc.fname, ref.name = "hg19", verbose 
     return(unique(vcf.dt))
 }
         
+<<<<<<< HEAD
 
+=======
+#' @name create.summary
+#' @title create.summary
+#'
+#' @description
+#'
+#' calculate stuff for summary table
+#'
+#' @param jabba_rds (character) jabba rds
+#' @param snv_vcf (character) path to snv vcf/bcf
+#' @param indel_vcf (character) path to indel vcf/bcf
+#' @param verbose (logical) default FALSE
+#' @param chrs (character vector) seqnames default 1:22, x, y
+#' @param amp.thresh (numeric) default 4
+#' @param del.thresh (numeric) default 0.5
+#'
+#' @return list with names
+#' - purity
+#' - ploidy
+#' - del_mbp
+#' - amp_mbp
+#' - cna_mbp
+#' - cna_frac
+#' - mut_count
+#' - mut_per_mbp
+create.summary = function(jabba_rds,
+                          snv_vcf,
+                          indel_vcf,
+                          verbose = FALSE,
+                          chrs = c(as.character(1:22), "X", "Y"),
+                          amp.thresh = 4,
+                          del.thresh = 0.5) {
+
+    jab = readRDS(jabba_rds)
+
+    ## segments as data table
+    segs.dt = gG(jabba = jabba_rds)$nodes$dt[as.character(seqnames) %in% chrs, ]
+    
+    out = list(purity = jab$purity,
+               ploidy = jab$ploidy)
+
+    if (verbose) {
+        message("Computing total width of deleted and amplified segments...")
+    }
+    
+    out$del_mbp = sum(segs.dt[cn <= (del.thresh * jab$ploidy), width], na.rm = TRUE) / 1e6
+    out$amp_mbp = sum(segs.dt[cn >= (amp.thresh * jab$ploidy), width], na.rm = TRUE) / 1e6
+    out$cna_mbp = out$del_mbp + out$amp_mbp
+
+    if (verbose) {
+        message("Mbp affected by CNA: ", out$cna_mbp)
+    }
+
+    total_width = sum(segs.dt[, width], na.rm = TRUE) / 1e6
+    out$cna_frac = out$cna_mbp / total_width
+
+    if (verbose) {
+        message("Fraction affected by CNA: ", out$cna_frac)
+    }
+
+    if (!is.null(snv_vcf) && file.exists(snv_vcf)) {
+        snv.vcf.gr = rowRanges(readVcf(snv_vcf))[, c()] %>% unique
+    } else {
+        snv.vcf.gr = GRanges()
+    }
+
+    if (!is.null(indel_vcf) && file.exists(indel_vcf)) {
+        indel.vcf.gr = rowRanges(readVcf(indel_vcf))[, c()] %>% unique
+    } else {
+        indel.vcf.gr = GRanges()
+    }
+
+    out$mut_count = length(snv.vcf.gr) + length(indel.vcf.gr)
+    out$mut_per_mbp = out$mut_count / total_width
+
+    if (verbose) {
+        message("Number of indels/SNVs: ", out$mut_count)
+        message("Number of indels/SNVs per mbp: ", out$mut_per_mbp)
+    }
+
+    return(out)
+}
+>>>>>>> 6022493ce086b9c0d554bc95f16e8360d7f4b22d

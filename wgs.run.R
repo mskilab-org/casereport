@@ -220,20 +220,6 @@ if (!opt$knit_only){
         }
     }
 
-    ## xtYao legacy code
-    ## if (!file.exists(paste0(opt$outdir, "/hets.gtrack.rds"))){
-    ##     hgt = covcbs(opt$het_pileups_wgs,
-    ##                  purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3)
-    ##     saveRDS(cvgt, paste0(opt$outdir, "/coverage.gtrack.rds"))
-    ## } else {
-    ##     cvgt = readRDS(paste0(opt$outdir, "/coverage.gtrack.rds"))
-    ## }
-    ## message("Generate full genome gTrack plot")
-    ## gts = c(cvgt, gg$gtrack(name = opt$pair, height = 30))
-    ## png(filename = paste0(opt$outdir, "/genome.wide.gtrack.png"), width = 2700, height = 900)
-    ## plot(gts, hg, gap = 1e7, y0 = 0, cex.label = 2, yaxis.cex = 0.5)
-    ## dev.off()
-
     ## TODO: make this generic
     ## cgc = fread(paste0(opt$libdir, "/data/cgc.tsv"))
     onc = readRDS(paste0(opt$libdir, "/data/onc.rds"))
@@ -417,6 +403,8 @@ if (!opt$knit_only){
                                            pad = 0.5,
                                            height = 2000,
                                            width = 1000,
+                                           server = opt$server,
+                                           pair = opt$pair,
                                            outdir = opt$outdir)
 
         ## make sure data table is not empty
@@ -911,6 +899,7 @@ if (!opt$knit_only){
         }
     }
 
+
     ## ##################
     ## Purity ploidy sliders
     ## ##################
@@ -1084,6 +1073,26 @@ if (!opt$knit_only){
         }
     }
     
+
+    ## #################
+    ## summarize
+    ##
+    ## #################
+
+    summary.fn = normalizePath(file.path(opt$outdir, "summary.rds"))
+    if (!file.exists(summary.fn) | opt$overwrite) {
+        message("Computing CN/mutation summary")
+        summary.list = create.summary(jabba_rds = opt$jabba_rds,
+                                      snv_vcf = opt$snpeff_snv,
+                                      indel_vcf = opt$snpeff_indel,
+                                      verbose = TRUE,
+                                      amp.thresh = opt$amp_thresh,
+                                      del.thresh = opt$del_thresh)
+        saveRDS(summary.list, summary.fn)
+    } else {
+        message("Summary already exists, skipping")
+    }
+
 }
 
 

@@ -294,10 +294,6 @@ cn.plot = function(drivers.fname = NULL,
         ## grab complex and coverage gTracks
         this.complex = readRDS(complex.fname)
 
-        ## grab max CN for formatting
-        gg.max.cn = max(this.complex$nodes$dt$cn, na.rm = TRUE)
-        y1 = round(gg.max.cn/10) * 10
-        
         this.complex.gt = this.complex$gt
         cvgt = readRDS(cvgt.fname) ## coverage
         gngt = readRDS(gngt.fname) ## gencode gTrack
@@ -351,14 +347,12 @@ cn.plot = function(drivers.fname = NULL,
         cvgt$yaxis.pretty = 3
         cvgt$xaxis.chronly = TRUE
         cvgt$y0 = 0
-        cvgt$y1 = y1
 
         this.complex.gt$ylab = "CN"
         this.complex.gt$name = "JaBbA"
         this.complex.gt$yaxis.pretty = 3
         this.complex.gt$xaxis.chronly = TRUE
         this.complex.gt$y0 = 0
-        this.complex.gt$y1 = 1
 
         gngt$cex.label = 0.01 ## no labels for full gencode
         gngt$xaxis.chronly = TRUE
@@ -401,7 +395,6 @@ cn.plot = function(drivers.fname = NULL,
             agt$yaxis.pretty = 3
             agt$xaxis.chronly = TRUE
             agt$y0 = 0
-            agt$y1 = y1
 
             gt = c(agt, gt)
         }
