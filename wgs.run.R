@@ -97,6 +97,7 @@ if (!opt$knit_only){
     ###################
     cn.plot.fname = normalizePath(file.path(opt$outdir, "cn.pp.png"))
     allele.plot.fname = normalizePath(file.path(opt$outdir, "allele.pp.png"))
+    allele.scatter.fname = normalizePath(file.path(opt$outdir, "allele.scatter.png"))
     if (!file.exists(cn.plot.fname) || opt$overwrite) {
         message("generating total CN purity/ploidy plots")
         pp_plot(jabba_rds = opt$jabba_rds,
@@ -107,8 +108,8 @@ if (!opt$knit_only){
                 plot.min = -2,
                 plot.max = 2,
                 bins = 500,
-                height = 800,
-                width = 800,
+                height = 500,
+                width = 500,
                 output.fname = cn.plot.fname,
                 verbose = TRUE)
     } else {
@@ -123,13 +124,31 @@ if (!opt$knit_only){
                 field = "count",
                 plot.min = -2,
                 plot.max = 2,
+                scatter = FALSE,
                 bins = 500,
-                height = 800,
-                width = 800,
+                height = 500,
+                width = 500,
                 output.fname = allele.plot.fname,
                 verbose = TRUE)
     } else {
-        message("allele CN purity/ploidy plot exists!")
+        message("allele CN histogram already exists")
+    }
+    if (!file.exists(allele.scatter.fname) || opt$overwrite) {
+        pp_plot(jabba_rds = opt$jabba_rds,
+                cov.fname = opt$cbs_cov_rds,
+                hets.fname = opt$het_pileups_wgs,
+                allele = TRUE,
+                field = "count",
+                plot.min = -2,
+                plot.max = 2,
+                scatter = TRUE,
+                bins = 500,
+                height = 500,
+                width = 500,
+                output.fname = allele.scatter.fname,
+                verbose = TRUE)
+    } else {
+        message("allele CN purity/ploidy scatter plot exists!")
     }
     
 
