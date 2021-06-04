@@ -7,14 +7,19 @@
 #' Quick utility function to convert star-fusion breakpoints to GRangesList
 #'
 #' @param fname (character) name of star-fusion output file
+#' @param chrsub (logical) remove chr prefix default TRUE
+#' @param return.type (character) Junction or GRangesList (default Junction)
 #' @param mc.cores (numeric) default 16
-star2grl = function(fname, mc.cores = 16) {
+#'
+#' @param GRangesList or Junction
+star2grl = function(fname, chrsub = TRUE, return.type = "Junction", mc.cores = 16) {
     dt = fread(fname)
     grl = mclapply(1:nrow(dt),
                    function(ix) {
                        left.bp.str = strsplit(dt[ix, LeftBreakpoint], ":")[[1]]
                        right.bp.str = strsplit(dt[ix, RightBreakpoint], ":")[[1]]
-                       gr = GRanges(seqnames = c(left.bp.str[1], right.bp.str[1]),
+                       gr = GRanges(seqnames = c(gsub("chr", "", left.bp.str[1]),
+                                                 gsub("chr", "", right.bp.str[1])),
                                     ranges = IRanges(start = as.numeric(c(left.bp.str[2],
                                                                           right.bp.str[2])),
                                                      width = 1),
@@ -25,6 +30,10 @@ star2grl = function(fname, mc.cores = 16) {
                        return (gr)
                    }, mc.cores = mc.cores) %>% GRangesList
     values(grl) = dt
+    if (return.type == "Junction") {
+        return(Junction$new(grl = grl))
+    }
+    
     return(grl)
 }
 

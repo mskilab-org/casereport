@@ -587,7 +587,7 @@ if (!opt$knit_only){
     ## ##################
     ## SNV signatures
     ## ##################
-    if (file.good(opt$deconstruct_sigs)){
+    if (file.good(opt$deconstruct_sigs)) {
         ## signatures
         sig = readRDS(opt$deconstruct_sigs)
         sigd = as.data.table(sig$weights) %>% data.table::melt(variable.name = "Signature", value.name = "Proportion") %>% data.table
@@ -608,7 +608,7 @@ if (!opt$knit_only){
             ## }, "deconstruct_sigs.png", width = 1600, height = 1200)
         }
 
-        if (!file.exists(paste0(opt$outdir, "/sig.composition.png")) | opt$overwrite){
+        if (!file.exists(paste0(opt$outdir, "/sig.composition.png")) | opt$overwrite) {
 
             sig.fn = file.path(opt$libdir, "data", "all.signatures.txt")
             background.type = "Cell cohort"
@@ -718,20 +718,23 @@ if (!opt$knit_only){
             
             
         } else {
-            png(filename = "sig.composition.png", width = 800, height= 1200)
+            message("signature compsition plot already exists")
+            ## png(filename = "sig.composition.png", width = 800, height= 1200)
             ## individual sample compositions
-            sct[, Signature := forcats::fct_reorder(Signature, sig_count)]
-            sigbar = ggplot(
-                sct[order(sig_count)],
-                aes(x = Signature, y = sig_count)) +
-                geom_bar(stat = "identity") +
-                theme_minimal() +
-                theme(text = element_text(size = 32),
-                      axis.text.x = element_text(angle = 45, hjust = 1)) +
-                coord_flip()
-            print(sigbar)
-            dev.off()
+            ## sct[, Signature := forcats::fct_reorder(Signature, sig_count)]
+            ## sigbar = ggplot(
+            ##     sct[order(sig_count)],
+            ##     aes(x = Signature, y = sig_count)) +
+            ##     geom_bar(stat = "identity") +
+            ##     theme_minimal() +
+            ##     theme(text = element_text(size = 32),
+            ##           axis.text.x = element_text(angle = 45, hjust = 1)) +
+            ##     coord_flip()
+            ## print(sigbar)
+            ## dev.off()
         }
+    } else {
+        message("deconstruct sigs not supplied")
     }
 
     ## ##################

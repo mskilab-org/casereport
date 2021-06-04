@@ -69,12 +69,33 @@ message("Loaded gGraph")
 ***
 # `r paste(params$pair, params$tumor_type, sep = ", ")`
 
-This is a `r params$tumor_type` sample. Estimated **purity** is 
-**`r format(jb$purity, digits = 2)`** and **ploidy** is **`r format(jb$ploidy, digits = 2)`**. 
+## Purity/ploidy
 
-`r format(round(summary.list$cna_frac * 100, 2), nsmall = 2)`% of the genome shows copy number alterations (CNA), defined as CN at most `r params$del_thresh` times ploidy (deletions) or at least `r params$amp_thresh` times ploidy (amplifications). 
+Estimated purity: **`r format(jb$purity, digits = 2)`** 
 
-The total number of somatic SNV/INDELs genome-wide is `r format(round(summary.list$mut_count, 0), nsmall = 0)`. The **Tumor Mutation Burden (TMB)** is **`r format(round(summary.list$mut_per_mbp, 2), 2)` per Mbp**. The total **junction burden** is **`r length(jj)`**.
+Estimated ploidy: **`r format(jb$ploidy, digits = 2)`**
+
+## SCNA
+
+Copy number alterations (CNA) are defined as CN at most `r params$del_thresh` times ploidy (deletions) or at least `r params$amp_thresh` times ploidy (amplifications). 
+
+Percent of genome with CNA: `r format(round(summary.list$cna_frac * 100, 2), nsmall = 2)`%
+
+Total amplifications (Mbp): `r format(round(summary.list$amp_mbp, 2), nsmall = 2)`
+
+Total deletions (Mbp): `r format(round(summary.list$del_mbp, 2), nsmall = 2)`
+
+Total CNA (Mbp): `r format(round(summary.list$cna_mbp, 2), nsmall = 2)`
+
+## Junction burden
+
+The total **junction burden** is **`r length(jj)`**.
+
+## SNV
+
+Total number of somatic SNV/INDELs: `r format(round(summary.list$mut_count, 0), nsmall = 0)`
+
+Tumor Mutation Burden (TMB): `r format(round(summary.list$mut_per_mbp, 2), 2)` per Mbp 
 
 ***
 # Whole genome view {.tabset .tabset-fade .tabset-pills}

@@ -56,28 +56,70 @@ dedup = function (x, suffix = ".")
     return(out)
 }
 
-rel2abs = function (gr, purity = NA, ploidy = NA, gamma = NA, beta = NA, 
-    field = "ratio", field.ncn = "ncn") 
+rel2abs = function(gr, purity = NA, ploidy = NA, gamma = NA, beta = NA, field = 'ratio', field.ncn = 'ncn', data_mean = NA, ncn.gr = NA, allele = FALSE, return.params = FALSE)
 {
-    mu = values(gr)[, field]
-    mu[is.infinite(mu)] = NA
-    w = as.numeric(width(gr))
-    w[is.na(mu)] = NA
-    sw = sum(w, na.rm = T)
-    mutl = sum(mu * w, na.rm = T)
-    ncn = rep(2, length(mu))
-    if (!is.null(field.ncn)) 
-        if (field.ncn %in% names(values(gr))) 
-            ncn = values(gr)[, field.ncn]
-    ploidy_normal = sum(w * ncn, na.rm = T)/sw
-    if (is.na(gamma)) 
-        gamma = 2 * (1 - purity)/purity
-    if (is.na(beta)) 
-        beta = ((1 - purity) * ploidy_normal + purity * ploidy) * 
-            sw/(purity * mutl)
-    return(beta * mu - ncn * gamma/2)
-}
+  mu = values(gr)[, field]
+  mu[is.infinite(mu)] = NA
+  w = as.numeric(width(gr))
+  w[is.na(mu)] = NA
+  sw = sum(w, na.rm = T)
+  if (is.na(data_mean)){
+      data_mean = sum(mu * w, na.rm = T) / sw
+  }
 
+  ncn = NA
+  if (!is.null(field.ncn))
+    if (field.ncn %in% names(values(gr)))
+      ncn = values(gr)[, field.ncn]
+
+  if (is.na(ncn)){
+      if (!is.na(ncn.gr)){
+          if (!inherits(ncn.gr, 'GRanges')){
+              stop('ncn.gr must be of class GRanges, but ', class(GRanges), ' was provided.')
+          }
+          ncn = values(gr %$% ncn.gr[, field.ncn])[, field.ncn]
+      } else {
+      ncn = rep(2, length(mu))
+      }
+  }
+
+
+  ploidy_normal = sum(w * ncn, na.rm = T) / sw  ## this will be = 2 if ncn is trivially 2
+
+  if (allele) {
+      y.bar = ploidy_normal * data_mean
+      denom = purity * ploidy + ploidy_normal * (1 - purity)
+      if (is.na(beta)) {
+          beta = y.bar * purity / denom
+      }
+      if (is.na(gamma)) {
+          gamma = (y.bar * (1 - purity)) / denom
+      }
+
+      if (return.params) {
+          out = c(slope = 1/beta,
+                  intercept = -gamma/beta)
+          return(out)
+      }
+      
+      return ((mu - gamma) / beta)
+  }
+
+
+  if (is.na(gamma))
+    gamma = 2*(1-purity)/purity
+
+  if (is.na(beta))
+    beta = ((1-purity)*ploidy_normal + purity*ploidy) / (purity * data_mean)
+
+  if (return.params) {
+      out = c(slope = ((1-purity)*2 + purity * ploidy) / (purity * data_mean),
+              intercept = -gamma)
+      return (out)
+  }
+
+  return(beta * mu - ncn * gamma / 2)
+}
 
 rebin = function (cov, binwidth, field = names(values(cov))[1], FUN = median, na.rm = TRUE) 
 {
