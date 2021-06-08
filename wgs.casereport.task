@@ -17,6 +17,7 @@ input	hrd_results	hrd_results	path	/dev/null
 input	snpeff_snv	snpeff_snv	path	/dev/null
 input	snpeff_indel	snpeff_indel	path	/dev/null
 input	snpeff_config	snpeff_config	path	~/modules/SnpEff/snpEff.config
+input	oncokb_token	oncokb_token	path	/gpfs/commons/home/xyao/keys/oncokb.token
 input	server	server	value		"https://mskilab.com/gGraph/"
 input	tumor_type	tumor_type	value "unknown"
 input	flags	flags	value		""

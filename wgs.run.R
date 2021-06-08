@@ -33,6 +33,7 @@ if (!exists("opt")){
         make_option(c("--tumor_type"), type = "character", default = "", help = "tumor type"),
         make_option(c("--ref"), type = "character", default = "hg19", help = "one of 'hg19', 'hg38'"),
         make_option(c("--snpeff_config"), type = "character", default = "~/modules/SnpEff/snpEff.config", help = "snpeff.config file path"),
+        make_option(c("--oncokb_token"), default = '~/keys/oncokb.token', type = "character", help = "a token to use when querying OncoKB. If you don't have a token, you must first obtain one from: https://www.oncokb.org/apiAccess. By default looking for the key in '~/keys/oncokb.token'. If no valid key is provided then OncoKB annotations will be skipped."),
         make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir")
     )
     parseobj = OptionParser(option_list = option_list)
@@ -380,10 +381,30 @@ if (!opt$knit_only){
         } else {
             driver.mutations.dt = data.table()
         }
+        ## ######################
+        ## match up with OncoKB
+        ## ######################
+        oncokb.token = opt$oncokb.token
+        if (file.exists(oncokb.token)){
+            source(file.path(opt$libdir, "oncokb.utils.R"))
+            message('Querying OncoKB to annotate genomic alterations')
+            oncokb = get_oncokb_response(driver.mutations.dt, oncokb.token = oncokb.token)
+            oncokb_annotations = get_oncokb_annotations(oncokb)
+            if (!is.null(oncokb_annotations)){
+                oncokb_annotations[, key_for_merging := .I]
+                driver.mutations.dt[, key_for_merging := .I]
+                driver.mutations.dt = merge(driver.mutations.dt, oncokb_annotations, by = 'key_for_merging')
+                driver.mutations.dt$key_for_merging = NULL
+                driver.mutations.dt$onco_kb_entry_url = get_oncokb_gene_entry_url(oncokb)
+            }
+        } else {
+            message('No OncoKB token was provided so skipping OncoKB annotations')
+        }
         fwrite(driver.mutations.dt, driver.mutations.fname)
     } else {
         message("Driver mutations file already exists")
     }
+
 
     ## ##################
     ## Fusions
