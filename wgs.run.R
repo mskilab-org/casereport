@@ -150,7 +150,7 @@ if (!opt$knit_only){
         melted.expr = rna.quantile(
             tpm.cohort,
             opt$pair,
-            opt$tpm)
+            tpm.dt)
 
         ## if there's metadata of tumor types
         if (is.element("tumor_type", colnames(meta))){

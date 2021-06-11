@@ -1115,6 +1115,11 @@ rna.quantile = function(tpm.cohort, pair, tpm.pair = NULL) {
             tpm.pair = data.table::fread(tpm.pair, header = TRUE)
         }
 
+        if (!inherits(tpm.pair, "data.frame")){
+            stop("'tpm.pair' must be a data.frame")
+        }
+        tpm.pair = data.table(tpm.pair)
+
         ## we enforce that the sample id must be a column in the individual data matrix
         if (!is.element(pair, colnames(tpm.pair))){
             stop("The TPM value must be in the column named after the sample id.")
@@ -1622,7 +1627,7 @@ kallisto.preprocess = function(kallisto.fname,
     if (!all(reqcols %in% colnames(kallisto.dt))) {
         stop("required columns target_id and tpm missing from kallisto output")
     }
-    outcols = c("gene", outcols)
+    outcols = c("target_id", outcols)
 
     kallisto.dt[, gene := ge.data$gene_name[match(target_id, ge.data$transcript_id)]]
 
