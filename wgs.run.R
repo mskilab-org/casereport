@@ -33,6 +33,7 @@ if (!exists("opt")){
         make_option(c("--tumor_type"), type = "character", default = "", help = "tumor type"),
         make_option(c("--ref"), type = "character", default = "hg19", help = "one of 'hg19', 'hg38'"),
         make_option(c("--snpeff_config"), type = "character", default = "~/modules/SnpEff/snpEff.config", help = "snpeff.config file path"),
+        make_option(c("--cohort_metadata"), type = "character", default = NA_character_, help = "Metadata of the background cohort"),
         make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir")
     )
     parseobj = OptionParser(option_list = option_list)
@@ -80,26 +81,82 @@ if (!opt$knit_only){
         gg = readRDS(paste0(opt$outdir, "/complex.rds"))
     } else if (file.exists(opt$complex) & file.size(opt$complex)>0){
         file.copy(opt$complex, paste0(opt$outdir, "/complex.rds"))
-        gg = readRDS(opt$complex)
+        gg = gGnome::refresh(readRDS(opt$complex))
     } else {
-        if (file.exists(opt$complex) & file.size(opt$complex)>0){
-            file.copy(opt$complex, paste0(opt$outdir, "/complex.rds"))
-            gg = readRDS(opt$complex)
-        } else {
-            gg = events(gG(jabba = jabba))
-            saveRDS(gg, paste0(opt$outdir, "/complex.rds"))
-        }
+        ## if (file.exists(opt$complex) & file.size(opt$complex)>0){
+        ##     file.copy(opt$complex, paste0(opt$outdir, "/complex.rds"))
+        ##     gg = readRDS(opt$complex)
+        ## } else {
+        gg = gGnome::events(gG(jabba = jabba))
+        saveRDS(gg, paste0(opt$outdir, "/complex.rds"))
+        ## }
     }
 
-    message("Checking for RNA expression input")
-    if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {
+    ## set up purity ploidy
+    gg$set(purity = jabba$purity)
+    gg$set(ploidy = jabba$ploidy)
 
+
+    message("Checking for cohort metadata")
+    if (file.good(opt$cohort_metadata)){
+        meta = data.table::fread(opt$cohort_metadata)
+    }
+    
+    message("Checking for RNA expression input")
+    tmp.tpm.cohort.fname = paste0(opt$outdir, "/tmp.tpm.cohort.rds")
+    if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {
+        ## what if it's already processed?
         ## save reformatted TPM data
         tpm.fn = file.path(opt$outdir, "tpm.txt")
 
+        ## if this file exists
+        ## ge.data = stack(readRDS(file.path(opt$libdir, "data", "gt.ge.hg19.rds"))@data[[1]]) %Q% (type=="gene")##  & gene_type=="protein_coding" & level<3)
+        ge.data = stack(readRDS(file.path(opt$libdir, "data", "gt.ge.hg19.rds"))@data[[1]])
+
         tpm.dt = kallisto.preprocess(opt$tpm,
                                      pair = opt$pair,
-                                     gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"))
+                                     gngt.fname = ge.data)
+
+
+        if (!file.good(tmp.tpm.cohort.fname) | opt$overwrite){
+            tpm.cohort = data.table::fread(opt$tpm_cohort, header = TRUE)
+            ## if there are only transcript level annotation, map to the genes the same map as individual kallisto
+            if (is.element("gene", colnames(tpm.cohort))) {
+                message("Cohort RNA expression ready.")
+            } else if (any(grepl("Transcript|target_id", colnames(tpm.cohort)))){
+                tfield = grep("Transcript|target_id", colnames(tpm.cohort), value = TRUE)[1]
+                if (any(grepl("Transcript|target_id", colnames(tpm.dt)))){
+                    tfield2 = grep("Transcript|target_id", colnames(tpm.dt), value = TRUE)[1]
+                    tgmap = setNames(tpm.dt$gene, tpm.dt[[tfield2]])
+                    tpm.cohort[, gene := tgmap[tpm.cohort[[tfield]]]]
+                } else {
+                    tgmap = gr2dt(ge.data)
+                    tgm = match(tpm.cohort[[tfield]], tgmap$transcript_id)
+                    tpm.cohort$gene = tgmap[tgm, gene_name]
+                }
+                tpm.cohort = tpm.cohort[!is.na(gene)]
+            } else {
+                stop("There must be a 'gene|Transcript|target_id' column in the cohort RNA expression levels.")
+            }
+            tpm.cohort = tpm.cohort[!duplicated(gene)]
+            ## temporarily save
+            saveRDS(tpm.cohort, tmp.tpm.cohort.fname)
+            
+        } else {
+            tpm.cohort = readRDS(tmp.tpm.cohort.fname)
+        }
+
+        message("Computing quantiles")
+        melted.expr = rna.quantile(
+            tpm.cohort,
+            opt$pair,
+            opt$tpm)
+
+        ## if there's metadata of tumor types
+        if (is.element("tumor_type", colnames(meta))){
+            melted.expr = data.table::merge.data.table(melted.expr, meta[, .(pair, tumor_type)], by = "pair", all.x = TRUE)
+            melted.expr[, tt.qt := rank(as.double(.SD$value))/.N, by = tumor_type]
+        }
 
         ## check for and process kallisto input
         fwrite(tpm.dt, tpm.fn)
@@ -136,17 +193,13 @@ if (!opt$knit_only){
         #' simplify seqnames to avoid empty data tables
         genes_cn = get_gene_copy_numbers(gg, gene_ranges = opt$genes, nseg = nseg, ploidy = kag$ploidy, simplify_seqnames = TRUE, complex.fname = opt$complex)
         genes_cn_annotated = get_gene_ampdel_annotations(genes_cn, amp.thresh = opt$amp_thresh,
-                                       del.thresh = opt$del_thresh)
+                                                         del.thresh = opt$del_thresh)
 
 
 
         #' zchoo Wednesday, May 12, 2021 04:17:06 PM
         #' integrate RNA expression data with genes data
-        if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {
-            message("Computing quantiles")
-            melted.expr = rna.quantile(opt$tpm_cohort,
-                                       opt$pair,
-                                       opt$tpm)
+        if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {            
             message("Done computing quantiles")
             genes_cn_annotated = merge.data.table(genes_cn_annotated,
                                                   melted.expr[pair == opt$pair,
@@ -209,14 +262,14 @@ if (!opt$knit_only){
         agt = readRDS(agt_fn)
     } else {
         message("Checking for hets")
-        if (is.null(opt$het_pileups_wgs) || !file.exists(opt$het_pileups_wgs)) {
-            message("no het pileups provided, skipping")
-            agt = NULL
-        } else {
+        if (file.good(opt$het_pileups_wgs)) {
             agt = grab.agtrack(opt$het_pileups_wgs,
                                purity = jabba$purity,
                                ploidy = jabba$ploidy)
             saveRDS(agt, agt_fn)
+        } else {
+            message("no het pileups provided, skipping")
+            agt = NULL            
         }
     }
 
@@ -330,6 +383,7 @@ if (!opt$knit_only){
             message("SNV vcf does not exist")
             snv.dt = NULL
         }
+        
         if ( (!is.null(opt$snpeff_indel)) && file.exists(opt$snpeff_indel)) {
 
             message("Running indel SnpEff")
@@ -392,39 +446,42 @@ if (!opt$knit_only){
             }
         }
         message("Preparing fusion genes report")
-        ## grab name of driver genes file
-        cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers), file.path(opt$libdir, "data", "cgc.tsv"), opt$drivers)
-        fusions.slickr.dt = fusion.wrapper(fusions.fname = opt$fusions,
-                                           complex.fname = opt$complex,
-                                           cvgt.fname = cvgt_fn,
-                                           agt.fname = agt_fn,
-                                           cgc.fname = cgc.fname,
-                                           gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
-                                           pad = 0.5,
-                                           height = 2000,
-                                           width = 1000,
-                                           server = opt$server,
-                                           pair = opt$pair,
-                                           outdir = opt$outdir)
+        if (length(fu)>0){
+            ## grab name of driver genes file
+            cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers), file.path(opt$libdir, "data", "cgc.tsv"), opt$drivers)
+            fusions.slickr.dt = fusion.wrapper(fusions.fname = opt$fusions,
+                                               complex.fname = opt$complex,
+                                               cvgt.fname = cvgt_fn,
+                                               agt.fname = agt_fn,
+                                               cgc.fname = cgc.fname,
+                                               gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                               pad = 0.5,
+                                               height = 2000,
+                                               width = 1000,
+                                               server = opt$server,
+                                               pair = opt$pair,
+                                               outdir = opt$outdir)
 
-        ## make sure data table is not empty
-        if (nrow(fusions.slickr.dt) == 0) {
+            ## make sure data table is not empty
+            if (nrow(fusions.slickr.dt) == 0) {
 
-            ## write empty data table, rmd file will deal with this.
-            fwrite(fusions.slickr.dt, fusions.driver.fname)
-            fwrite(fusions.slickr.dt, fusions.other.fname)
+                ## write empty data table, rmd file will deal with this.
+                fwrite(fusions.slickr.dt, fusions.driver.fname)
+                fwrite(fusions.slickr.dt, fusions.other.fname)
+                
+            } else {
+
+                ## save data table for drivers and non-drivers separately
+                fwrite(fusions.slickr.dt[driver == TRUE,], fusions.driver.fname)
+                fwrite(fusions.slickr.dt[driver == FALSE,], fusions.other.fname)
+
+            }
             
         } else {
-
-            ## save data table for drivers and non-drivers separately
-            fwrite(fusions.slickr.dt[driver == TRUE,], fusions.driver.fname)
-            fwrite(fusions.slickr.dt[driver == FALSE,], fusions.other.fname)
-
+            message("Fusion files already exist")
         }
-        
-    } else {
-        message("Fusion files already exist")
     }
+    
     
     ## ##################
     ## SV gallery code
@@ -440,7 +497,7 @@ if (!opt$knit_only){
     if (opt$overwrite | !file.exists(file.path(opt$outdir, "sv.gallery.txt"))) {
         message("Preparing SV gallery")
 
-        
+
         sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
                                        background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
                                        cvgt.fname = cvgt_fn,
@@ -453,8 +510,9 @@ if (!opt$knit_only){
                                        height = 1200, ## png image height
                                        width = 1000, ## png image width
                                        outdir = opt$outdir)
-
-        fwrite(sv.slickr.dt, file.path(opt$outdir, "sv.gallery.txt"))
+        if (length(sv.slickr.dt)>0){
+            fwrite(sv.slickr.dt, file.path(opt$outdir, "sv.gallery.txt"))
+        }
     } else {
         message("SV gallery files already exist")
     }
@@ -489,30 +547,35 @@ if (!opt$knit_only){
     ## ##################
     ## RNA expression level over a cohort
     ## ##################
-    if (file.good(opt$tpm_cohort)){
-        tpm_cohort = fread(opt$tpm_cohort, header = TRUE)
-        if (is.element(opt$pair, colnames(tpm_cohort))){
-            message("Found this sample in the cohort expression matrix")
-            if (file.good(opt$tpm)){
-                tpm = fread(opt$tpm, header = TRUE)
+    if (file.good(opt$tpm) && file.good(opt$tpm_cohort)){
+        ## tpm_cohort = fread(opt$tpm_cohort, header = TRUE)
+        ## tpm.cohort = readRDS(tmp.tpm.cohort.fname)
+
+        ## if (is.element(opt$pair, colnames(tpm_cohort))){
+        ##     message("Found this sample in the cohort expression matrix")
+        ##     if (file.good(opt$tpm)){
+        ##         tpm = fread(opt$tpm, header = TRUE)
                 
-                message("Found this sample's input expression matrix, overwriting...")
-                tpm_cohort[[opt$pair]] = NULL
-                tpm_cohort = data.table::merge.data.table(
-                    tpm_cohort, tpm, by = "gene", all.x = TRUE)
-            }
-        }
+        ##         message("Found this sample's input expression matrix, overwriting...")
+        ##         tpm_cohort[[opt$pair]] = NULL
+        ##         tpm_cohort = data.table::merge.data.table(
+        ##             tpm_cohort, tpm, by = "gene", all.x = TRUE)
+        ##     }
+        ## }
+        
         ## limit to annotated ONC/TSG
-        tpm_cohort = tpm_cohort[gene %in% c(onc, tsg)]
-        tpm_cohort[, role := case_when(gene %in% onc ~ "ONC",
+        melted.expr = melted.expr[gene %in% c(onc, tsg)]
+        melted.expr[, role := case_when(gene %in% onc ~ "ONC",
                                        gene %in% tsg ~ "TSG",
                                        TRUE ~ NA_character_)]
+        
         ## melt to analyze
-        mexp = data.table::melt(tpm_cohort, id.vars = c("gene", "role"),
-                                variable.name = "pair")
-        mexp[, ":="(qt = rank(as.double(.SD$value))/.N), by = gene]
+        ## melted.expr = data.table::melt(tpm_cohort, id.vars = c("gene", "role"),
+        ##                         variable.name = "pair")
+        ## melted.expr[, ":="(qt = rank(as.double(.SD$value))/.N), by = gene]
+        
         ## TODO: make the quantile threshold adjustable
-        cool.exp = mexp[pair==opt$pair][(role=="TSG" & qt<0.05) | (role=="ONC" & qt>0.95)]
+        cool.exp = melted.expr[pair==opt$pair][(role=="TSG" & qt<0.05) | (role=="ONC" & qt>0.95)]
         ## cool.exp[order(qt)]
 
         cool.exp.fn = file.path(opt$outdir, "cool.expr.rds")
@@ -523,11 +586,42 @@ if (!opt$knit_only){
             for (g in cool.exp$gene){
                 if (!file.good(cool.exp[g, gf])){
                     png(filename = cool.exp[g, gf], width = 1600, height = 900)
-                    d = mexp[gene==g][!is.na(value)]
+                    d = melted.expr[gene==g][!is.na(value)]
                     message(g)
                     ## ppng({
-                    p = ggplot(d, aes(x = value, y = gene)) +
-                        geom_density_ridges2() +
+                    p = ggplot(d, aes(x = value, y = gene))
+                    if (is.element("tumor_type", colnames(d))){
+                        p = p +
+                            geom_density_ridges2(
+                            aes(point_colour = tumor_type==opt$tumor_type,
+                                fill = tumor_type==opt$tumor_type),
+                            bandwidth = 0.1,
+                            alpha = 0.5,
+                            scale = 0.9,
+                            rel_min_height = 0.01,
+                            color = NA,
+                            jittered_points = TRUE,
+                            position = position_points_jitter(width = 0.01, height = 0),
+                            point_shape = '|',
+                            point_size = 3,
+                            point_alpha = 0.3,
+                            point_colour = "black") +
+                            scale_fill_manual(values = binary.cols, name = "Tumor type", breaks = c(FALSE, TRUE), labels = c("Other", opt$tumor_type))
+                    } else {
+                        p = p + geom_density_ridges2(                            
+                                    bandwidth = 0.1,
+                                    alpha = 0.5,
+                                    scale = 0.9,
+                                    rel_min_height = 0.01,
+                                    color = NA,
+                                    jittered_points = TRUE,
+                                    position = position_points_jitter(width = 0.01, height = 0),
+                                    point_shape = '|',
+                                    point_size = 3,
+                                    point_alpha = 0.3,
+                                    point_colour = "black")
+                    }
+                    p = p +
                         geom_vline(
                             xintercept = cool.exp[g, value],
                             color = ifelse(cool.exp[g, direction]=="over", "red", "blue"),
@@ -570,15 +664,17 @@ if (!opt$knit_only){
         } else {
             message("expression gallery files already exist")
         }
+
+        ## expression waterfall plot
         waterfall.fn = file.path(opt$outdir, "waterfall.png")
         if (!check_file(waterfall.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
             message("generating waterfall plot")
             gns = readRDS(cool.exp.fn)$gene ## genes with changes in expression
-            rna.waterfall.plot(tpm.cohort = opt$tpm_cohort,
+            rna.waterfall.plot(melted.expr = melted.expr,
                                pair = opt$pair,
-                               tpm.pair = opt$tpm,
                                out.fn = waterfall.fn,
-                               genes.to.label = gns)
+                               genes.to.label = gns,
+                               width = 1600, height = 1200)
         } else {
             message("Expression gallery files already exist")
         }
@@ -904,181 +1000,182 @@ if (!opt$knit_only){
     ## Purity ploidy sliders
     ## ##################
     ## get the purity ploidy
-    if (file.good(opt$jabba_rds)){
-        kagf = gsub("jabba.simple", "karyograph", opt$jabba_rds)
-        if (file.good(kagf)){
+    ## if (file.good(opt$jabba_rds)){
+    ##     kagf = gsub("jabba.simple", "karyograph", opt$jabba_rds)
+    ##     if (file.good(kagf)){
 
-            ## start gathering the LL matrix
-            kag = readRDS(kagf)
-            pu0 = gg$meta$purity
-            pl0 = gg$meta$ploidy
-            seg = kag$segstats %Q% (strand=="+" & !bad) %>% gr.stripstrand
-            ppg = ppgrid(segstats = seg, return.nll = TRUE)
-            nll = ppg$NLL
+    ##         ## start gathering the LL matrix
+    ##         kag = readRDS(kagf)
+    ##         pu0 = gg$meta$purity
+    ##         pl0 = gg$meta$ploidy
+    ##         seg = kag$segstats %Q% (strand=="+" & !bad) %>% gr.stripstrand
+    ##         ppg = ppgrid(segstats = seg, return.nll = TRUE)
+    ##         nll = ppg$NLL
 
-            ## first plot, histogram with grids
-            tmp = seg  ## only plot seg that we haven't fixed SD for and that have normal cn 1, to minimize confusion
-            dupval = sort(table(tmp$mean), decreasing = TRUE)[1]
-            if (!is.na(dupval))
-                if (dupval>5)
-                    tmp = tmp[-which(as.character(tmp$mean) == names(dupval))]
+    ##         ## first plot, histogram with grids
+    ##         tmp = seg  ## only plot seg that we haven't fixed SD for and that have normal cn 1, to minimize confusion
+    ##         dupval = sort(table(tmp$mean), decreasing = TRUE)[1]
+    ##         if (!is.na(dupval))
+    ##             if (dupval>5)
+    ##                 tmp = tmp[-which(as.character(tmp$mean) == names(dupval))]
 
-            ## sampling random loci to plot not segments
-            ## segsamp = pmin(sample(tmp$mean, 1e6, replace = T, prob = width(tmp)), xlim[2])
-            tmp = tmp %Q% (!is.na(mean))
-            segsamp = sample(tmp[, "mean"], 1e6, replace = T, prob = width(tmp)) %>% gr2dt
-            segsamp[, mean := pmax(xlim[1], pmin(mean, xlim[2]))]
-            segsamp = segsamp[!is.na(mean)]            
+    ##         ## sampling random loci to plot not segments
+    ##         ## segsamp = pmin(sample(tmp$mean, 1e6, replace = T, prob = width(tmp)), xlim[2])
+    ##         xlim = c(0, Inf)
+    ##         tmp = tmp %Q% (!is.na(mean))
+    ##         segsamp = sample(tmp[, "mean"], 1e6, replace = T, prob = width(tmp)) %>% gr2dt
+    ##         segsamp$mu = segsamp$mean
+    ##         ## segsamp[, mean := pmax(xlim[1], pmin(mean, xlim[2]))]
+    ##         segsamp = segsamp[!is.na(mu)]
 
-            mu = tmp$mean
-            w = width(tmp)
-            Sw = sum(as.numeric(width(tmp)))
-            sd = tmp$sd
-            m0 = sum(as.numeric(mu*w))/Sw
-            ncn = rep(2, length(mu))
-            ploidy_normal = 2
+    ##         mu = tmp$mean
+    ##         w = width(tmp)
+    ##         Sw = sum(as.numeric(width(tmp)))
+    ##         sd = tmp$sd
+    ##         m0 = sum(as.numeric(mu*w))/Sw
+    ##         ncn = rep(2, length(mu))
+    ##         ploidy_normal = 2
 
-            alpha = pu0
-            tau = pl0
-            beta = (tau + ploidy_normal * gamma / 2 ) / m0
-            gamma = 2/alpha - 2
-            grids = 1/beta*(0:100) + gamma/beta
-            grids = grids[which(grids < segsamp[, max(mean)])]
-            ## make static image
-            h = ggplot(segsamp, aes(x = mean)) +
-                geom_histogram(bins = 1000) +
-                geom_vline(xintercept = grids, color = alpha("red", 0.5), lty = 2) +
-                scale_x_continuous(limits = c(0, segsamp[, quantile(mean, 0.999)])) +
-                labs(title = sprintf('Purity: %.2f Ploidy: %.2f Beta: %.2f Gamma: %.2f', alpha, tau, beta, gamma),
-                     x = "Intensity") +
-                theme_minimal(12)
+    ##         alpha = pu0
+    ##         tau = pl0
+    ##         gamma = 2/alpha - 2
+    ##         beta = (tau + ploidy_normal * gamma / 2 ) / m0
+    ##         grids = 1/beta*(0:100) + gamma/beta
+    ##         grids = grids[which(grids < max(mu))]
 
-            png(paste0(opt$outdir, "/ppfit.hist.png"), width = 1200, height = 800)
-            print(h)
-            dev.off()
-            ## hp = ggplotly(h)
+    ##         ## make static image
+    ##         h = ggplot(segsamp, aes(x = mu)) +
+    ##             geom_histogram(bins = 1000) +
+    ##             geom_vline(xintercept = grids, color = alpha("red", 0.5), lty = 2) +
+    ##             scale_x_continuous(limits = c(0, segsamp[, quantile(mu, 0.999)])) +
+    ##             labs(title = sprintf('Purity: %.2f Ploidy: %.2f Beta: %.2f Gamma: %.2f', alpha, tau, beta, gamma),
+    ##                  x = "Intensity") +
+    ##             theme_minimal(12)
+
+    ##         png(paste0(opt$outdir, "/ppfit.hist.png"), width = 1200, height = 800)
+    ##         print(h)
+    ##         dev.off()
+    ##         ## hp = ggplotly(h)
 
 
 
-            ## line <- list(
-            ##     type = "line",
-            ##     line = list(color = alpha("#e6194b", 0.5), lty = 2),
-            ##     xref = "x",
-            ##     yref = "y"
-            ## )
-            ## lines <- list()
-            ## for (i in seq_along(grids)) {
-            ##     line[["x0"]] <- grids[i]
-            ##     line[["x1"]] <- grids[i]
-            ##     line[c("y0", "y1")] <- c(0, 1e5)
-            ##     lines <- c(lines, list(line))
-            ## }
-            ## ##
-            ## hp3 = layout(hp2,
-            ##              title = sprintf('Purity: %.2f Ploidy: %.2f Beta: %.2f Gamma: %.2f', alpha, tau, beta, gamma),
-            ##              shapes = lines)
-            ## wij(ggplotly(hp3))
+    ##         ## line <- list(
+    ##         ##     type = "line",
+    ##         ##     line = list(color = alpha("#e6194b", 0.5), lty = 2),
+    ##         ##     xref = "x",
+    ##         ##     yref = "y"
+    ##         ## )
+    ##         ## lines <- list()
+    ##         ## for (i in seq_along(grids)) {
+    ##         ##     line[["x0"]] <- grids[i]
+    ##         ##     line[["x1"]] <- grids[i]
+    ##         ##     line[c("y0", "y1")] <- c(0, 1e5)
+    ##         ##     lines <- c(lines, list(line))
+    ##         ## }
+    ##         ## ##
+    ##         ## hp3 = layout(hp2,
+    ##         ##              title = sprintf('Purity: %.2f Ploidy: %.2f Beta: %.2f Gamma: %.2f', alpha, tau, beta, gamma),
+    ##         ##              shapes = lines)
+    ##         ## wij(ggplotly(hp3))
 
-            ## PP grid
-            ## purity.min = 0.01
-            ## purity.max = 1.0
-            ## ploidy.step = 0.4
-            ## purity.step = 0.2
-            ## ploidy.min = 1.8 # ploidy bounds (can be generous)
-            ## ploidy.max = 4.2
-            ##  purity.guesses = seq(0, 1, purity.step)
-            ## pu.guesses = seq(pmax(0, purity.min), pmin(1.00, purity.max), purity.step)
-            ## ploidy.guesses = seq(pmin(0.5, ploidy.min), pmax(10, ploidy.max), ploidy.step)
-            ## pl.guesses = seq(pmax(0.5, ploidy.min), pmax(0.5, ploidy.max), ploidy.step)
-            ## ppgr = as.data.table(expand.grid(list(purity = pu.guesses, ploidy = pl.guesses)))
-            ## ppgr[, ":="(visible = FALSE, name = sprintf("Purity: %.2f Ploidy: %.2f", purity, ploidy))]
-            ## ppgr[(abs(purity-pu0)<0.001 & abs(ploidy-pl0)<0.001), visible := TRUE]
+    ##         ## PP grid
+    ##         ## purity.min = 0.01
+    ##         ## purity.max = 1.0
+    ##         ## ploidy.step = 0.4
+    ##         ## purity.step = 0.2
+    ##         ## ploidy.min = 1.8 # ploidy bounds (can be generous)
+    ##         ## ploidy.max = 4.2
+    ##         ##  purity.guesses = seq(0, 1, purity.step)
+    ##         ## pu.guesses = seq(pmax(0, purity.min), pmin(1.00, purity.max), purity.step)
+    ##         ## ploidy.guesses = seq(pmin(0.5, ploidy.min), pmax(10, ploidy.max), ploidy.step)
+    ##         ## pl.guesses = seq(pmax(0.5, ploidy.min), pmax(0.5, ploidy.max), ploidy.step)
+    ##         ## ppgr = as.data.table(expand.grid(list(purity = pu.guesses, ploidy = pl.guesses)))
+    ##         ## ppgr[, ":="(visible = FALSE, name = sprintf("Purity: %.2f Ploidy: %.2f", purity, ploidy))]
+    ##         ## ppgr[(abs(purity-pu0)<0.001 & abs(ploidy-pl0)<0.001), visible := TRUE]
             
 
-            ## hp2 = plot_ly(x = segsamp$mean,
-            ##               type = "histogram")
-            ## ## create sliders for purity and ploidy values
-            ## pu.scroll = list()
-            ## for (i in seq_along(pu.guesses)){
-            ##     pu.scroll[[i]] <- list(
-            ##         method = "relayout",
-            ##         ## args = list('visible', ppgr[, ifelse(abs(purity-pu.guesses[[i]])<0.001, TRUE, FALSE)])
-            ##         args = list('visible', ifelse(seq_along(pu.guesses)==i, TRUE, FALSE))
-            ##     )
-            ## }
-            ## pl.scroll = list()
-            ## for (j in seq_along(pl.guesses)){
-            ##     pl.scroll[[j]] <- list(
-            ##         method = "relayout",
-            ##         ## args = list('visible', ppgr[, ifelse(abs(ploidy-pl.guesses[[j]])<0.001, TRUE, FALSE)])
-            ##         args = list('visible', ifelse(seq_along(pl.guesses)==j, TRUE, FALSE))
-            ##     )
-            ## }
+    ##         ## hp2 = plot_ly(x = segsamp$mean,
+    ##         ##               type = "histogram")
+    ##         ## ## create sliders for purity and ploidy values
+    ##         ## pu.scroll = list()
+    ##         ## for (i in seq_along(pu.guesses)){
+    ##         ##     pu.scroll[[i]] <- list(
+    ##         ##         method = "relayout",
+    ##         ##         ## args = list('visible', ppgr[, ifelse(abs(purity-pu.guesses[[i]])<0.001, TRUE, FALSE)])
+    ##         ##         args = list('visible', ifelse(seq_along(pu.guesses)==i, TRUE, FALSE))
+    ##         ##     )
+    ##         ## }
+    ##         ## pl.scroll = list()
+    ##         ## for (j in seq_along(pl.guesses)){
+    ##         ##     pl.scroll[[j]] <- list(
+    ##         ##         method = "relayout",
+    ##         ##         ## args = list('visible', ppgr[, ifelse(abs(ploidy-pl.guesses[[j]])<0.001, TRUE, FALSE)])
+    ##         ##         args = list('visible', ifelse(seq_along(pl.guesses)==j, TRUE, FALSE))
+    ##         ##     )
+    ##         ## }
             
-            ## for (i in seq_along(pu.guesses)){
-            ##     for (j in seq_along(pl.guesses)){
-            ##         alpha = pu.guesses[[i]]
-            ##         tau = pl.guesses[[j]]
-            ##         beta = (tau + ploidy_normal * gamma / 2 ) / m0
-            ##         gamma = 2/alpha - 2
-            ##         grids = 1/beta*(0:100) + gamma/beta
-            ##         grids = grids[which(grids < segsamp[, max(mean)])]
-            ##         hp2 <- add_segments(
-            ##             hp2, x = grids, y = 0, xend = grids, yend = 1e5,
-            ##             ## visible = pu.scroll[[i]]$args[[2]] & pl.scroll[[i]]$args[[2]],
-            ##             visible = FALSE,
-            ##             name = sprintf('Purity: %.2f Ploidy: %.2f Beta: %.2f Gamma: %.2f', alpha, tau, beta, gamma),
-            ##             hoverinfo = "name",
-            ##             showlegend = FALSE)
-            ##     }
-            ## }
+    ##         ## for (i in seq_along(pu.guesses)){
+    ##         ##     for (j in seq_along(pl.guesses)){
+    ##         ##         alpha = pu.guesses[[i]]
+    ##         ##         tau = pl.guesses[[j]]
+    ##         ##         beta = (tau + ploidy_normal * gamma / 2 ) / m0
+    ##         ##         gamma = 2/alpha - 2
+    ##         ##         grids = 1/beta*(0:100) + gamma/beta
+    ##         ##         grids = grids[which(grids < segsamp[, max(mean)])]
+    ##         ##         hp2 <- add_segments(
+    ##         ##             hp2, x = grids, y = 0, xend = grids, yend = 1e5,
+    ##         ##             ## visible = pu.scroll[[i]]$args[[2]] & pl.scroll[[i]]$args[[2]],
+    ##         ##             visible = FALSE,
+    ##         ##             name = sprintf('Purity: %.2f Ploidy: %.2f Beta: %.2f Gamma: %.2f', alpha, tau, beta, gamma),
+    ##         ##             hoverinfo = "name",
+    ##         ##             showlegend = FALSE)
+    ##         ##     }
+    ##         ## }
             
-            ## ## for (i in seq_len(nrow(ppgr))){
-            ## ## for (i in 1:101){
-            ##     ## alpha = ppgr[i, purity]
-            ##     ## tau = ppgr[i, ploidy]
-            ##     ## add value to the scroll
-            ##     ## pu.sc = list(args = list('visible', rep(FALSE, nrow(ppgr))),
-            ##     ##              method = "restyle")
-            ##     ## pu.sc$args[[2]][i] = TRUE
-            ##     ## pp.scroll[[i]] = pu.sc
-            ##     ## pl.sc = list(args = list('visible', rep(FALSE, nrow(ppgr))),
-            ##     ##              method = "restyle")
-            ##     ## pl.sc$args[[2]][i] = TRUE
-            ##     ## pl.scroll[[i]] = pl.sc
-            ## ##     message(i)
-            ## ## }
+    ##         ## ## for (i in seq_len(nrow(ppgr))){
+    ##         ## ## for (i in 1:101){
+    ##         ##     ## alpha = ppgr[i, purity]
+    ##         ##     ## tau = ppgr[i, ploidy]
+    ##         ##     ## add value to the scroll
+    ##         ##     ## pu.sc = list(args = list('visible', rep(FALSE, nrow(ppgr))),
+    ##         ##     ##              method = "restyle")
+    ##         ##     ## pu.sc$args[[2]][i] = TRUE
+    ##         ##     ## pp.scroll[[i]] = pu.sc
+    ##         ##     ## pl.sc = list(args = list('visible', rep(FALSE, nrow(ppgr))),
+    ##         ##     ##              method = "restyle")
+    ##         ##     ## pl.sc$args[[2]][i] = TRUE
+    ##         ##     ## pl.scroll[[i]] = pl.sc
+    ##         ## ##     message(i)
+    ##         ## ## }
 
             
 
-            ## ## layout final plot with scroll bars
-            ## hp3 <- hp2 %>%
-            ##     layout(
-            ##         sliders = list(
-            ##             list(
-            ##                 active = which(abs(purity.guesses-pu0)<0.001),
-            ##                 currentvalue = list(prefix = "Purity = "),
-            ##                 pad = list(t = 20),
-            ##                 steps = pu.scroll),
-            ##             list(
-            ##                 active = which(abs(ploidy.guesses-pl0)<0.001),
-            ##                 currentvalue = list(prefix = "Ploidy = "),
-            ##                 pad = list(t = 100),
-            ##                 steps = pl.scroll)
-            ##         ))
-            ## wij(hp3)
+    ##         ## ## layout final plot with scroll bars
+    ##         ## hp3 <- hp2 %>%
+    ##         ##     layout(
+    ##         ##         sliders = list(
+    ##         ##             list(
+    ##         ##                 active = which(abs(purity.guesses-pu0)<0.001),
+    ##         ##                 currentvalue = list(prefix = "Purity = "),
+    ##         ##                 pad = list(t = 20),
+    ##         ##                 steps = pu.scroll),
+    ##         ##             list(
+    ##         ##                 active = which(abs(ploidy.guesses-pl0)<0.001),
+    ##         ##                 currentvalue = list(prefix = "Ploidy = "),
+    ##         ##                 pad = list(t = 100),
+    ##         ##                 steps = pl.scroll)
+    ##         ##         ))
+    ##         ## wij(hp3)
             
-        } else {
-            message("Did not find karyograph in the same directory as JaBbA output.")
-        }
-    }
+    ##     } else {
+    ##         message("Did not find karyograph in the same directory as JaBbA output.")
+    ##     }
+    ## }
     
 
     ## #################
     ## summarize
-    ##
     ## #################
-
     summary.fn = normalizePath(file.path(opt$outdir, "summary.rds"))
     if (!file.exists(summary.fn) | opt$overwrite) {
         message("Computing CN/mutation summary")
@@ -1111,3 +1208,6 @@ rmarkdown::render(
                   tumor_type = opt$tumor_type,
                   server = opt$server),
     quiet = FALSE)
+
+message("clean up temporary files")
+file.remove(tmp.tpm.cohort.fname)

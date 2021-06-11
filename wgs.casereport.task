@@ -19,6 +19,7 @@ input	snpeff_indel	snpeff_indel	path	/dev/null
 input	snpeff_config	snpeff_config	path	~/modules/SnpEff/snpEff.config
 input	server	server	value		"https://mskilab.com/gGraph/"
 input	tumor_type	tumor_type	value "unknown"
+input	cohort_metadata	cohort_metadata	path  /dev/null
 input	flags	flags	value		""
 output	wgs_casereport	*wgs.report.html$
 

@@ -151,27 +151,31 @@ if (file.exists(driver.fusions.fname)) {
 
 ## Gallery {.tabset .tabset-fade .tabset-pills}
 
-```{r fusion-tabset, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
-fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
-if (nrow(fusions.gallery.dt) > 0) {
-    cat("\n")
-    for (g in fusions.gallery.dt[, genes]) {
+```{r fusion-tabset, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+if (file.good(file.path(params$outdir, "fusions.driver.txt"))){
+    fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
+    if (nrow(fusions.gallery.dt) > 0) {
         cat("\n")
-        cat("###", paste0(g, "<br>","\n"))
-	cat(
-		paste0('<p>',
-			'<a href="',
-			fusions.gallery.dt[genes == g, plot.link],
-			'">',
-			'<img src="',
-			fusions.gallery.dt[genes == g, plot.fname],
-			'" width="75%" />',
-			'</a>',
-			'</p>'
-		)
-	)
-        cat('\n', '<br>', '\n\n')
+        for (g in fusions.gallery.dt[, genes]) {
+            cat("\n")
+            cat("###", paste0(g, "<br>","\n"))
+            cat(
+                paste0('<p>',
+                       '<a href="',
+                       fusions.gallery.dt[genes == g, plot.link],
+                       '">',
+                       '<img src="',
+                       fusions.gallery.dt[genes == g, plot.fname],
+                       '" width="75%" />',
+                       '</a>',
+                       '</p>'
+                       )
+            )
+            cat('\n', '<br>', '\n\n')
+        }
     }
+} else {
+    cat("\n", "Fusion results not available.", "<br>\n\n")
 }
 ```
 
@@ -232,19 +236,27 @@ if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
     for (g in cool.exp[order(qt, decreasing = T), gene]){
         cat("\n")
         cat("###", cool.exp[g, paste0(gene, " (", direction, ")", "<br>", "\n")])
-	cat(
-		paste0(
-			'<p float="left">',
-			'<img src="',
-			params$outdir,
-			cool.exp[g, paste0("/", gene, ".", direction, ".expr.png")],
-			'" width="45%" />',
-			'<img src="',
-			expr.slickr.dt[gene_name == g, plot.fname],
-			'" width="45%" />',
-			'</p>'
-		)
-	)
+        cat()
+        cat(
+            paste0("![](", paste0(params$outdir, cool.exp[g, paste0("/", gene, ".", direction, ".expr.png")]),")"), "\n"
+        )
+        cat("\n")
+        cat(
+            paste0("![](", expr.slickr.dt[gene_name == g, plot.fname],")"), "\n"
+        )
+        ## cat(
+        ## 	paste0(
+        ## 		'<p float="left">',
+        ## 		'<img src="',
+        ## 		params$outdir,
+        ## 		cool.exp[g, paste0("/", gene, ".", direction, ".expr.png")],
+        ## 		'" width="45%" />',
+        ## 		'<img src="',
+        ## 		expr.slickr.dt[gene_name == g, plot.fname],
+        ## 		'" width="45%" />',
+        ## 		'</p>'
+        ## 	)
+        ## )
         cat('\n', '<br>', '\n\n')
     }
 }
@@ -264,9 +276,11 @@ knitr::include_graphics(file.path(params$outdir, "ridgeplot.png"))
 
 ```{r, SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 ## read data table with plot png/URL
-sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
-slick_up = slickR(obj = sv.slickr.dt$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
-slick_up
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+    slick_up = slickR(obj = sv.slickr.dt$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+    slick_up
+}
 ```
 
 # Driver SNVs/indels
@@ -281,27 +295,29 @@ Fitting COSMIC signatures to the whole genome mutation profiles of
 this sample we obtain the following active SNV mutation signatures:
 
 ```{r, SNV-signature, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
-cat("\n")
-cat("## deconstructSigs: input profile, fitted, error")
-cat("\n")
-## knitr::include_graphics(paste0(params$outdir, "/deconstruct_sigs.png"))
+if (file.good(paste0(params$outdir, "/deconstruct_sigs.png"))){
+    cat("\n")
+    cat("## deconstructSigs: input profile, fitted, error")
+    cat("\n")
+    ## knitr::include_graphics(paste0(params$outdir, "/deconstruct_sigs.png"))
 
-cat(
-    paste0("![](", paste0(params$outdir, "/deconstruct_sigs.png"),")"), "\n"
-)
+    cat(
+        paste0("![](", paste0(params$outdir, "/deconstruct_sigs.png"),")"), "\n"
+    )
 
-cat ("\n<br>\n")
+    cat ("\n<br>\n")
 
-cat("\n")
-cat("## SNV signature composition")
-cat("\n")
+    cat("\n")
+    cat("## SNV signature composition")
+    cat("\n")
 
-if (file.exists(paste0(params$outdir, "/sig.composition.png"))) {
-   cat(
-	 paste0("![](", paste0(params$outdir, "/sig.composition.png"),")"), "\n")
-}	 
+    if (file.exists(paste0(params$outdir, "/sig.composition.png"))) {
+        cat(
+            paste0("![](", paste0(params$outdir, "/sig.composition.png"),")"), "\n")
+    }	 
 
-cat ("\n<br>\n")
+    cat ("\n<br>\n")
+}
 ```
 
 ```{r, HRDetect, results = "asis", echo = FALSE, out.width="100%", fig.align = "center", max.height = 800}
@@ -364,8 +380,7 @@ if (length(prox.plots)>0){
                 prox.plot,
                 '" width="45%" />',
                 '<img src="',
-                params$outdir,
-                cool.exp[g, paste0("/", gene, ".", direction, ".expr.png")],
+                cool.exp[g, gf],
                 '" width="45%" />',
                 '</p>'
             )
