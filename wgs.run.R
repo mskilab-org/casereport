@@ -34,6 +34,7 @@ if (!exists("opt")){
         make_option(c("--ref"), type = "character", default = "hg19", help = "one of 'hg19', 'hg38'"),
         make_option(c("--snpeff_config"), type = "character", default = "~/modules/SnpEff/snpEff.config", help = "snpeff.config file path"),
         make_option(c("--cohort_metadata"), type = "character", default = NA_character_, help = "Metadata of the background cohort"),
+        make_option(c("--pmkb_interpretations"), type = "character", default = NA_character_, help = "Path to CVS with PMKB interpretations. If not provided, then a default table will be used (in data/pmkb-interpretations-06-11-2021.csv). See https://pmkb.weill.cornell.edu/about for details about PMKB."),
         make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir")
     )
     parseobj = OptionParser(option_list = option_list)
@@ -67,6 +68,7 @@ suppressMessages(expr = {
         message("Loading critical dependencies from KevUtils")
         source(paste0(opt$libdir, "/utils.R"))
         source(paste0(opt$libdir, "/config.R"))
+        source(paste0(opt$libdir, "/pmkb-utils.R"))
         source(file.path(opt$libdir, "sv.gallery.R"))
         source(file.path(opt$libdir, "fusion.gallery.R"))
     })
@@ -482,6 +484,23 @@ if (!opt$knit_only){
         } else {
             driver.mutations.dt = data.table()
         }
+
+        if (driver.mutations.dt[,.N] > 0){
+            mutation.tier.driver.name = 'PMKB' # we can later switch to a different annotator or cycle through multiple annotators if we wish to
+            mutation.tier.parser = mutation.tier.annotators[['PMKB']]
+            driver.mutations.dt = mutation.tier.annotator(driver.mutations.dt)
+        }
+
+        # add ONC and TSG annotations
+        # notice that if the mutation.tier.parser added "gene.type" annotations then this step could override some of these
+        cgc = fread(cgc.fname)
+        tsg = cgc[get('Is Tumor Suppressor Gene') == 'Yes', get('Hugo Symbol')]
+        onc = cgc[get('Is Oncogene') == 'Yes', get('Hugo Symbol')]
+        driver.mutations.dt[gene %in% tsg, gene.type := 'TSG']
+        driver.mutations.dt[gene %in% onc, gene.type := 'ONC']
+        # some genes are annotated in CGC as both
+        driver.mutations.dt[gene %in% onc & gene %in% tsg, gene.type := 'ONC|TSG']
+
         fwrite(driver.mutations.dt, driver.mutations.fname)
     } else {
         message("Driver mutations file already exists")
@@ -495,6 +514,7 @@ if (!opt$knit_only){
     if (opt$overwrite | !file.exists(fusions.driver.fname) | !file.exists(fusions.other.fname)) {
         ## if opt$fusions not available, run it
         if (!file.exists(opt$fusions) | file.size(opt$fusions)==0){
+            message('Computig fusions')
             if (file.exists(paste0(opt$outdir, "/fusions.rds"))){
                 opt$fusions = paste0(opt$outdir, "/fusions.rds")
             } else {
@@ -506,6 +526,9 @@ if (!opt$knit_only){
                 opt$fusions = paste0(opt$outdir, "/fusions.rds")
                 saveRDS(opt, "cmd.args.rds")
             }
+        } else {
+            message('Found fusion calls: ', opt$fusions)
+            fu = readRDS(opt$fusions)
         }
         message("Preparing fusion genes report")
         if (length(fu)>0){
@@ -539,10 +562,11 @@ if (!opt$knit_only){
 
             }
             
-        } else {
-            message("Fusion files already exist")
         }
+    } else {
+            message("Fusion files already exist")
     }
+
     
     
     ## ##################
@@ -1042,183 +1066,6 @@ if (!opt$knit_only){
         }
     }
 
-
-    ## ##################
-    ## Purity ploidy sliders
-    ## ##################
-    ## get the purity ploidy
-    ## if (file.good(opt$jabba_rds)){
-    ##     kagf = gsub("jabba.simple", "karyograph", opt$jabba_rds)
-    ##     if (file.good(kagf)){
-
-    ##         ## start gathering the LL matrix
-    ##         kag = readRDS(kagf)
-    ##         pu0 = gg$meta$purity
-    ##         pl0 = gg$meta$ploidy
-    ##         seg = kag$segstats %Q% (strand=="+" & !bad) %>% gr.stripstrand
-    ##         ppg = ppgrid(segstats = seg, return.nll = TRUE)
-    ##         nll = ppg$NLL
-
-    ##         ## first plot, histogram with grids
-    ##         tmp = seg  ## only plot seg that we haven't fixed SD for and that have normal cn 1, to minimize confusion
-    ##         dupval = sort(table(tmp$mean), decreasing = TRUE)[1]
-    ##         if (!is.na(dupval))
-    ##             if (dupval>5)
-    ##                 tmp = tmp[-which(as.character(tmp$mean) == names(dupval))]
-
-    ##         ## sampling random loci to plot not segments
-    ##         ## segsamp = pmin(sample(tmp$mean, 1e6, replace = T, prob = width(tmp)), xlim[2])
-    ##         xlim = c(0, Inf)
-    ##         tmp = tmp %Q% (!is.na(mean))
-    ##         segsamp = sample(tmp[, "mean"], 1e6, replace = T, prob = width(tmp)) %>% gr2dt
-    ##         segsamp$mu = segsamp$mean
-    ##         ## segsamp[, mean := pmax(xlim[1], pmin(mean, xlim[2]))]
-    ##         segsamp = segsamp[!is.na(mu)]
-
-    ##         mu = tmp$mean
-    ##         w = width(tmp)
-    ##         Sw = sum(as.numeric(width(tmp)))
-    ##         sd = tmp$sd
-    ##         m0 = sum(as.numeric(mu*w))/Sw
-    ##         ncn = rep(2, length(mu))
-    ##         ploidy_normal = 2
-
-    ##         alpha = pu0
-    ##         tau = pl0
-    ##         gamma = 2/alpha - 2
-    ##         beta = (tau + ploidy_normal * gamma / 2 ) / m0
-    ##         grids = 1/beta*(0:100) + gamma/beta
-    ##         grids = grids[which(grids < max(mu))]
-
-    ##         ## make static image
-    ##         h = ggplot(segsamp, aes(x = mu)) +
-    ##             geom_histogram(bins = 1000) +
-    ##             geom_vline(xintercept = grids, color = alpha("red", 0.5), lty = 2) +
-    ##             scale_x_continuous(limits = c(0, segsamp[, quantile(mu, 0.999)])) +
-    ##             labs(title = sprintf('Purity: %.2f Ploidy: %.2f Beta: %.2f Gamma: %.2f', alpha, tau, beta, gamma),
-    ##                  x = "Intensity") +
-    ##             theme_minimal(12)
-
-    ##         png(paste0(opt$outdir, "/ppfit.hist.png"), width = 1200, height = 800)
-    ##         print(h)
-    ##         dev.off()
-    ##         ## hp = ggplotly(h)
-
-
-
-    ##         ## line <- list(
-    ##         ##     type = "line",
-    ##         ##     line = list(color = alpha("#e6194b", 0.5), lty = 2),
-    ##         ##     xref = "x",
-    ##         ##     yref = "y"
-    ##         ## )
-    ##         ## lines <- list()
-    ##         ## for (i in seq_along(grids)) {
-    ##         ##     line[["x0"]] <- grids[i]
-    ##         ##     line[["x1"]] <- grids[i]
-    ##         ##     line[c("y0", "y1")] <- c(0, 1e5)
-    ##         ##     lines <- c(lines, list(line))
-    ##         ## }
-    ##         ## ##
-    ##         ## hp3 = layout(hp2,
-    ##         ##              title = sprintf('Purity: %.2f Ploidy: %.2f Beta: %.2f Gamma: %.2f', alpha, tau, beta, gamma),
-    ##         ##              shapes = lines)
-    ##         ## wij(ggplotly(hp3))
-
-    ##         ## PP grid
-    ##         ## purity.min = 0.01
-    ##         ## purity.max = 1.0
-    ##         ## ploidy.step = 0.4
-    ##         ## purity.step = 0.2
-    ##         ## ploidy.min = 1.8 # ploidy bounds (can be generous)
-    ##         ## ploidy.max = 4.2
-    ##         ##  purity.guesses = seq(0, 1, purity.step)
-    ##         ## pu.guesses = seq(pmax(0, purity.min), pmin(1.00, purity.max), purity.step)
-    ##         ## ploidy.guesses = seq(pmin(0.5, ploidy.min), pmax(10, ploidy.max), ploidy.step)
-    ##         ## pl.guesses = seq(pmax(0.5, ploidy.min), pmax(0.5, ploidy.max), ploidy.step)
-    ##         ## ppgr = as.data.table(expand.grid(list(purity = pu.guesses, ploidy = pl.guesses)))
-    ##         ## ppgr[, ":="(visible = FALSE, name = sprintf("Purity: %.2f Ploidy: %.2f", purity, ploidy))]
-    ##         ## ppgr[(abs(purity-pu0)<0.001 & abs(ploidy-pl0)<0.001), visible := TRUE]
-            
-
-    ##         ## hp2 = plot_ly(x = segsamp$mean,
-    ##         ##               type = "histogram")
-    ##         ## ## create sliders for purity and ploidy values
-    ##         ## pu.scroll = list()
-    ##         ## for (i in seq_along(pu.guesses)){
-    ##         ##     pu.scroll[[i]] <- list(
-    ##         ##         method = "relayout",
-    ##         ##         ## args = list('visible', ppgr[, ifelse(abs(purity-pu.guesses[[i]])<0.001, TRUE, FALSE)])
-    ##         ##         args = list('visible', ifelse(seq_along(pu.guesses)==i, TRUE, FALSE))
-    ##         ##     )
-    ##         ## }
-    ##         ## pl.scroll = list()
-    ##         ## for (j in seq_along(pl.guesses)){
-    ##         ##     pl.scroll[[j]] <- list(
-    ##         ##         method = "relayout",
-    ##         ##         ## args = list('visible', ppgr[, ifelse(abs(ploidy-pl.guesses[[j]])<0.001, TRUE, FALSE)])
-    ##         ##         args = list('visible', ifelse(seq_along(pl.guesses)==j, TRUE, FALSE))
-    ##         ##     )
-    ##         ## }
-            
-    ##         ## for (i in seq_along(pu.guesses)){
-    ##         ##     for (j in seq_along(pl.guesses)){
-    ##         ##         alpha = pu.guesses[[i]]
-    ##         ##         tau = pl.guesses[[j]]
-    ##         ##         beta = (tau + ploidy_normal * gamma / 2 ) / m0
-    ##         ##         gamma = 2/alpha - 2
-    ##         ##         grids = 1/beta*(0:100) + gamma/beta
-    ##         ##         grids = grids[which(grids < segsamp[, max(mean)])]
-    ##         ##         hp2 <- add_segments(
-    ##         ##             hp2, x = grids, y = 0, xend = grids, yend = 1e5,
-    ##         ##             ## visible = pu.scroll[[i]]$args[[2]] & pl.scroll[[i]]$args[[2]],
-    ##         ##             visible = FALSE,
-    ##         ##             name = sprintf('Purity: %.2f Ploidy: %.2f Beta: %.2f Gamma: %.2f', alpha, tau, beta, gamma),
-    ##         ##             hoverinfo = "name",
-    ##         ##             showlegend = FALSE)
-    ##         ##     }
-    ##         ## }
-            
-    ##         ## ## for (i in seq_len(nrow(ppgr))){
-    ##         ## ## for (i in 1:101){
-    ##         ##     ## alpha = ppgr[i, purity]
-    ##         ##     ## tau = ppgr[i, ploidy]
-    ##         ##     ## add value to the scroll
-    ##         ##     ## pu.sc = list(args = list('visible', rep(FALSE, nrow(ppgr))),
-    ##         ##     ##              method = "restyle")
-    ##         ##     ## pu.sc$args[[2]][i] = TRUE
-    ##         ##     ## pp.scroll[[i]] = pu.sc
-    ##         ##     ## pl.sc = list(args = list('visible', rep(FALSE, nrow(ppgr))),
-    ##         ##     ##              method = "restyle")
-    ##         ##     ## pl.sc$args[[2]][i] = TRUE
-    ##         ##     ## pl.scroll[[i]] = pl.sc
-    ##         ## ##     message(i)
-    ##         ## ## }
-
-            
-
-    ##         ## ## layout final plot with scroll bars
-    ##         ## hp3 <- hp2 %>%
-    ##         ##     layout(
-    ##         ##         sliders = list(
-    ##         ##             list(
-    ##         ##                 active = which(abs(purity.guesses-pu0)<0.001),
-    ##         ##                 currentvalue = list(prefix = "Purity = "),
-    ##         ##                 pad = list(t = 20),
-    ##         ##                 steps = pu.scroll),
-    ##         ##             list(
-    ##         ##                 active = which(abs(ploidy.guesses-pl0)<0.001),
-    ##         ##                 currentvalue = list(prefix = "Ploidy = "),
-    ##         ##                 pad = list(t = 100),
-    ##         ##                 steps = pl.scroll)
-    ##         ##         ))
-    ##         ## wij(hp3)
-            
-    ##     } else {
-    ##         message("Did not find karyograph in the same directory as JaBbA output.")
-    ##     }
-    ## }
-    
 
     ## #################
     ## summarize
