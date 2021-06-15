@@ -487,7 +487,7 @@ if (!opt$knit_only){
 
         if (driver.mutations.dt[,.N] > 0){
             mutation.tier.driver.name = 'PMKB' # we can later switch to a different annotator or cycle through multiple annotators if we wish to
-            mutation.tier.annotators = mutation.tier.annotators[['PMKB']]
+            mutation.tier.annotator = mutation.tier.annotators[['PMKB']]
             driver.mutations.dt = mutation.tier.annotator(driver.mutations.dt)
         }
 
