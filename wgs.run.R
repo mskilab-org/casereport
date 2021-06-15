@@ -424,10 +424,20 @@ if (!opt$knit_only){
         }
 
         if (driver.mutations.dt[,.N] > 0){
-            mutation.tier.driver.name = 'PMKB'
-            mutation.tier.parser = mutation.tier.parsers[['PMKB']]
-            driver.mutations.dt = mutation.tier.parser(driver.mutations.dt)
+            mutation.tier.driver.name = 'PMKB' # we can later switch to a different annotator or cycle through multiple annotators if we wish to
+            mutation.tier.parser = mutation.tier.annotators[['PMKB']]
+            driver.mutations.dt = mutation.tier.annotator(driver.mutations.dt)
         }
+
+        # add ONC and TSG annotations
+        # notice that if the mutation.tier.parser added "gene.type" annotations then this step could override some of these
+        cgc = fread(cgc.fname)
+        tsg = cgc[get('Is Tumor Suppressor Gene') == 'Yes', get('Hugo Symbol')]
+        onc = cgc[get('Is Oncogene') == 'Yes', get('Hugo Symbol')]
+        driver.mutations.dt[gene %in% tsg, gene.type := 'TSG']
+        driver.mutations.dt[gene %in% onc, gene.type := 'ONC']
+        # some genes are annotated in CGC as both
+        driver.mutations.dt[gene %in% onc & gene %in% tsg, gene.type := 'ONC|TSG']
 
         fwrite(driver.mutations.dt, driver.mutations.fname)
     } else {
