@@ -1,0 +1,514 @@
+gene	variant	type	any.variant	Tier
+ABL1	any mutation	mutation	TRUE	1
+AKT1	E17K	missense	FALSE	1
+ALK	R1275Q	missense	FALSE	1
+ALK	F1174L	missense	FALSE	1
+ALK	F1174C	missense	FALSE	1
+ALK	L1196M	missense	FALSE	1
+ALK	L1196Q	missense	FALSE	1
+ALK	G1202R	missense	FALSE	1
+APC	any missense	missense	TRUE	2
+APC	any nonsense	nonsense	TRUE	2
+APC	any frameshift	frameshift	TRUE	2
+APC	codon(s) 1464 frameshift		FALSE	2
+APC	Q1338*		FALSE	2
+APC	R1114*		FALSE	2
+APC	codon(s) 1556 frameshift		FALSE	2
+APC	R876*		FALSE	2
+APC	codon(s) 1465 frameshift		FALSE	2
+APC	codon(s) 1307 frameshift		FALSE	2
+APC	Q1429*		FALSE	2
+APC	E1317Q	missense	FALSE	2
+APC	I1307K	missense	FALSE	2
+APC	K1454E	missense	FALSE	2
+AR	copy number gain		FALSE	1
+AR	T878A	missense	FALSE	1
+AR	H875Y	missense	FALSE	1
+ARID1A	any mutation	mutation	TRUE	2
+ASXL1	any mutation	mutation	TRUE	1
+ASXL1	any missense	missense	TRUE	1
+ATM	P604S	missense	FALSE	1
+ATM	A1309T	missense	FALSE	1
+ATM	F858L	missense	FALSE	1
+ATM	P2699S	missense	FALSE	1
+ATM	R2443Q	missense	FALSE	1
+ATM	R2691C	missense	FALSE	1
+AURKA	copy number gain		FALSE	2
+BCL2	copy number gain		FALSE	1
+BCOR	any mutation	mutation	TRUE	1
+BCOR	any missense	missense	TRUE	1
+BCORL1	any mutation	mutation	TRUE	2
+BRAF	V600D	missense	FALSE	1
+BRAF	V600E	missense	FALSE	1
+BRAF	V600K	missense	FALSE	1
+BRAF	V600R	missense	FALSE	1
+BRAF	codon(s) 600 any		TRUE	1
+BRAF	any mutation	mutation	TRUE	1
+BRAF	V600M	missense	FALSE	1
+BRAF	V600G	missense	FALSE	1
+BRAF	G469A	missense	FALSE	1
+BRAF	codon(s) 469 any		TRUE	1
+BRAF	G464V	missense	FALSE	1
+BRAF	codon(s) 464 any		TRUE	1
+BRAF	K601E	missense	FALSE	1
+BRAF	codon(s) 601 any		TRUE	1
+BRAF	D594E	missense	FALSE	1
+BRAF	codon(s) 594 any		TRUE	1
+BRAF	T599_V600insT		FALSE	1
+BRAF	T599_V600insV		FALSE	1
+BRAF	F595S	missense	FALSE	1
+BRAF	L597V	missense	FALSE	1
+BRAF	L597R	missense	FALSE	1
+BRAF	G466V	missense	FALSE	1
+BRAF	N581S	missense	FALSE	1
+BRAF	E586K	missense	FALSE	1
+BRAF	G469R	missense	FALSE	1
+BRAF	L597Q	missense	FALSE	1
+BRAF	G469V	missense	FALSE	1
+BRAF	D594N	missense	FALSE	1
+BRAF	G596C	missense	FALSE	1
+BRAF	L597S	missense	FALSE	1
+BRAF	G466R	missense	FALSE	1
+BRAF	F468S	missense	FALSE	1
+BRAF	N581I	missense	FALSE	1
+BRAF	V590I	missense	FALSE	1
+BRAF	D594G	missense	FALSE	1
+BRCA1	any mutation	mutation	TRUE	1
+BRCA2	any mutation	mutation	TRUE	1
+BRINP3	any mutation	mutation	TRUE	3
+BTK	C481S	missense	FALSE	1
+CALR	exon(s) 9 frameshift		FALSE	1
+CBL	any mutation	mutation	TRUE	2
+CCND1	copy number gain		FALSE	2
+CDH1	any indel	indel	TRUE	2
+CDH1	A403T	missense	FALSE	2
+CDH1	D400V	missense	FALSE	2
+CDK4	copy number gain		FALSE	1
+CDK6	copy number gain		FALSE	1
+CDKN2A	W110*		FALSE	2
+CDKN2A	Y129*		FALSE	2
+CDKN2A	any frameshift	frameshift	TRUE	2
+CDKN2A	H83Y	missense	FALSE	2
+CDKN2A	codon(s) 58 frameshift		FALSE	2
+CDKN2A	codon(s) 80 frameshift		FALSE	2
+CDKN2A	D108H	missense	FALSE	2
+CDKN2A	copy number loss		FALSE	2
+CDKN2A	V126D	missense	FALSE	2
+CDKN2A	R128W	missense	FALSE	2
+CDKN2A	G67C	missense	FALSE	2
+CDKN2A	D84V	missense	FALSE	2
+CDKN2B	copy number loss		FALSE	1
+CEBPA	any mutation	mutation	TRUE	1
+CEBPA	Q83*		FALSE	1
+CHD1	any indel	indel	TRUE	2
+CRKL	copy number gain		FALSE	2
+CSF3R	T618I	missense	FALSE	1
+CSF3R	any nonsense	nonsense	TRUE	1
+CSF3R	any frameshift	frameshift	TRUE	1
+CTNNB1	codon(s) 32, 33, 34, 35, 36, 37, 41, 45 any		TRUE	1
+CTNNB1	S45P	missense	FALSE	1
+CTNNB1	G34E	missense	FALSE	1
+CTNNB1	S37C	missense	FALSE	1
+CTNNB1	S37F	missense	FALSE	1
+CTNNB1	D32V	missense	FALSE	1
+CTNNB1	codon(s) 41, 45 any		TRUE	1
+CTNNB1	S37Y	missense	FALSE	1
+CTNNB1	Y30_I35del		FALSE	1
+CTNNB1	S45F	missense	FALSE	1
+CTNNB1	T41A	missense	FALSE	1
+CTNNB1	S33F	missense	FALSE	1
+DNMT3A	any mutation	mutation	TRUE	2
+EGFR	A289V	missense	FALSE	1
+EGFR	A289D	missense	FALSE	1
+EGFR	G598V	missense	FALSE	1
+EGFR	P596L	missense	FALSE	1
+EGFR	codon(s) 289, 596, 598 any		TRUE	1
+EGFR	L858R	missense	FALSE	1
+EGFR	exon(s) 18, 19, 20, 21 any		TRUE	1
+EGFR	E746_A750delinsI		FALSE	1
+EGFR	exon(s) 19 deletion		FALSE	1
+EGFR	E746_A750del		FALSE	1
+EGFR	codon(s) 790 any		TRUE	1
+EGFR	exon(s) 20 any		TRUE	1
+EGFR	exon(s) 20 insertion		FALSE	1
+EGFR	H773L	missense	FALSE	1
+EGFR	V774M	missense	FALSE	1
+EGFR	D761N	missense	FALSE	1
+EGFR	D761Y	missense	FALSE	1
+EGFR	codon(s) 761 any		TRUE	1
+EGFR	G863D	missense	FALSE	1
+EGFR	P753S	missense	FALSE	1
+EGFR	L861Q	missense	FALSE	1
+EGFR	codon(s) 861 any		TRUE	1
+EGFR	E709K	missense	FALSE	1
+EGFR	copy number gain		FALSE	1
+EGFR	S768I	missense	FALSE	1
+EGFR	G724S	missense	FALSE	1
+EGFR	R776H	missense	FALSE	1
+EGFR	K745_E746insIPVAIK		FALSE	1
+EGFR	E709_T710delinsD		FALSE	1
+EGFR	exon(s) 18 indel		FALSE	1
+EGFR	exon(s) 18 deletion		FALSE	1
+EGFR	T790M	missense	FALSE	1
+EGFR	L747P	missense	FALSE	1
+EGFR	V769L	missense	FALSE	1
+EGFR	R108K	missense	FALSE	1
+EGFR	L861R	missense	FALSE	1
+EGFR	V765M	missense	FALSE	1
+EGFR	K757M	missense	FALSE	1
+EGFR	G721S	missense	FALSE	1
+EGFR	A750P	missense	FALSE	1
+EGFR	A763_Y764insFQEA		FALSE	1
+EGFR	G719A	missense	FALSE	1
+EGFR	G719C	missense	FALSE	1
+EGFR	G719S	missense	FALSE	1
+EGFR	G719D	missense	FALSE	1
+EGFR	E709_G719delins11		FALSE	1
+EGFR	G796S	missense	FALSE	1
+EP300	any mutation	mutation	TRUE	2
+ERBB2	G776delinsVC		FALSE	1
+ERBB2	V842I	missense	FALSE	1
+ERBB2	S310F	missense	FALSE	1
+ERBB2	S310Y	missense	FALSE	1
+ERBB2	R157W	missense	FALSE	1
+ERBB2	exon(s) 20 insertion		FALSE	1
+ERBB2	L755S	missense	FALSE	1
+ERBB2	copy number gain		FALSE	1
+ERBB2	L755P	missense	FALSE	1
+ERBB2	S295F	missense	FALSE	1
+ERBB2	L869R	missense	FALSE	1
+ERBB2	T798I	missense	FALSE	1
+ERBB2	G776V	missense	FALSE	1
+ERBB2	I767M	missense	FALSE	1
+ERBB3	copy number gain		FALSE	2
+ERBB4	P920H	missense	FALSE	1
+ESR1	Y537S	missense	FALSE	2
+ESR1	D538G	missense	FALSE	2
+ETV6	any mutation	mutation	TRUE	1
+ETV6	any missense	missense	TRUE	1
+EZH2	any mutation	mutation	TRUE	1
+EZH2	any missense	missense	TRUE	1
+FANCL	any mutation	mutation	TRUE	1
+FBXW7	R479Q	missense	FALSE	1
+FBXW7	D761N	missense	FALSE	1
+FBXW7	codon(s) 505, 465 missense		FALSE	1
+FBXW7	R505C	missense	FALSE	1
+FBXW7	R505G	missense	FALSE	1
+FBXW7	R393*		FALSE	1
+FBXW7	H500Y	missense	FALSE	1
+FBXW7	R465H	missense	FALSE	1
+FGFR1	copy number gain		FALSE	1
+FGFR1	T141R	missense	FALSE	1
+FGFR2	P253R	missense	FALSE	1
+FGFR2	copy number gain		FALSE	1
+FGFR2	N549K	missense	FALSE	1
+FGFR3	Y373C	missense	FALSE	1
+FGFR3	F384L	missense	FALSE	1
+FGFR3	R248C	missense	FALSE	1
+FGFR3	S249C	missense	FALSE	1
+FGFR3	copy number gain		FALSE	1
+FLCN	any mutation	mutation	TRUE	1
+FLT3	D835A	missense	FALSE	1
+FLT3	D835E	missense	FALSE	1
+FLT3	D835H	missense	FALSE	1
+FLT3	D835N	missense	FALSE	1
+FLT3	D835V	missense	FALSE	1
+FLT3	exon(s) 14 insertion		FALSE	1
+FLT3	exon(s) 15 insertion		FALSE	1
+FLT3	codon(s) 835 missense		FALSE	1
+FLT3	Y842C	missense	FALSE	1
+FLT3	codon(s) 839 missense		FALSE	1
+FLT3	codon(s) 842 missense		FALSE	1
+FLT3	codon(s) 691 missense		FALSE	1
+FLT3	codon(s) 676 missense		FALSE	1
+FLT3	codon(s) 697 missense		FALSE	1
+FLT3	codon(s) 835 any		TRUE	1
+FLT3	codon(s) 839 any		TRUE	1
+FLT3	codon(s) 842 any		TRUE	1
+FLT3	exon(s) 20 any		TRUE	1
+FLT3	exon(s) 17 any		TRUE	1
+FLT3	exon(s) 14-23 any		TRUE	1
+FOXL2	C134W	missense	FALSE	2
+GATA1	any mutation	mutation	TRUE	2
+GATA2	any mutation	mutation	TRUE	1
+GNAS	codon(s) 201, 844 any		TRUE	1
+GNAS	Q227L	missense	FALSE	1
+GNAS	R201C	missense	FALSE	1
+GNB1	codon(s) 57 missense		FALSE	1
+H3F3A	codon(s) 28 missense		FALSE	1
+HNRNPK	any mutation	mutation	TRUE	2
+HRAS	codon(s) 12, 13, 61 any		TRUE	1
+HRAS	Q61R	missense	FALSE	1
+HRAS	Q61K	missense	FALSE	1
+IDH1	R132H	missense	FALSE	1
+IDH1	R132L	missense	FALSE	1
+IDH1	R132C	missense	FALSE	1
+IDH1	codon(s) 132 any		TRUE	1
+IDH1	any mutation	mutation	TRUE	1
+IDH1	R119Q	missense	FALSE	1
+IDH2	R140Q	missense	FALSE	1
+IDH2	R172K	missense	FALSE	1
+IDH2	codon(s) 140, 172 any		TRUE	1
+IDH2	codon(s) 140 missense		FALSE	1
+IDH2	codon(s) 172 missense		FALSE	1
+IKZF1	any mutation	mutation	TRUE	2
+IRS2	copy number gain		FALSE	3
+JAK1	any mutation	mutation	TRUE	2
+JAK2	V617F	missense	FALSE	1
+JAK2	exon(s) 12 insertion		FALSE	1
+JAK2	exon(s) 12 deletion		FALSE	1
+JAK2	any mutation	mutation	TRUE	1
+JAK2	codon(s) 683 missense		FALSE	1
+JAK3	V722I	missense	FALSE	1
+KDM6A	any mutation	mutation	TRUE	2
+KDR	P263T	missense	FALSE	2
+KDR	K270N	missense	FALSE	2
+KDR	R962H	missense	FALSE	2
+KIT	D816V	missense	FALSE	1
+KIT	exon(s) 11 any		TRUE	1
+KIT	exon(s) 17 any		TRUE	1
+KIT	exon(s) 8 missense		FALSE	1
+KIT	exon(s) 9 missense		FALSE	1
+KIT	exon(s) 10 missense		FALSE	1
+KIT	any mutation	mutation	TRUE	1
+KIT	M541L	missense	FALSE	1
+KIT	E554K	missense	FALSE	1
+KIT	V560D	missense	FALSE	1
+KIT	N822K	missense	FALSE	1
+KIT	exon(s) 9 insertion		FALSE	1
+KIT	V559A	missense	FALSE	1
+KIT	V654A	missense	FALSE	1
+KIT	W557_K558del		FALSE	1
+KIT	E554_I571del		FALSE	1
+KIT	D820Y	missense	FALSE	1
+KIT	D820A	missense	FALSE	1
+KIT	D820E	missense	FALSE	1
+KIT	D820G	missense	FALSE	1
+KIT	D816F	missense	FALSE	1
+KIT	D816Y	missense	FALSE	1
+KIT	D419del		FALSE	1
+KIT	T417_D419delinsRG		FALSE	1
+KIT	T417_D419delinsI		FALSE	1
+KIT	I653T	missense	FALSE	1
+KIT	H697Y	missense	FALSE	1
+KIT	exon(s) 9 any		TRUE	1
+KIT	K550_W557del		FALSE	1
+KIT	F522C	missense	FALSE	1
+KIT	P573_D579del		FALSE	1
+KIT	N822I	missense	FALSE	1
+KIT	N822Y	missense	FALSE	1
+KIT	N822H	missense	FALSE	1
+KIT	P551_M552del		FALSE	1
+KIT	K642E	missense	FALSE	1
+KIT	K558N	missense	FALSE	1
+KIT	L576P	missense	FALSE	1
+KIT	M552_W557del		FALSE	1
+KIT	K558_E562del		FALSE	1
+KIT	N564_Y578del		FALSE	1
+KIT	I563_L576del		FALSE	1
+KIT	V555_V559del		FALSE	1
+KIT	V555_L576del		FALSE	1
+KIT	V530I	missense	FALSE	1
+KIT	Q556_K558del		FALSE	1
+KIT	P838L	missense	FALSE	1
+KIT	P577_W582delinsPYD		FALSE	1
+KIT	P577_D579del		FALSE	1
+KIT	N505I	missense	FALSE	1
+KIT	K558_V559del		FALSE	1
+KIT	E554_K558del		FALSE	1
+KIT	V559D	missense	FALSE	1
+KIT	Y578C	missense	FALSE	1
+KIT	Y570H	missense	FALSE	1
+KIT	Y553_K558del		FALSE	1
+KIT	Y553N	missense	FALSE	1
+KIT	W557R	missense	FALSE	1
+KIT	W557G	missense	FALSE	1
+KIT	V569_L576del		FALSE	1
+KIT	V560G	missense	FALSE	1
+KIT	V559del		FALSE	1
+KIT	V559G	missense	FALSE	1
+KIT	V559C	missense	FALSE	1
+KIT	V559_V560del		FALSE	1
+KIT	D579del		FALSE	1
+KIT	E554_V559del		FALSE	1
+KIT	D45N	missense	FALSE	1
+KIT	K807N	missense	FALSE	1
+KIT	D52N	missense	FALSE	1
+KIT	G565V	missense	FALSE	1
+KIT	C844Y	missense	FALSE	1
+KLF2	any nonsense	nonsense	TRUE	2
+KLF2	any frameshift	frameshift	TRUE	2
+KLF2	any missense	missense	TRUE	2
+KRAS	codon(s) 12, 13, 61, 117, 146 any		TRUE	1
+KRAS	G12A	missense	FALSE	1
+KRAS	G12V	missense	FALSE	1
+KRAS	G12D	missense	FALSE	1
+KRAS	G12C	missense	FALSE	1
+KRAS	G12S	missense	FALSE	1
+KRAS	G12R	missense	FALSE	1
+KRAS	G13C	missense	FALSE	1
+KRAS	G13S	missense	FALSE	1
+KRAS	G13R	missense	FALSE	1
+KRAS	Q61H	missense	FALSE	1
+KRAS	Q61L	missense	FALSE	1
+KRAS	Q61K	missense	FALSE	1
+KRAS	Q61R	missense	FALSE	1
+KRAS	A146T	missense	FALSE	1
+KRAS	A146V	missense	FALSE	1
+KRAS	A146P	missense	FALSE	1
+KRAS	A11V	missense	FALSE	1
+KRAS	G13D	missense	FALSE	1
+KRAS	codon(s) 12 any		TRUE	1
+KRAS	Q22K	missense	FALSE	1
+KRAS	V14I	missense	FALSE	1
+KRAS	L19F	missense	FALSE	1
+MAP2K1	C121S	missense	FALSE	1
+MDM2	copy number gain		FALSE	1
+MET	V1110I	missense	FALSE	1
+MET	M1131T	missense	FALSE	1
+MET	M1149T	missense	FALSE	1
+MET	V1188L	missense	FALSE	1
+MET	L1195V	missense	FALSE	1
+MET	V1220I	missense	FALSE	1
+MET	L1213F	missense	FALSE	1
+MET	H1112Y	missense	FALSE	1
+MET	E168D	missense	FALSE	1
+MET	T1010I	missense	FALSE	1
+MET	M1268T	missense	FALSE	1
+MET	copy number gain		FALSE	1
+MET	M362T	missense	FALSE	1
+MET	D1010Y	missense	FALSE	1
+MET	D1010N	missense	FALSE	1
+MET	D1010H	missense	FALSE	1
+MET	N375K	missense	FALSE	1
+MLH1	V384D	missense	FALSE	3
+MPL	codon(s) 515 missense		FALSE	1
+MPL	W515L	missense	FALSE	1
+MPL	W515K	missense	FALSE	1
+MPL	Y591D	missense	FALSE	1
+MPL	S505N	missense	FALSE	1
+MYD88	L265P	missense	FALSE	1
+NCOA2	copy number gain		FALSE	1
+NFE2	any mutation	mutation	TRUE	2
+NKX2-1	copy number gain	SV	FALSE	2
+NOTCH1	exon(s) 26 missense		FALSE	1
+NOTCH1	exon(s) 27 missense		FALSE	1
+NOTCH1	exon(s) 34 frameshift		FALSE	1
+NOTCH1	exon(s) 34 nonsense		FALSE	1
+NOTCH1	exon(s) 34 missense		FALSE	1
+NOTCH1	exon(s) 26 insertion		FALSE	1
+NOTCH1	exon(s) 26 deletion		FALSE	1
+NOTCH1	exon(s) 27 insertion		FALSE	1
+NOTCH1	exon(s) 27 deletion		FALSE	1
+NOTCH1	L2457V	missense	FALSE	1
+NOTCH1	exon(s) 26-27 deletion		FALSE	1
+NOTCH2	I2304fs		FALSE	1
+NOTCH2	exon(s) 34 frameshift		FALSE	1
+NPM1	codon(s) 288 frameshift		FALSE	1
+NPM1	codon(s) 290 frameshift		FALSE	1
+NRAS	any mutation	mutation	TRUE	1
+NRAS	G12A	missense	FALSE	1
+NRAS	G12V	missense	FALSE	1
+NRAS	G12D	missense	FALSE	1
+NRAS	G12C	missense	FALSE	1
+NRAS	G12S	missense	FALSE	1
+NRAS	G12R	missense	FALSE	1
+NRAS	G13D	missense	FALSE	1
+NRAS	G13C	missense	FALSE	1
+NRAS	G13S	missense	FALSE	1
+NRAS	G13R	missense	FALSE	1
+NRAS	G13A	missense	FALSE	1
+NRAS	G13V	missense	FALSE	1
+NRAS	Q61H	missense	FALSE	1
+NRAS	Q61L	missense	FALSE	1
+NRAS	Q61K	missense	FALSE	1
+NRAS	Q61R	missense	FALSE	1
+NRAS	codon(s) 12, 13, 61, 146 any		TRUE	1
+NRAS	T58I	missense	FALSE	1
+NTRK1	any mutation	mutation	TRUE	1
+PDGFA	Y273F	missense	FALSE	2
+PDGFRA	D842V	missense	FALSE	1
+PDGFRA	H650Q	missense	FALSE	1
+PDGFRA	N659S	missense	FALSE	1
+PDGFRA	R748G	missense	FALSE	1
+PDGFRA	T674I	missense	FALSE	1
+PDGFRA	Y849S	missense	FALSE	1
+PDGFRA	codon(s) 842 any		TRUE	1
+PDGFRA	copy number gain		FALSE	1
+PDGFRA	N659K	missense	FALSE	1
+PHF6	any mutation	mutation	TRUE	2
+PIK3CA	E542K	missense	FALSE	1
+PIK3CA	E545K	missense	FALSE	1
+PIK3CA	H1047R	missense	FALSE	1
+PIK3CA	codon(s) 542, 545, 1047 any		TRUE	1
+PIK3CA	exon(s) 10, 20, 21 any		TRUE	1
+PIK3CA	M1043I	missense	FALSE	1
+PIK3CA	R88Q	missense	FALSE	1
+PIK3CA	N1044K	missense	FALSE	1
+PIK3CA	P539R	missense	FALSE	1
+POLE	P286R	missense	FALSE	1
+PTCH1	W844C	missense	FALSE	1
+PTEN	any deletion	deletion	TRUE	1
+PTEN	any frameshift	frameshift	TRUE	1
+PTEN	any missense	missense	TRUE	1
+PTEN	G129R	missense	FALSE	1
+PTEN	Y68H	missense	FALSE	1
+PTEN	G165R	missense	FALSE	1
+PTEN	P169H	missense	FALSE	1
+PTEN	I101T	missense	FALSE	1
+PTEN	R15I	missense	FALSE	1
+PTEN	R173H	missense	FALSE	1
+PTEN	Q214*		FALSE	1
+PTPN11	any mutation	mutation	TRUE	2
+PTPN11	V497L	missense	FALSE	2
+PTPN11	G503V	missense	FALSE	2
+PTPN11	E76K	missense	FALSE	2
+RAD21	any mutation	mutation	TRUE	2
+RB1	R320*		FALSE	2
+RET	M918T	missense	FALSE	1
+RET	E623K	missense	FALSE	1
+RIT1	M90I	missense	FALSE	1
+RUNX1	any mutation	mutation	TRUE	1
+SEPT14	copy number gain		FALSE	2
+SETBP1	any mutation	mutation	TRUE	1
+SETD2	any nonsense	nonsense	TRUE	1
+SETD2	any frameshift	frameshift	TRUE	1
+SETD2	any missense	missense	TRUE	1
+SF1	any mutation	mutation	TRUE	1
+SF3B1	codon(s) 700, 666, 662, 625, 622 missense		FALSE	1
+SF3B1	exon(s) 13-16 missense		FALSE	1
+SH2B3	any mutation	mutation	TRUE	2
+SMAD4	any nonsense	nonsense	TRUE	2
+SMAD4	C324Y	missense	FALSE	2
+SMAD4	R361H	missense	FALSE	2
+SMAD4	I525V	missense	FALSE	2
+SMAD4	R361C	missense	FALSE	2
+SMAD4	P472T	missense	FALSE	2
+SMAD4	D351G	missense	FALSE	2
+SMAD4	P356L	missense	FALSE	2
+SMARCB1	R374Q	missense	FALSE	2
+SMARCB1	A203T	missense	FALSE	2
+SMARCB1	R377H	missense	FALSE	2
+SMC1A	any mutation	mutation	TRUE	2
+SMC3	any mutation	mutation	TRUE	1
+SMO	W535L	missense	FALSE	1
+SMO	P641A	missense	FALSE	1
+SRSF2	codon(s) 95 missense		FALSE	1
+STAG2	any mutation	mutation	TRUE	1
+STK11	codon(s) 60-1 deletion		FALSE	2
+STK11	E33*		FALSE	2
+SUZ12	any mutation	mutation	TRUE	2
+TET2	any mutation	mutation	TRUE	2
+TP53	copy number loss		FALSE	1
+TP53	G245C	missense	FALSE	1
+TP53	E204*		FALSE	1
+TP53	any deletion	deletion	TRUE	1
+TP53	any mutation	mutation	TRUE	1
+TSC1	any missense	missense	TRUE	2
+TSC2	any missense	missense	TRUE	2
+U2AF1	codon(s) 34 missense		FALSE	1
+U2AF1	codon(s) 157 missense		FALSE	1
+VHL	C162Y	missense	FALSE	1
+VHL	codon(s) 430 nonsense		FALSE	1
+WT1	any mutation	mutation	TRUE	2
+ZRSR2	any mutation	mutation	TRUE	1
