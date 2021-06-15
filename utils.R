@@ -1710,7 +1710,7 @@ filter.snpeff = function(vcf, gngt.fname, cgc.fname, ref.name = "hg19", verbose 
 
     require(skitools)
     if (verbose) {
-        message("Reading input")
+        message("Reading VCF/BCF input")
     }
 
     if (grepl("bcf", vcf)) {
