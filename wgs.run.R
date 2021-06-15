@@ -56,6 +56,7 @@ suppressMessages(expr = {
         library(ggforce)
         library(ggridges)
         library(ggrepel)
+        library(ggExtra)
         library(httr)
         library(jsonlite)
         library(knitr)
@@ -91,6 +92,67 @@ if (!opt$knit_only){
         saveRDS(gg, paste0(opt$outdir, "/complex.rds"))
         ## }
     }
+
+    ###################
+    ## purity/ploidy QC plots
+    ##
+    ###################
+    cn.plot.fname = normalizePath(file.path(opt$outdir, "cn.pp.png"))
+    ## allele.plot.fname = normalizePath(file.path(opt$outdir, "allele.pp.png"))
+    allele.scatter.fname = normalizePath(file.path(opt$outdir, "allele.scatter.png"))
+    if (!file.exists(cn.plot.fname) || opt$overwrite) {
+        message("generating total CN purity/ploidy plots")
+        pp_plot(jabba_rds = opt$jabba_rds,
+                cov.fname = opt$cbs_cov_rds,
+                hets.fname = opt$het_pileups_wgs,
+                allele = FALSE,
+                field = "ratio",
+                plot.min = -2,
+                plot.max = 2,
+                bins = 100,
+                height = 500,
+                width = 500,
+                output.fname = cn.plot.fname,
+                verbose = TRUE)
+    } else {
+        message("total CN purity/ploidy plot exists!")
+    }
+    ## if (!file.exists(allele.plot.fname) || opt$overwrite) {
+    ##     message("generating allele CN purity/ploidy plots")
+    ##     pp_plot(jabba_rds = opt$jabba_rds,
+    ##             cov.fname = opt$cbs_cov_rds,
+    ##             hets.fname = opt$het_pileups_wgs,
+    ##             allele = TRUE,
+    ##             field = "count",
+    ##             plot.min = -2,
+    ##             plot.max = 2,
+    ##             scatter = FALSE,
+    ##             bins = 100,
+    ##             height = 500,
+    ##             width = 500,
+    ##             output.fname = allele.plot.fname,
+    ##             verbose = TRUE)
+    ## } else {
+    ##     message("allele CN histogram already exists")
+    ## }
+    if (!file.exists(allele.scatter.fname) || opt$overwrite) {
+        pp_plot(jabba_rds = opt$jabba_rds,
+                cov.fname = opt$cbs_cov_rds,
+                hets.fname = opt$het_pileups_wgs,
+                allele = TRUE,
+                field = "count",
+                plot.min = -2,
+                plot.max = 2,
+                scatter = TRUE,
+                bins = 100,
+                height = 500,
+                width = 500,
+                output.fname = allele.scatter.fname,
+                verbose = TRUE)
+    } else {
+        message("allele CN purity/ploidy scatter plot exists!")
+    }
+    
 
     ## set up purity ploidy
     gg$set(purity = jabba$purity)
@@ -683,7 +745,7 @@ if (!opt$knit_only){
     ## ##################
     ## SNV signatures
     ## ##################
-    if (file.good(opt$deconstruct_sigs)){
+    if (file.good(opt$deconstruct_sigs)) {
         ## signatures
         sig = readRDS(opt$deconstruct_sigs)
         sigd = as.data.table(sig$weights) %>% data.table::melt(variable.name = "Signature", value.name = "Proportion") %>% data.table
@@ -704,7 +766,7 @@ if (!opt$knit_only){
             ## }, "deconstruct_sigs.png", width = 1600, height = 1200)
         }
 
-        if (!file.exists(paste0(opt$outdir, "/sig.composition.png")) | opt$overwrite){
+        if (!file.exists(paste0(opt$outdir, "/sig.composition.png")) | opt$overwrite) {
 
             sig.fn = file.path(opt$libdir, "data", "all.signatures.txt")
             background.type = "Cell cohort"
@@ -803,31 +865,16 @@ if (!opt$knit_only){
                       axis.text.x = element_text(size = 15, family = "sans"),
                       axis.text.y = element_text(size = 20, family = "sans"))
 
-            ## theme(
-            ##     text = element_text(size = 32),
-            ##     axis.text.x
-            ##     legend.position = "none"
-            ##     ## axis.text.x = element_text(angle = 45, hjust = 1)
-            ## )
-
-            ppng(print(sigbar), filename = paste0(opt$outdir, "/sig.composition.png"), height = 800, width = 800)
+            ppng(print(sigbar),
+                 filename = paste0(opt$outdir, "/sig.composition.png"),
+                 height = 800, width = 800)
             
             
         } else {
-            png(filename = "sig.composition.png", width = 800, height= 1200)
-            ## individual sample compositions
-            sct[, Signature := forcats::fct_reorder(Signature, sig_count)]
-            sigbar = ggplot(
-                sct[order(sig_count)],
-                aes(x = Signature, y = sig_count)) +
-                geom_bar(stat = "identity") +
-                theme_minimal() +
-                theme(text = element_text(size = 32),
-                      axis.text.x = element_text(angle = 45, hjust = 1)) +
-                coord_flip()
-            print(sigbar)
-            dev.off()
+            message("signature compsition plot already exists")
         }
+    } else {
+        message("deconstruct sigs not supplied")
     }
 
     ## ##################

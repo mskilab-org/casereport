@@ -56,28 +56,70 @@ dedup = function (x, suffix = ".")
     return(out)
 }
 
-rel2abs = function (gr, purity = NA, ploidy = NA, gamma = NA, beta = NA, 
-                    field = "ratio", field.ncn = "ncn") 
+rel2abs = function(gr, purity = NA, ploidy = NA, gamma = NA, beta = NA, field = 'ratio', field.ncn = 'ncn', data_mean = NA, ncn.gr = NA, allele = FALSE, return.params = FALSE)
 {
-    mu = values(gr)[, field]
-    mu[is.infinite(mu)] = NA
-    w = as.numeric(width(gr))
-    w[is.na(mu)] = NA
-    sw = sum(w, na.rm = T)
-    mutl = sum(mu * w, na.rm = T)
-    ncn = rep(2, length(mu))
-    if (!is.null(field.ncn)) 
-        if (field.ncn %in% names(values(gr))) 
-            ncn = values(gr)[, field.ncn]
-    ploidy_normal = sum(w * ncn, na.rm = T)/sw
-    if (is.na(gamma)) 
-        gamma = 2 * (1 - purity)/purity
-    if (is.na(beta)) 
-        beta = ((1 - purity) * ploidy_normal + purity * ploidy) * 
-            sw/(purity * mutl)
-    return(beta * mu - ncn * gamma/2)
-}
+  mu = values(gr)[, field]
+  mu[is.infinite(mu)] = NA
+  w = as.numeric(width(gr))
+  w[is.na(mu)] = NA
+  sw = sum(w, na.rm = T)
+  if (is.na(data_mean)){
+      data_mean = sum(mu * w, na.rm = T) / sw
+  }
 
+  ncn = NA
+  if (!is.null(field.ncn))
+    if (field.ncn %in% names(values(gr)))
+      ncn = values(gr)[, field.ncn]
+
+  if (is.na(ncn)){
+      if (!is.na(ncn.gr)){
+          if (!inherits(ncn.gr, 'GRanges')){
+              stop('ncn.gr must be of class GRanges, but ', class(GRanges), ' was provided.')
+          }
+          ncn = values(gr %$% ncn.gr[, field.ncn])[, field.ncn]
+      } else {
+      ncn = rep(2, length(mu))
+      }
+  }
+
+
+  ploidy_normal = sum(w * ncn, na.rm = T) / sw  ## this will be = 2 if ncn is trivially 2
+
+  if (allele) {
+      y.bar = ploidy_normal * data_mean
+      denom = purity * ploidy + ploidy_normal * (1 - purity)
+      if (is.na(beta)) {
+          beta = y.bar * purity / denom
+      }
+      if (is.na(gamma)) {
+          gamma = (y.bar * (1 - purity)) / denom
+      }
+
+      if (return.params) {
+          out = c(slope = 1/beta,
+                  intercept = -gamma/beta)
+          return(out)
+      }
+      
+      return ((mu - gamma) / beta)
+  }
+
+
+  if (is.na(gamma))
+    gamma = 2*(1-purity)/purity
+
+  if (is.na(beta))
+    beta = ((1-purity)*ploidy_normal + purity*ploidy) / (purity * data_mean)
+
+  if (return.params) {
+      out = c(slope = ((1-purity)*2 + purity * ploidy) / (purity * data_mean),
+              intercept = -gamma)
+      return (out)
+  }
+
+  return(beta * mu - ncn * gamma / 2)
+}
 
 rebin = function (cov, binwidth, field = names(values(cov))[1], FUN = median, na.rm = TRUE) 
 {
@@ -1869,3 +1911,240 @@ create.summary = function(jabba_rds,
     return(out)
 }
 
+#' @name grab.hets
+#' @title grab.hets
+#'
+#' @description
+#'
+#' returns allele gtrack given sites.txt from het pileup
+#'
+#' @param agt.fname (character) path to sites.txt
+#' @param min.frac (numeric) between 0 and 1, min frequency in normal to count as het site
+#' @param max.frac (numeric) between 0 and 1, max frequency in normal to count as het site
+#' 
+#' @return allele gTrack
+grab.hets = function(agt.fname = NULL,
+                     min.frac = 0.2,
+                     max.frac = 0.8)
+{
+    if (is.null(agt.fname) || !file.exists(agt.fname)) {
+        stop("agt.fname does not exist")
+    }
+
+    ## prepare and filter
+    agt.dt = fread(agt.fname)[alt.frac.n > min.frac & alt.frac.n < max.frac,]
+    ## add major and minor
+    agt.dt[, which.major := ifelse(alt.count.t > ref.count.t, "alt", "ref")]
+    agt.dt[, major.count := ifelse(which.major == "alt", alt.count.t, ref.count.t)]
+    agt.dt[, minor.count := ifelse(which.major == "alt", ref.count.t, alt.count.t)]
+
+    ## melt the data frame
+    agt.melted = rbind(agt.dt[, .(seqnames, start, end, count = major.count, allele = "major")],
+                       agt.dt[, .(seqnames, start, end, count = minor.count, allele = "minor")]
+                       )
+
+    ## make GRanges
+    agt.gr = dt2gr(agt.melted[, .(seqnames, start, end, count, allele)])
+
+    return (agt.gr)
+}
+
+
+#' @name pp_plot
+#' @title pp_plot
+#'
+#' @details
+#'
+#' create histogram of estimated copy number given purity and ploidy
+#'
+#' @param jabba_rds (character) JaBbA output
+#' @param cov.fname (character) path to coverage GRanges (supply if allele = FALSE)
+#' @param hets.fname (character) path to sites.txt (supply if allele = TRUE)
+#' @param allele (logical) allelic CN? default FALSE
+#' @param field (character) default ratio if allele is FALSE and count if allele is TRUE
+#' @param plot.min (numeric) minimum CN default -2
+#' @param plot.max (numeric) max CN (factor times ploidy) default 2
+#' @param bins (numeric) number of histogram bins default 500
+#' @param scatter (logical) default FALSE
+#' @param height (numeric) plot height
+#' @param width (numeric) plot width
+#' @param output.fname (character) path of output directory
+#' @param verbose (logical)
+#'
+#' @return output.fname
+pp_plot = function(jabba_rds = NULL,
+                   cov.fname = NULL,
+                   hets.fname = NULL,
+                   allele = FALSE,
+                   field = NULL,
+                   plot.min = -2,
+                   plot.max = 2,
+                   scatter = FALSE,
+                   bins = 500,
+                   height = 800,
+                   width = 800,
+                   output.fname = "./plot.png",
+                   verbose = FALSE) {
+
+    if (is.null(jabba_rds) || !file.exists(jabba_rds)) {
+        stop("jabba_rds does not exist")
+    }
+    jab = readRDS(jabba_rds)
+    if (!allele) {
+        if (is.null(cov.fname) || !file.exists(cov.fname)) {
+            stop("cov.fname not supplied and allele = TRUE")
+        }
+        if (!grepl(pattern = "rds", x = cov.fname)) {
+            stop("cov.fname must be .rds file containing GRanges object")
+        }
+        cov = readRDS(cov.fname)
+        if (!inherits(cov, "GRanges")) {
+            stop("cov is not GRanges")
+        }
+        if (length(cov) == 0) {
+            stop("empty GRanges")
+        }
+        if (is.null(field)) {
+            field = "ratio"
+        }
+        if (!(field %in% names(values(cov)))) {
+            stop("cov missing required field")
+        }
+        if (verbose) {
+            message("Grabbing coverage and converting rel2abs")
+        }
+        cov$cn = rel2abs(cov, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = FALSE)
+        ## get mean CN over JaBbA segments
+        if (verbose) {
+            message("computing mean over jabba segments")
+        }
+        segs = gr.stripstrand(jab$segstats %Q% (strand(jab$segstats)=="+"))[, c()]
+        segs = gr.val(segs, cov[, "cn"], val = "cn", mean = TRUE, na.rm = TRUE)
+        if (verbose) {
+            message("tiling")
+        }
+        tiles = gr.tile(gr = segs, width = 1e4)
+        tiles = gr.val(tiles, segs[, "cn"], val = "cn", mean = TRUE, na.rm = TRUE)
+        if (verbose) {
+            message("Grabbing transformation slope and intercept")
+        }
+        eqn = rel2abs(cov, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = FALSE, return.params = TRUE)
+        dt = as.data.table(tiles)
+    } else {
+        if (is.null(hets.fname) || !file.exists(hets.fname)) {
+            stop("hets.fname not supplied")
+        }
+        hets = grab.hets(hets.fname)
+        if (is.null(field)) {
+            field = "count"
+        }
+        if (!field %in% names(values(hets))) {
+            stop("hets missing required field")
+        }
+        if (verbose) {
+            message("Grabbing hets and converting rel2abs")
+        }
+        hets$cn = rel2abs(hets, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = TRUE)
+        eqn = rel2abs(hets, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = TRUE, return.params = TRUE)
+        if (verbose) {
+            message("computing mean over jabba segments")
+        }
+        segs = gr.stripstrand(jab$segstats %Q% (strand(jab$segstats)=="+"))[, c()]
+        major.segs = gr.val(segs, hets %Q% (allele == "major"), val = "cn", mean = TRUE, na.rm = TRUE)
+        minor.segs = gr.val(segs, hets %Q% (allele == "minor"), val = "cn", mean = TRUE, na.rm = TRUE)
+        if (verbose) {
+            message("Tiling")
+        }
+        tiles = gr.tile(gr = segs, width = 1e4)
+        major.tiles = gr.val(tiles, major.segs, val = "cn", mean = TRUE, na.rm = TRUE)
+        minor.tiles = gr.val(tiles, minor.segs, val = "cn", mean = TRUE, na.rm = TRUE)
+        dt = rbind(as.data.table(major.tiles)[, .(seqnames, start, end, allele = "major", cn)],
+                   as.data.table(minor.tiles)[, .(seqnames, start, end, allele = "minor", cn)])
+    }
+
+    maxval = plot.max * jab$ploidy # max dosage
+    minval = plot.min ## min dosage
+
+    ## remove things with weird ploidy
+    dt = dt[cn < maxval & cn > minval & grepl("[0-9]", seqnames)==TRUE]
+
+    if (verbose) {
+        message("Making plot for ", nrow(dt), " points")
+    }
+    
+    if (!allele) {
+
+        pt = ggplot(dt, aes(x = cn)) +
+            geom_histogram(fill = "gray", bins = bins, alpha = 0.8) +
+            scale_x_continuous(breaks = 0:floor(maxval),
+                               labels = 0:floor(maxval) %>% as.character,
+                               sec.axis = sec_axis(trans = ~(. - eqn["intercept"])/eqn["slope"],
+                                                   name = field)) +
+            geom_vline(xintercept = 0:floor(maxval), color = "red", linetype = "longdash") +
+            labs(x = "Estimated CN", y = "count") +
+            theme_bw() +
+            theme(legend.position = "none",
+                  axis.title = element_text(size = 20, family = "sans"),
+                  axis.text.x = element_text(size = 20, family = "sans"),
+                  axis.text.y = element_text(size = 14, family = "sans"))
+
+    } else {
+
+        if (scatter) {
+
+            dt = cbind(as.data.table(major.tiles)[, .(seqnames, start, end, major.cn = cn)],
+                       as.data.table(minor.tiles)[, .(minor.cn = cn)])
+            dt = dt[major.cn < maxval & minor.cn < maxval &
+                    major.cn > minval & minor.cn > minval &
+                    grepl("[0-9]", seqnames)==TRUE,]
+
+            pt = ggplot(dt, aes(x = major.cn, y = minor.cn)) +
+                geom_point(size = 2, alpha = 0.1, color = "gray") +
+                scale_x_continuous(breaks = 0:floor(maxval),
+                                   labels = 0:floor(maxval) %>% as.character,
+                                   sec.axis = sec_axis(trans = ~(. - eqn["intercept"])/eqn["slope"],
+                                                       name = paste("Major", field))) +
+                scale_y_continuous(breaks = 0:floor(maxval),
+                                   labels = 0:floor(maxval) %>% as.character,
+                                   sec.axis = sec_axis(trans = ~(. - eqn["intercept"])/eqn["slope"],
+                                                       name = paste("Minor", field))) +
+                labs(x = "Major CN", y = "Minor CN") +
+                theme_bw() +
+                theme(legend.position = "none",
+                      axis.title = element_text(size = 20, family = "sans"),
+                      axis.text.x = element_text(size = 20, family = "sans"),
+                      axis.text.y = element_text(size = 14, family = "sans"))
+
+            pt = ggMarginal(pt, type = "histogram",
+                            xparams = list(bins = bins),
+                            yparams = list(bins = bins))
+            
+        } else {
+
+            pt = ggplot(dt, aes(x = cn)) +
+                geom_histogram(fill = "gray", bins = bins, alpha = 0.8) +
+                scale_x_continuous(breaks = 0:floor(maxval),
+                                   labels = 0:floor(maxval) %>% as.character,
+                                   sec.axis = sec_axis(trans = ~(. - eqn["intercept"])/eqn["slope"],
+                                                       name = field)) +
+                geom_vline(xintercept = 0:floor(maxval), color = "red", linetype = "longdash") +
+                labs(x = "Estimated CN", y = "count") +
+                facet_grid(row = vars(allele)) +
+                theme_bw() +
+                theme(legend.position = "none",
+                      axis.title = element_text(size = 20, family = "sans"),
+                      axis.text.x = element_text(size = 20, family = "sans"),
+                      axis.text.y = element_text(size = 14, family = "sans"),
+                      strip.text.y = element_text(size = 20, family = "sans"))
+        }
+
+    }
+
+    if (verbose) {
+        message("Saving results to: ", normalizePath(output.fname))
+    }
+    
+    ppng(print(pt), filename = normalizePath(output.fname), height = height, width = width)
+
+    return(output.fname)
+}
