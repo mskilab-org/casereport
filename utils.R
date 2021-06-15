@@ -2114,6 +2114,10 @@ pp_plot = function(jabba_rds = NULL,
                       axis.title = element_text(size = 20, family = "sans"),
                       axis.text.x = element_text(size = 20, family = "sans"),
                       axis.text.y = element_text(size = 14, family = "sans"))
+
+            pt = ggMarginal(pt, type = "histogram",
+                            xparams = list(bins = bins),
+                            yparams = list(bins = bins))
             
         } else {
 
