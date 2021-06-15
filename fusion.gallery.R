@@ -425,6 +425,9 @@ fusion.table = function(fusions.fname = NULL,
 
     ## filter to include only in-frame non-silent
     this.fusions = readRDS(fusions.fname) ## gWalk object
+    if (length(this.fusions)==0){
+        return(this.fusions)
+    }
     filtered.fusions = this.fusions[in.frame == TRUE & silent == FALSE & numgenes > 1]
 
     ## compute total number of amino acids and mark

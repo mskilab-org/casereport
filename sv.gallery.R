@@ -151,51 +151,59 @@ grab.window = function(gr, complex.fname,
     gg = readRDS(complex.fname)
 
     ## grab events as GRanges
-    evs = gg$meta$events[type %in% ev.types]
-    if (nrow(evs) > 0) {
-        ev.grl = parse.grl(evs$footprint)
-        values(ev.grl) = evs
-        ev.gr = stack(ev.grl)
+    if (!is.null(gg$meta$events)){
+        evs = gg$meta$events[type %in% ev.types]
+        if (nrow(evs) > 0) {
+            ev.grl = parse.grl(evs$footprint)
+            values(ev.grl) = evs
+            ev.gr = stack(ev.grl)
 
-        ## warning: for genes overlapping multiple events, will pull ALL footprints (potentially huge :()
-        ev.ov = gr.findoverlaps(gr, ev.gr, scol = c("footprint"), return.type = "data.table")
-        if (nrow(ev.ov) > 0) {
-            tmp = ev.ov[, .(footprint = paste(unique(footprint), collapse = ",")),
-                        by = query.id]
-            gr$ev.fp = tmp[match(1:length(gr), tmp$query.id), footprint]
+            ## warning: for genes overlapping multiple events, will pull ALL footprints (potentially huge :()
+            ev.ov = gr.findoverlaps(gr, ev.gr, scol = c("footprint"), return.type = "data.table")
+            if (nrow(ev.ov) > 0) {
+                tmp = ev.ov[, .(footprint = paste(unique(footprint), collapse = ",")),
+                            by = query.id]
+                gr$ev.fp = tmp[match(1:length(gr), tmp$query.id), footprint]
+            } else {
+                gr$ev.fp = NA_character_ ## keep consistent type
+            }
         } else {
-            gr$ev.fp = NA_character_ ## keep consistent type
+            gr$ev.fp = NA_character_
         }
     } else {
         gr$ev.fp = NA_character_
     }
+    
 
     ## grab amplicons as GRanges
     keep = (gg$nodes$dt$cn/ploidy) > amp.thresh
-    gg$clusters(keep)
+    if (any(keep)){
+        gg$clusters(keep)
+        ## grab nodes with non-NA cluster
+        amp.gr = (gg$nodes$gr %Q% (!is.na(cluster))) %>% gr.stripstrand
 
-    ## grab nodes with non-NA cluster
-    amp.gr = (gg$nodes$gr %Q% (!is.na(cluster))) %>% gr.stripstrand
+        if (length(amp.gr) > 0) {
 
-    if (length(amp) > 0) {
+            ## get footprint of the whole cluster of easier querying later on
+            amp.dt = gr2dt(amp.gr)
+            amp.dt[, footprint := paste(unique(gr.string(amp.gr)), collapse = ","), by = "cluster"]
+            amp.gr$footprint = amp.dt$footprint
 
-        ## get footprint of the whole cluster of easier querying later on
-        amp.dt = gr2dt(amp.gr)
-        amp.dt[, footprint := paste(unique(gr.string(amp.gr)), collapse = ","), by = "cluster"]
-        amp.gr$footprint = amp.dt$footprint
-
-        ## get overlaps with genes
-        amp.ov = gr.findoverlaps(gr, amp.gr, scol = c("cluster", "footprint"), return.type = "data.table")
-        if (nrow(amp.ov) > 0) {
-            tmp.amp = amp.ov[, .(footprint = paste(unique(footprint), collapse = ",")), by = query.id]
-            gr$amp.fp = tmp.amp[match(1:length(gr), tmp.amp$query.id), footprint]
+            ## get overlaps with genes
+            amp.ov = gr.findoverlaps(gr, amp.gr, scol = c("cluster", "footprint"), return.type = "data.table")
+            if (nrow(amp.ov) > 0) {
+                tmp.amp = amp.ov[, .(footprint = paste(unique(footprint), collapse = ",")), by = query.id]
+                gr$amp.fp = tmp.amp[match(1:length(gr), tmp.amp$query.id), footprint]
+            } else {
+                gr$amp.fp = NA_character_
+            }
         } else {
             gr$amp.fp = NA_character_
         }
     } else {
         gr$amp.fp = NA_character_
     }
-
+    
     ## grab node footprint
     node.gr = gg$nodes$gr[, c()]
     node.gr$footprint = gr.string(node.gr)
@@ -210,9 +218,9 @@ grab.window = function(gr, complex.fname,
     ## get final window
     gr$win = ifelse(!is.na(gr$ev.fp),
                     gr$ev.fp,
-                    ifelse(!is.na(gr$amp.fp),
-                           gr$amp.fp,
-                           gr$node.fp))
+             ifelse(!is.na(gr$amp.fp),
+                    gr$amp.fp,
+                    gr$node.fp))
 
     ## get event id, amplicon id, and node id for each range
     if (return.type == "data.table") {
@@ -489,8 +497,13 @@ sv.plot = function(complex.fname = NULL,
     cvgt = readRDS(cvgt.fname) ## coverage
     gngt = readRDS(gngt.fname) ## gencode gTrack
 
+    if (is.null(this.complex$meta$events)){
+        return(list())
+    }
     ## extract just complex events
     complex.ev = this.complex$meta$events[type %in% ev.types,]
+
+
 
     ## grab plot titles and file names
     complex.ev[, plot.fname := file.path(outdir, paste("event", ev.id, "png", sep = "."))]

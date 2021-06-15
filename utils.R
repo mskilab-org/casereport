@@ -21,7 +21,7 @@ covcbs = function(x, field = "ratio", name = "sample", max.ranges = 1e4,
     }
     if (!is.null(rebin)){
         x = rebin(x, binwidth = rebin, field = field,
-                            FUN = median, na.rm = TRUE)
+                  FUN = median, na.rm = TRUE)
     }
     gTrack(x,
            y.field = field,
@@ -37,7 +37,7 @@ fready = function (..., pattern = "\\W+", sub = "_")
 {
     tab = fread(...)
     nms = dedup(gsub(pattern, sub, names(tab), perl = TRUE), 
-        suffix = ".") %>% gsub("^[^A-Za-z]", "", ., perl = TRUE)
+                suffix = ".") %>% gsub("^[^A-Za-z]", "", ., perl = TRUE)
     setnames(tab, nms)
     return(tab)
 }
@@ -49,10 +49,10 @@ dedup = function (x, suffix = ".")
     udup = setdiff(unique(x[dup]), NA)
     udup.ix = lapply(udup, function(y) which(x == y))
     udup.suffices = lapply(udup.ix, function(y) c("", paste(suffix, 
-        2:length(y), sep = "")))
+                                                            2:length(y), sep = "")))
     out = x
     out[unlist(udup.ix)] = paste(out[unlist(udup.ix)], unlist(udup.suffices), 
-        sep = "")
+                                 sep = "")
     return(out)
 }
 
@@ -126,7 +126,7 @@ rebin = function (cov, binwidth, field = names(values(cov))[1], FUN = median, na
     tmp = as.data.table(cov[, c()])
     tmp$value = values(cov)[[field]]
     outdt = tmp[, FUN(value, na.rm = na.rm), by = .(seqnames, 
-        start = floor(start/binwidth) * binwidth + 1)]
+                                                    start = floor(start/binwidth) * binwidth + 1)]
     outdt[, `:=`(end, start + binwidth - 1)]
     out = dt2gr(outdt)
     names(values(out)) = field
@@ -134,8 +134,8 @@ rebin = function (cov, binwidth, field = names(values(cov))[1], FUN = median, na
 }
 
 ppng = function (expr, filename = "plot.png", height = 1000, width = 1000, 
-          dim = NULL, cex = 1, title = NULL, cex.pointsize = min(cex), 
-          cex.title = 1, ...) 
+                 dim = NULL, cex = 1, title = NULL, cex.pointsize = min(cex), 
+                 cex.title = 1, ...) 
 {
     if (length(cex) == 1) 
         cex = rep(cex, 2)
@@ -167,12 +167,12 @@ ppng = function (expr, filename = "plot.png", height = 1000, width = 1000,
 
 
 grok_vcf = function (x, snpeff.ontology = NULL, label = NA, keep.modifier = TRUE, long = FALSE, 
-    oneliner = FALSE, verbose = FALSE) 
+                     oneliner = FALSE, verbose = FALSE) 
 {
     fn = c("allele", "annotation", "impact", "gene", "gene_id", 
-        "feature_type", "feature_id", "transcript_type", "rank", 
-        "variant.c", "variant.p", "cdna_pos", "cds_pos", "protein_pos", 
-        "distance")
+           "feature_type", "feature_id", "transcript_type", "rank", 
+           "variant.c", "variant.p", "cdna_pos", "cds_pos", "protein_pos", 
+           "distance")
     if (is.character(x)) {
         out = suppressWarnings(skidb::read_vcf(x))
         if (is.na(label)) 
@@ -189,18 +189,18 @@ grok_vcf = function (x, snpeff.ontology = NULL, label = NA, keep.modifier = TRUE
             if (!is.null(vcf$ANN)) {
                 vcf$eff = unstrsplit(vcf$ANN)
                 vcf$modifier = !grepl("(HIGH)|(LOW)|(MODERATE)", 
-                  vcf$eff)
+                                      vcf$eff)
                 if (!keep.modifier) 
-                  vcf = vcf[!vcf$modifier]
+                    vcf = vcf[!vcf$modifier]
             }
             vcf$ref = as.character(vcf$REF)
             vcf$alt = as.character(unstrsplit(vcf$ALT))
             vcf = vcf[, sapply(values(vcf), class) %in% c("factor", 
-                "numeric", "integer", "logical", "character")]
+                                                          "numeric", "integer", "logical", "character")]
             vcf$var.id = 1:length(vcf)
             vcf$type = ifelse(nchar(vcf$ref) == nchar(vcf$alt), 
-                "SNV", ifelse(nchar(vcf$ref) < nchar(vcf$alt), 
-                  "INS", "DEL"))
+                              "SNV", ifelse(nchar(vcf$ref) < nchar(vcf$alt), 
+                                            "INS", "DEL"))
             vcf$label = label
         }
         return(vcf)
@@ -209,8 +209,8 @@ grok_vcf = function (x, snpeff.ontology = NULL, label = NA, keep.modifier = TRUE
         out$REF = as.character(out$REF)
         out$ALT = as.character(unstrsplit(out$ALT))
         out$vartype = ifelse(nchar(out$REF) == nchar(out$ALT), 
-            "SNV", ifelse(nchar(out$REF) < nchar(out$ALT), "INS", 
-                "DEL"))
+                             "SNV", ifelse(nchar(out$REF) < nchar(out$ALT), "INS", 
+                                           "DEL"))
         if (is.null(out$ANN)) 
             stop("no $ANN column, check to see if annotated VCF is formatted in the SnpEff style")
         else out$eff = unstrsplit(out$ANN)
@@ -221,7 +221,7 @@ grok_vcf = function (x, snpeff.ontology = NULL, label = NA, keep.modifier = TRUE
             annlist = strsplit(out$ANN, ",")
         else annlist = out$ANN %>% as.list
         tmp = lapply(annlist, function(y) do.call(rbind, lapply(strsplit(y, 
-            "\\|"), "[", 1:15)))
+                                                                         "\\|"), "[", 1:15)))
         tmpix = rep(1:length(out), elementNROWS(tmp))
         meta = as.data.frame(do.call(rbind, tmp))
         colnames(meta) = fn
@@ -233,9 +233,9 @@ grok_vcf = function (x, snpeff.ontology = NULL, label = NA, keep.modifier = TRUE
         names(out2) = NULL
         out2$ANN = NULL
         precedence = c("trunc", "cnadel", "cnadup", "complexsv", 
-            "splice", "inframe_indel", "fusion", "missense", 
-            "promoter", "regulatory", "noncoding", "inv", "synonymous", 
-            "")
+                       "splice", "inframe_indel", "fusion", "missense", 
+                       "promoter", "regulatory", "noncoding", "inv", "synonymous", 
+                       "")
         ## eff = readRDS(system.file("extdata", "snpeff_ontology.rds", 
         ##     package = "skitools"))[, `:=`(short, factor(short, 
         ##                                                 precedence))][!is.na(short), ]
@@ -245,7 +245,7 @@ grok_vcf = function (x, snpeff.ontology = NULL, label = NA, keep.modifier = TRUE
         .short = function(vcf) {
             tmp = strsplit(as.character(vcf$annotation), "\\&")
             dtl = data.table(eff = unlist(tmp), id = rep(1:length(tmp), 
-                lengths(tmp))) %>% merge(eff, by = "eff", allow.cartesian = TRUE) %>% 
+                                                         lengths(tmp))) %>% merge(eff, by = "eff", allow.cartesian = TRUE) %>% 
                 unique(by = "id")
             setkey(dtl, id)
             vcf$short = dtl[.(1:length(vcf)), short]
@@ -254,8 +254,8 @@ grok_vcf = function (x, snpeff.ontology = NULL, label = NA, keep.modifier = TRUE
         out2 = .short(out2)
         if (oneliner) 
             out2$oneliner = paste(ifelse(!is.na(out2$gene), as.character(out2$gene), 
-                as.character(out2$annotation)), ifelse(nchar(as.character(out2$variant.p)) > 
-                0, as.character(out2$variant.p), as.character(out2$variant.c)))
+                                         as.character(out2$annotation)), ifelse(nchar(as.character(out2$variant.p)) > 
+                                                                                0, as.character(out2$variant.p), as.character(out2$variant.c)))
     }
     return(out2)
 }
@@ -290,8 +290,8 @@ get_oncokb_gene_entry_url = function(oncokb.response){
             return(NA)
         }
         if (!(length(oncokb.content$treatments) == 0)){
-        # Notice: I am using the treatments object to get the AA mutation
-        # in the future we can switch to reading it from our VCF file
+                                        # Notice: I am using the treatments object to get the AA mutation
+                                        # in the future we can switch to reading it from our VCF file
             alterations = oncokb.content$treatments[[1]]$alterations
             if (is.null(alterations)){
                 return(NA)
@@ -302,14 +302,14 @@ get_oncokb_gene_entry_url = function(oncokb.response){
             alteration = alterations[[1]]
             if (is.character(alteration) & length(alteration) > 0){
                 library(RCurl)
-                # if a URL exists for the specific alteration then let's go there
+                                        # if a URL exists for the specific alteration then let's go there
                 url_alteration = paste0(baseurl, '/', gene, '/', alteration, '/')
                 if (url.exists(url_alteration)){
                     return(url_alteration)
                 }
             }
         } else {
-            # If there was no URL for the specific alteration then we will try to go to the gene
+                                        # If there was no URL for the specific alteration then we will try to go to the gene
             url_gene = paste0(baseurl, '/', gene, '/')
             if (url.exists(url_gene)){
                 return(url_gene)
@@ -333,8 +333,8 @@ get_oncokb_gene_entry_url = function(oncokb.response){
 #' @export
 #' @author Alon Shaiber
 get_oncokb_response = function(variants.dt, oncokb.token,
-                                  oncokb.url = 'https://www.oncokb.org/api/v1/annotate',
-                                  reference = 'GRCh37'){
+                               oncokb.url = 'https://www.oncokb.org/api/v1/annotate',
+                               reference = 'GRCh37'){
     refdict = list('hg19' = 'GRCh37', 'hg38' = 'GRCh38')
     if (reference %in% names(refdict)){
         reference = refdict[[reference]]
@@ -398,7 +398,7 @@ get_oncokb_annotations = function(oncokb.response,
             }
         }
         return(vdt)
-        })
+    })
     annotations = rbindlist(annotations, fill = TRUE)
     return(annotations)
 }
@@ -411,11 +411,11 @@ get_oncokb_annotations = function(oncokb.response,
 #'
 #' @author Alon Shaiber
 test_oncokb_api = function(oncokb.token){
-    # this is an example actionable genomic alteration
+                                        # this is an example actionable genomic alteration
     example1 = data.table(seqnames = '7', start = '140453136', end = '140453136', REF = 'A', ALT = 'T')
-    # this is a gene that exists in the database, but a variant that does not
+                                        # this is a gene that exists in the database, but a variant that does not
     example2 = data.table(seqnames = '2', start = '204732714', end = '204732714', REF = 'A', ALT = 'G')
-    # this is a gene that is not in the database at all
+                                        # this is a gene that is not in the database at all
     example3 = data.table(seqnames = '1', start = '69511', end = '69511', REF = 'A', ALT = 'G')
     som = rbind(example1, example2, example3)
     oncokb = get_oncokb_response(som, oncokb.token = oncokb.token)
@@ -424,7 +424,7 @@ test_oncokb_api = function(oncokb.token){
     if (is.na(oncokb_annotations[1, highestSensitiveLevel])) stop('Something went wrong. The query for a known actionable genomic alteration did not return the expected value.')
     message('OncoKB hg19 query was finished with success.')
 
-    # example using GRCh38
+                                        # example using GRCh38
     example_GRCh38 = data.table(seqnames = 'chr7', start = '140753336', end = '140753337', REF = 'A', ALT = 'T')
     oncokb38 = get_oncokb_response(example_GRCh38, reference = 'GRCh38', oncokb.token = oncokb.token)
     oncokb_annotations = get_oncokb_annotations(oncokb38)
@@ -748,7 +748,7 @@ get_oncogenes_with_amp = function(oncotable){
     amplified_oncogenes = oncotable[grepl('ONC', role)][type == 'amp']
     strout = 'There are no oncogenes with copy number amplifications.'
     if (amplified_oncogenes[, .N] > 0){
-        # TODO: we can later add the CN for each of these genes
+                                        # TODO: we can later add the CN for each of these genes
         strout = paste0(paste(unique(amplified_oncogenes$gene), collapse = ', '), '.')
     }
     return(strout)
@@ -758,7 +758,7 @@ get_TSG_with_homdels = function(oncotable){
     homdel_tsgs = oncotable[grepl('TSG', role)][type == 'homdel']
     strout = 'There are no tumor suppressor genes with homozygous deletions.'
     if (homdel_tsgs[, .N] > 0){
-        # TODO: we can later add the CN for each of these genes
+                                        # TODO: we can later add the CN for each of these genes
         strout = paste0(paste(unique(homdel_tsgs$gene), collapse = ', '), '.')
     }
     return(strout)
@@ -771,11 +771,14 @@ check_file = function(fn, overwrite = FALSE, verbose = TRUE){
         }
         return(TRUE)
     }
-        return(FALSE)
+    return(FALSE)
 }
 
 
 file.good = function(f){
+    if (is.null(f)){
+        return(FALSE)
+    }
     file.exists(f) & (file.size(f)>0)
 }
 
@@ -823,7 +826,7 @@ get_gene_ampdel_annotations = function(genes_cn, amp.thresh, del.thresh){
     genes_cn[min_cn == 0, cnv := 'homdel']
     return(genes_cn)
 }
-    
+
 
 #' @title check_GRanges_compatibility
 #' @description
@@ -837,19 +840,19 @@ get_gene_ampdel_annotations = function(genes_cn, amp.thresh, del.thresh){
 #' @return TRUE if seqlevels are identical, otherwise, FALSE
 #' @author Alon Shaiber
 check_GRanges_compatibility = function(gr1, gr2, name1 = 'first', name2 = 'second'){
-      # check which seqnames overlap and which don't 
-      non_overlapping_seqnames1 = setdiff(seqlevels(gr1), seqlevels(gr2))
-      non_overlapping_seqnames2 = setdiff(seqlevels(gr2), seqlevels(gr1))
-      overlap = intersect(seqlevels(gr1), seqlevels(gr2))
-      message('The following seqnames are only in the ', name1, ' GRanges, but not in the ', name2, ' GRanges: ', paste(non_overlapping_seqnames1, collapse = ', '))
-      message('The following seqnames are only in the ', name2, ' GRanges, but not in the ', name1, ' GRanges: ', paste(non_overlapping_seqnames2, collapse = ', '))
-      message('The follosing seqnames are in both GRanges objects: ', paste(overlap, collapse = ', '))
-      if (length(non_overlapping_seqnames1) > 0 | length(non_overlapping_seqnames2) > 0){
-          return(FALSE)
-      }
-      return(TRUE)
+                                        # check which seqnames overlap and which don't 
+    non_overlapping_seqnames1 = setdiff(seqlevels(gr1), seqlevels(gr2))
+    non_overlapping_seqnames2 = setdiff(seqlevels(gr2), seqlevels(gr1))
+    overlap = intersect(seqlevels(gr1), seqlevels(gr2))
+    message('The following seqnames are only in the ', name1, ' GRanges, but not in the ', name2, ' GRanges: ', paste(non_overlapping_seqnames1, collapse = ', '))
+    message('The following seqnames are only in the ', name2, ' GRanges, but not in the ', name1, ' GRanges: ', paste(non_overlapping_seqnames2, collapse = ', '))
+    message('The follosing seqnames are in both GRanges objects: ', paste(overlap, collapse = ', '))
+    if (length(non_overlapping_seqnames1) > 0 | length(non_overlapping_seqnames2) > 0){
+        return(FALSE)
+    }
+    return(TRUE)
 }
-    
+
 
 
 #' @title get_gene_copy_numbers
@@ -884,10 +887,10 @@ get_gene_copy_numbers = function(gg, gene_ranges,
                                  output_type = 'data.table',
                                  ploidy = 2){
     if (is.character(gg)){
-      gg = readRDS(gg)
+        gg = readRDS(gg)
     }
     if (!inherits(gene_ranges, 'GRanges')){
-        # try to import with rtracklayer
+                                        # try to import with rtracklayer
         gene_ranges = rtracklayer::import(gene_ranges)
     }
 
@@ -904,25 +907,25 @@ get_gene_copy_numbers = function(gg, gene_ranges,
     if (!is.null(nseg)){
         ngr = ngr %$% nseg[, c('ncn')]
     } else {
-        # if there is no nseg then assume ncn = 2
+                                        # if there is no nseg then assume ncn = 2
         message('No normal copy number segmentation was provided so assuming CN = 2 for all seqnames.')
         ngr$ncn = 2
     }
     ndt = gr2dt(ngr)
 
     seq_widths = as.numeric(width(ngr))
-    # since we are comparing to CN data which is integer then we will also round the normal ploidy to the nearest integer.
+                                        # since we are comparing to CN data which is integer then we will also round the normal ploidy to the nearest integer.
     normal_ploidy = round(sum(seq_widths * ngr$ncn, na.rm = T) / sum(seq_widths, na.rm = T))
 
-    # normalize the CN by ploidy and by local normal copy number
+                                        # normalize the CN by ploidy and by local normal copy number
     ## ndt[, normalized_cn := cn * normal_ploidy / (jab$ploidy * ncn)] ## error because jab does not exist!
     ndt[, normalized_cn := cn * normal_ploidy / (ploidy * ncn)]
 
-    # overlapping copy number segments with gene ranges
+                                        # overlapping copy number segments with gene ranges
     gene_cn_segments = dt2gr(ndt, seqlengths = seqlengths(gg)) %*% gene_ranges %>% gr2dt
-    # let's find genes that overlap with multiple copy number segments 
-    # we would want to report the minimum and maximum CN for these genes as well as the number of CN segments overlapping the gene
-    # we could do the same computation for all genes, but it is much more efficient to do it separately since the split_genes are a minority
+                                        # let's find genes that overlap with multiple copy number segments 
+                                        # we would want to report the minimum and maximum CN for these genes as well as the number of CN segments overlapping the gene
+                                        # we could do the same computation for all genes, but it is much more efficient to do it separately since the split_genes are a minority
     split_genes = gene_cn_segments[duplicated(get(gene_id_col)), get(gene_id_col)]
 
     gene_cn_non_split_genes = gene_cn_segments[!(get(gene_id_col) %in% split_genes)]
@@ -942,38 +945,50 @@ get_gene_copy_numbers = function(gg, gene_ranges,
 
 
     gene_cn_split_genes_max = gene_cn_segments[get(gene_id_col) %in% split_genes,
-                                           .SD[which.max(cn)], by = gene_id_col][, .(get(gene_id_col),
-                                                                max_normalized_cn = normalized_cn,
-                                                                max_cn = cn)]
+                                               .SD[which.max(cn)], by = gene_id_col][, .(get(gene_id_col),
+                                                                                         max_normalized_cn = normalized_cn,
+                                                                                         max_cn = cn)]
     setnames(gene_cn_split_genes_max, 'V1', gene_id_col)
     
     number_of_segments_per_split_gene = gene_cn_segments[get(gene_id_col) %in% split_genes, .(number_of_cn_segments = .N), by = gene_id_col]
 
-    gene_cn_split_genes = merge(gene_cn_split_genes_min, gene_cn_split_genes_max, by = gene_id_col)
-    gene_cn_split_genes = merge(gene_cn_split_genes, number_of_segments_per_split_gene, by = gene_id_col)
+    gene_cn_split_genes = merge.data.table(gene_cn_split_genes_min, gene_cn_split_genes_max, by = gene_id_col)
+    gene_cn_split_genes = merge.data.table(gene_cn_split_genes, number_of_segments_per_split_gene, by = gene_id_col)
 
     gene_cn_table = rbind(gene_cn_split_genes, gene_cn_non_split_genes)
 
     ## overlap with event calls
-    if (is.null(gg$meta$events)){
-        gg = events(gg)
+    ## had done this up front
+    ## if (is.null(gg$meta$events)){
+    ##     gg = events(gg)
+    ## }
+        
+    if (!is.null(gg$meta$events) && nrow(gg$meta$events)){
+        this.ev = gg$meta$events[type %in% ev.types,]
+        ev.grl = parse.grl(this.ev$footprint)
+        values(ev.grl) = this.ev
+        ev.gr = stack(ev.grl)
+    } else {
+        ev.gr = GRanges()
     }
-    this.ev = gg$meta$events[type %in% ev.types,]
-    ev.grl = parse.grl(this.ev$footprint)
-    values(ev.grl) = this.ev
-    ev.gr = stack(ev.grl)
+    
 
     ## get genes as granges
     gene_cn_gr = dt2gr(gene_cn_table, seqlengths = seqlengths(gene_ranges))
+
+    if (length(ev.gr)){
+        ov = gr.findoverlaps(gene_cn_gr, ev.gr,
+                             qcol = c("gene_name"),
+                             scol = c("ev.id", "type"),
+                             return.type = "data.table")
+    } else {
+        ov = data.table()
+    }
     
-    ov = gr.findoverlaps(gene_cn_gr, ev.gr,
-                         qcol = c("gene_name"),
-                         scol = c("ev.id", "type"),
-                         return.type = "data.table")
 
     if (ov[,.N] > 0){
         ov = ov[, .(ev.id = paste(unique(ev.id), sep = ","), ev.type = paste(unique(type), sep = ",")), by = gene_name]
-        gene_cn_table = merge(gene_cn_table, ov, by = "gene_name", all.x = TRUE)
+        gene_cn_table = merge.data.table(gene_cn_table, ov, by = "gene_name", all.x = TRUE)
     } else {
         gene_cn_table[, ":="(ev.id = NA, type = NA)]
     }
@@ -983,18 +998,18 @@ get_gene_copy_numbers = function(gg, gene_ranges,
     }
     return(dt2gr(gene_cn_table, seqlengths = seqlengths(gene_ranges)))
 }
-    
-# This is under construction.
-# a helper function to reduce the gencode GRanges to a a reduced version
+
+                                        # This is under construction.
+                                        # a helper function to reduce the gencode GRanges to a a reduced version
 reduce_gencode = function(gencode, gene_id_col = 'gene_id'){
     if (!inherits(gencode, 'GRanges')){
         stop('Invalid input. Input must be of class GRanges.')
     }
 
     genes_dt = gr2dt(gencode)
-    # split to GRL according to gene_id
+                                        # split to GRL according to gene_id
     genes_grl = split(gencode, gencode[, get(gene_id_col)])
-    # reduce each gene to a single range. The 1e3 pad is just in order to overlap segments of the gene
+                                        # reduce each gene to a single range. The 1e3 pad is just in order to overlap segments of the gene
     genes_grl_reduced = reduce(genes_grl + 1e3) - 1e3
     genes_gr = unlist(genes_grl_reduced)
 
@@ -1002,7 +1017,7 @@ reduce_gencode = function(gencode, gene_id_col = 'gene_id'){
 
     new_genes_dt = gr2dt(genes_gr)
 
-    new_genes_dt_with_metadata = merge(new_genes_dt, genes_dt[!duplicated(gene_id), ..mfields], by = 'gene_id')
+    new_genes_dt_with_metadata = merge.data.table(new_genes_dt, genes_dt[!duplicated(gene_id), ..mfields], by = 'gene_id')
 
     gencode_reduced = dt2gr(new_genes_dt_with_metadata)
 
@@ -1125,29 +1140,51 @@ grab.agtrack = function(agt.fname = NULL,
 #' @param tpm.pair file path of data.table with column gene, pair
 #'
 #' @return data table with column gene and quantile representing expression quantile for the pair of interest relative to rest of cohort
-rna.quantile = function(tpm.cohort = NULL, pair = NULL, tpm.pair = NULL) {
+rna.quantile = function(tpm.cohort, pair, tpm.pair = NULL) {
+    ## this is now a required argument
+    ## if (is.null(pair)) {
+    ##     stop("must supply pair")
+    ## }
 
-    if (is.null(pair)) {
-        stop("must supply pair")
+    if (is.character(tpm.cohort) && file.good(tpm.cohort)){
+        tpm.cohort = data.table::fread(tpm.cohort, header = TRUE)
+    } else if (inherits(tpm.cohort, "data.table")){
+        stopifnot(all(is.element("gene", colnames(tpm.cohort))))
     }
 
-    tpm.cohort = data.table::fread(tpm.cohort, header = TRUE)
-    tpm.pair = data.table::fread(tpm.pair, header = TRUE)
-    
     if (!is.null(tpm.pair)) {
+        if (is.character(tpm.pair) && file.good(tpm.pair)){
+            tpm.pair = data.table::fread(tpm.pair, header = TRUE)
+        }
+
+        if (!inherits(tpm.pair, "data.frame")){
+            stop("'tpm.pair' must be a data.frame")
+        }
+        tpm.pair = data.table(tpm.pair)
+
+        ## we enforce that the sample id must be a column in the individual data matrix
+        if (!is.element(pair, colnames(tpm.pair))){
+            stop("The TPM value must be in the column named after the sample id.")
+        }
+        
+        ## if sample already exists in cohort, replace with the input
         if (pair %in% colnames(tpm.cohort)) {
             tpm.cohort[[pair]] = NULL ## overwite pair if it exists
-            tpm.cohort = merge.data.table(tpm.cohort, tpm.pair, by = "gene", all.x = TRUE)
+            tpm.cohort = merge.data.table(tpm.cohort, tpm.pair[, c("gene", pair), with = FALSE], by = "gene", all.x = TRUE)
         } else {
-            tpm.cohort = merge.data.table(tpm.cohort, tpm.pair, by = "gene", all.x = TRUE)
+            tpm.cohort = merge.data.table(tpm.cohort, tpm.pair[, c("gene", pair), with = FALSE], by = "gene", all.x = TRUE)
         }
     }
-    if (!(pair %in% colnames(tpm.cohort))) {
+    
+    if (!(pair %in% colnames(tpm.cohort))){
         stop("pair must be in tpm.cohort columns")
     }
 
+    id.cols = grep("gene|target_id|tumor_type|Transcript", colnames(tpm.cohort), value = TRUE)
+    data.cols = setdiff(colnames(tpm.cohort), id.cols)
     melted.tpm.cohort = data.table::melt(tpm.cohort,
-                                         id.vars = c("gene"),
+                                         id.vars = id.cols,
+                                         measure.vars = data.cols,
                                          variable.name = "pair")
 
     melted.tpm.cohort[, qt := rank(as.double(.SD$value))/.N, by = gene]
@@ -1168,43 +1205,41 @@ rna.quantile = function(tpm.cohort = NULL, pair = NULL, tpm.pair = NULL) {
 #' @param genes.to.label (character) label these genes
 #'
 #' @return creates a plot
-rna.waterfall.plot = function(tpm.cohort = NULL,
-                              pair = NULL,
-                              tpm.pair = NULL,
+rna.waterfall.plot = function(melted.expr,
+                              pair,
                               out.fn = NULL,
-                              genes.to.label = NULL) {
+                              genes.to.label = NULL,
+                              ...) {
 
-    if (is.null(pair)) {
-        stop("must supply pair")
-    }
-
-    tpm.cohort = data.table::fread(tpm.cohort, header = TRUE)
-    tpm.pair = data.table::fread(tpm.pair, header = TRUE)
+    ## if (is.null(pair)) {
+    ##     stop("must supply pair")
+    ## }
+    ## tpm.cohort = data.table::fread(tpm.cohort, header = TRUE)
+    ## tpm.pair = data.table::fread(tpm.pair, header = TRUE)
     
-    if (!is.null(tpm.pair)) {
-        if (pair %in% colnames(tpm.cohort)) {
-            tpm.cohort[[pair]] = NULL ## overwite pair if it exists
-            tpm.cohort = merge.data.table(tpm.cohort, tpm.pair, by = "gene", all.x = TRUE)
-        } else {
-            tpm.cohort = merge.data.table(tpm.cohort, tpm.pair, by = "gene", all.x = TRUE)
-        }
-    }
-    if (!(pair %in% colnames(tpm.cohort))) {
-        stop("pair must be in tpm.cohort columns")
-    }
-
-    melted.tpm.cohort = data.table::melt(tpm.cohort,
-                                         id.vars = c("gene"),
-                                         variable.name = "pair")
+    ## if (!is.null(tpm.pair)) {
+    ##     if (pair %in% colnames(tpm.cohort)) {
+    ##         tpm.cohort[[pair]] = NULL ## overwite pair if it exists
+    ##         tpm.cohort = merge.data.table(tpm.cohort, tpm.pair, by = "gene", all.x = TRUE)
+    ##     } else {
+    ##         tpm.cohort = merge.data.table(tpm.cohort, tpm.pair, by = "gene", all.x = TRUE)
+    ##     }
+    ## }
+    ## if (!(pair %in% colnames(tpm.cohort))) {
+    ##     stop("pair must be in tpm.cohort columns")
+    ## }
+    ## melted.tpm.cohort = data.table::melt(tpm.cohort,
+    ##                                      id.vars = c("gene"),
+    ##                                      variable.name = "pair")
 
     ## compute zscores
-    melted.tpm.cohort[, value := as.double(value)]
-    melted.tpm.cohort[, m := mean(value, na.rm = TRUE), by = "gene"]
-    melted.tpm.cohort[, v := var(value, na.rm = TRUE), by = "gene"]
-    melted.tpm.cohort[, zs := (value - m)/sqrt(v), by = "gene"]
+    melted.expr[, value := as.double(value)]
+    melted.expr[, m := mean(value, na.rm = TRUE), by = "gene"]
+    melted.expr[, v := var(value, na.rm = TRUE), by = "gene"]
+    melted.expr[, zs := (value - m)/sqrt(v), by = "gene"]
 
-    sel = melted.tpm.cohort$pair == pair
-    ds = melted.tpm.cohort[sel, .(gene, zs)]
+    sel = melted.expr$pair == pair
+    ds = melted.expr[sel, .(gene, zs)]
 
     od = order(ds$zs, decreasing = TRUE)
     flevels = ds$gene[od]
@@ -1227,10 +1262,10 @@ rna.waterfall.plot = function(tpm.cohort = NULL,
     pt = ggplot(ds, aes(x = gene, y = zs, fill = role)) +
         geom_bar(stat = "identity", width = 1) +
         geom_label_repel(mapping = aes(label = gene.label,
-                                 x = as.numeric(gene),
-                                 y = label.y),
-                   data = ds[!is.na(gene.label)],
-                   alpha = 0.8)
+                                       x = as.numeric(gene),
+                                       y = label.y),
+                         data = ds[!is.na(gene.label)],
+                         alpha = 0.8)
 
     pad = nrow(ds) * 0.05
     pt = pt +
@@ -1247,7 +1282,335 @@ rna.waterfall.plot = function(tpm.cohort = NULL,
               panel.grid.minor = element_blank(),
               plot.margin=unit(c(1,1,1,1),"cm"))
 
-    ppng(print(pt), filename = out.fn)
+    ppng(print(pt), filename = out.fn, ...)
+}
+
+
+
+####################################################################
+#' ppgrid
+#'
+#' least squares grid search for purity and ploidy modes
+#'
+#' @param segstats GRanges object of intervals with meta data fields "mean" and "sd" (i.e. output of segstats function)
+#' @param allelic logical flag, if TRUE will also look for mean_high, sd_high, mean_low, sd_low variables and choose among top solutions from top copy number according to the best allelic fit
+#' @param purity.min min purity value allowed
+#' @param purity.max max purity value allowed
+#' @param ploidy.min min ploidy value allowed
+#' @param ploidy.max max ploidy value allowed
+#' @param ploidy.step grid length of ploidy values
+#' @param purity.step grid length of purity values
+#' @param plot whether to plot the results to file
+#' @param verbose print intermediate outputs
+#' @param mc.cores integer number of cores to use (default 1)
+#' @param return.all return the log likelihood matrix
+#' @return data.frame with top purity and ploidy solutions and associated gamma and beta values, for use in downstream jbaMI
+############################################
+ppgrid = function(segstats,
+                  allelic = FALSE,
+                  purity.min = 0.01,
+                  purity.max = 1.0,
+                  ploidy.step = 0.01,
+                  purity.step = 0.01,
+                  ploidy.min = 1.2, # ploidy bounds (can be generous)
+                  ploidy.max = 6,
+                  plot = F,
+                  verbose = F,
+                  mc.cores = 1,
+                  return.nll = FALSE){
+    if (verbose)
+        jmessage('setting up ppgrid matrices .. \n')
+
+    if (is.na(ploidy.min)) ploidy.min = 1.2
+    if (is.na(ploidy.max)) ploidy.max = 6
+    if (is.na(purity.min)) purity.min = 0.01
+    if (is.na(purity.max)) purity.max = 1
+
+    ##  purity.guesses = seq(0, 1, purity.step)
+    purity.guesses = seq(pmax(0, purity.min), pmin(1.00, purity.max), purity.step)
+    ## ploidy.guesses = seq(pmin(0.5, ploidy.min), pmax(10, ploidy.max), ploidy.step)
+    ploidy.guesses = seq(pmax(0.5, ploidy.min), pmax(0.5, ploidy.max), ploidy.step)
+
+    if (allelic)
+        if (!all(c('mean_high', 'mean_low', 'sd_high', 'sd_low') %in% names(values(segstats))))
+        {
+            jwarning('If allelic = TRUE then must have meta data fields mean_high, mean_low, sd_high, sd_low in input segstats')
+            allelic = FALSE
+        }
+
+    if (is.null(segstats$mean))
+        jerror('segstats must have field $mean')
+
+    segstats = segstats[!is.na(segstats$mean) & !is.na(segstats$sd)]
+
+    if (!is.null(segstats$ncn))
+        segstats = segstats[segstats$ncn==2, ]
+
+    ## if (is.null(segstats$ncn))
+    ##     ncn = rep(2, length(mu))
+    ## else
+    ##     ncn = segstats$ncn
+
+    if (any(tmpix <-is.infinite(segstats$mean) | is.infinite(segstats$sd)))
+    {
+        segstats$sd[tmpix] = segstats$mean[tmpix] = NA
+    }
+    segstats = segstats[!is.na(segstats$mean) & !is.na(segstats$sd), ]
+    if (length(segstats)==0)
+        jerror('No non NA segments provided')
+
+    mu = segstats$mean
+    w = as.numeric(width(segstats))
+    Sw = sum(as.numeric(width(segstats)))
+    sd = segstats$sd
+    m0 = sum(as.numeric(mu*w))/Sw
+
+    if (verbose)
+        cat(paste(c(rep('.', length(purity.guesses)), '\n'), collapse = ''))
+
+    NLL = matrix(unlist(parallel::mclapply(seq_along(purity.guesses), function(i)
+    {
+        if (verbose)
+            cat('.')
+        nll = rep(NA, length(ploidy.guesses))
+        for (j in seq_along(ploidy.guesses))
+        {
+            alpha = purity.guesses[i]
+            tau = ploidy.guesses[j]
+            gamma = 2/alpha - 2
+            beta = (tau + gamma)/m0 
+            v = pmax(0, round(beta*mu-gamma))
+            nll[j] = sum((v-beta*mu+gamma)^2/((sd)^2))
+        }
+        return(nll)
+    }, mc.cores = mc.cores)), nrow = length(purity.guesses), byrow = T)
+
+    dimnames(NLL) = list(as.character(purity.guesses), as.character(ploidy.guesses))
+
+    if (verbose)
+        cat('\n')
+
+    ## rix = as.numeric(rownames(NLL))>=purity.min & as.numeric(rownames(NLL))<=purity.max
+    ## cix = as.numeric(colnames(NLL))>=ploidy.min & as.numeric(colnames(NLL))<=ploidy.max
+    ## NLL = NLL[rix, cix, drop = FALSE]
+
+    a = rep(NA, nrow(NLL));
+    b = rep(NA, ncol(NLL)+2)
+    b.inf = rep(Inf, ncol(NLL)+2)
+                                        #  a = rep(Inf, nrow(NLL));
+                                        #  b = rep(Inf, ncol(NLL)+2)
+    NLLc = rbind(b, cbind(a, NLL, a), b) ## padded NLL and all of its shifts
+    NLLul = rbind(cbind(NLL, a, a), b.inf, b)
+    NLLuc = rbind(cbind(a, NLL, a), b.inf, b)
+    NLLur = rbind(cbind(a, a, NLL), b.inf, b)
+    NLLcl = rbind(b, cbind(NLL, a, a), b)
+    NLLcr = rbind(b, cbind(a, a, NLL), b)
+    NLLll = rbind(b, b, cbind(NLL, a, a))
+    NLLlc = rbind(b, b, cbind(a, NLL, a))
+    NLLlr = rbind(b, b, cbind(a, a, NLL))
+
+    if (min(c(ncol(NLL), nrow(NLL)))>1) ## up up down down left right left right ba ba start
+        M = (NLLc < NLLul &
+             NLLc < NLLuc &
+             NLLc < NLLur &
+             NLLc < NLLcl &
+             NLLc < NLLcr &
+             NLLc < NLLll &
+             NLLc < NLLlc &
+             NLLc < NLLlr)[-c(1, nrow(NLLc)),
+                           -c(1, ncol(NLLc)),
+                           drop = FALSE]
+    else if (ncol(NLL)==1) ## one column, only go up and down
+        M = (NLLc < NLLuc & NLLc < NLLlc)[-c(1, nrow(NLLc)), -c(1, ncol(NLLc)), drop = FALSE]
+    else ## only row, only go left right
+        M = (NLLc < NLLcl & NLLc < NLLcr)[-c(1, nrow(NLLc)), -c(1, ncol(NLLc)), drop = FALSE]
+
+    if (length(M)>1)
+    {
+        ix = Matrix::which(M, arr.ind=T);
+        if (nrow(ix)>1)
+        {
+            C = hclust(d = dist(ix), method = 'single')
+            cl = cutree(C, h = min(c(nrow(NLL), ncol(NLL), 2)))
+            minima = ix[vaggregate(1:nrow(ix), by = list(cl), function(x) x[which.min(NLL[ix[x, drop = FALSE]])]), , drop = FALSE]
+        }
+        else
+            minima = ix[1,, drop = FALSE]
+    }
+    else
+        minima = cbind(1,1)
+
+    out = data.frame(purity = as.numeric(rownames(NLL)[minima[,1]]), ploidy = as.numeric(colnames(NLL)[minima[,2]]), NLL = NLL[minima],
+                     i = minima[,1], j = minima[,2])
+
+    out = out[order(out$NLL), , drop = FALSE]
+    rownames(out) = 1:nrow(out)
+    ## Saturday, Sep 02, 2017 10:33:26 PM
+    ## Noted floating point error, use the epsilon trick to replace '>='
+    ## out = out[out$purity>=purity.min & out$purity<=purity.max & out$ploidy>=ploidy.min & out$ploidy<=ploidy.max, ]
+    eps = 1e9
+    out = out[out$purity - purity.min >= -eps &
+              out$purity - purity.max <= eps &
+              out$ploidy - ploidy.min >= -eps &
+              out$ploidy - ploidy.max <= eps, ]
+    out$gamma = 2/out$purity -2
+    out$beta = (out$ploidy + out$gamma)/m0
+    out$mincn = mapply(function(gamma, beta) min(round(beta*mu-gamma)), out$gamma, out$beta)
+    out$maxcn = mapply(function(gamma, beta) max(round(beta*mu-gamma)), out$gamma, out$beta)
+
+    ## group solutions with (nearly the same) slope (i.e. 1/beta), these should have almost identical
+    ## NLL (also take into account in-list distance just be safe)
+    if (nrow(out)>1)
+        out$group = cutree(hclust(d = dist(cbind(100/out$beta, 1:nrow(out)), method = 'manhattan'), method = 'single'), h = 2)
+    else
+        out$group = 1
+    out = out[out$group<=3, ,drop = FALSE] ## only pick top 3 groups
+
+    if (allelic) ## if allelic then use allelic distance to rank best solution in group
+    {
+        ## remove all NA allelic samples
+        segstats = segstats[!is.na(segstats$mean_high) & !is.na(segstats$sd_high) & !is.na(segstats$mean_low) & !is.na(segstats$sd_low)]
+        out$NLL.allelic = NA
+        mu = cbind(segstats$mean_high, segstats$mean_low)
+        w = matrix(rep(as.numeric(width(segstats)), 2), ncol = 2, byrow = TRUE)
+        Sw = sum(as.numeric(width(segstats)))*2
+        sd = cbind(segstats$sd_high, segstats$sd_low)
+        m0 = sum(as.numeric(mu*w))/Sw
+
+        if (verbose)
+            cat(paste(c(rep('.', length(purity.guesses)), '\n'), collapse = ''))
+
+        for (i in 1:nrow(out))
+        {
+            if (verbose)
+            {
+                jmessage(sprintf('Evaluating alleles for solution %s of %s\n', i, nrow(out)))
+            }
+            alpha = out$purity[i]
+            tau = out$ploidy[i]
+                                        #                  gamma = 2/alpha - 2
+            gamma = 1/alpha - 1 ## 1 since we are looking at hets
+            beta = (tau + gamma)/m0 ## replaced with below 9/10/14
+                                        #          beta = ( tau + tau_normal * gamma /2 ) / m0
+                                        #          v = pmax(0, round(beta*mu-ncn*gamma/2))
+            v = pmax(0, round(beta*mu-gamma))
+
+            vtot = round(out$beta[i]*segstats$mean-out$gamma[i])
+            vlow.mle = rep(NA, length(vtot))
+
+            for (j in seq_along(vlow.mle))
+            {
+                if (vtot[j]==0)
+                    vlow.mle[j] = 0
+                else
+                {
+                    vlow = 0:floor(vtot[j]/2)
+                    vhigh = vtot[j]-vlow
+                    tmp.nll = cbind((vlow-beta*mu[j,2]+gamma)^2/(sd[j,2])^2, (vhigh-beta*mu[j, 1]+gamma)^2/((sd[j,1])^2))
+                    vlow.mle[j] = vlow[which.min(rowSums(tmp.nll))]
+                }
+            }
+
+            vlow.mle = apply(cbind(mu, sd, vtot), 1, function(x) {
+                tot = x[5]
+                if (tot == 0)
+                    return(0)
+                else
+                {
+                    vlow = 0:floor(tot/2)
+                    vhigh = tot-vlow
+                    muh = x[1]
+                    mul = x[2]
+                    sdh = x[3]
+                    sdl = x[4]
+                    tmp.nll = cbind((vlow-beta*mul+gamma)^2/(sdl)^2, (vhigh-beta*muh+gamma)^2/((sdh)^2))
+                    return(vlow[which.min(rowSums(tmp.nll))])
+                }
+            })
+
+            out$NLL.allelic[i] = sum((cbind(vtot-vlow.mle, vlow.mle)-beta*mu+gamma)^2/sd^2)
+        }
+
+        out$NLL.tot = out$NLL
+        out$NLL = out$NLL.tot + out$NLL.allelic
+        out.all = out
+        ix = vaggregate(1:nrow(out), by = list(out$group), FUN = function(x) x[order(abs(out$NLL[x]))][1])
+    } else ## otherwise choose the one that gives the lowest magnitude copy number
+    {
+        out.all = out
+        ix = vaggregate(1:nrow(out), by = list(out$group), FUN = function(x) x[order(abs(out$mincn[x]), out$mincn[x]<0)][1])
+    }
+
+    out = out[ix, , drop = FALSE]
+    out$NLL = vaggregate(out$NLL, by = list(out$group), FUN = min)
+
+    out.all$keep = 1:nrow(out.all) %in% ix ## keep track of other ploidy group peaks for drawing purposes
+    out.all = out.all[out.all$group %in% out$group, ] ## only draw the groups in the top solution
+    out = out.all;
+    out = out[order(out$group, !out$keep, out$NLL), ]
+    out$rank = NA
+    out$rank[out$keep] = 1:sum(out$keep)
+    out$keep = out$i = out$j = NULL
+    rownames(out) = NULL
+    if (return.nll){
+        out = list(out = out, NLL = NLL)
+    }
+    return(out)
+}
+
+
+## diagnostic function used by karyograph_stub
+#' @name ggplot_ppfit
+#' @rdname internal
+ggplot_ppfit = function(seg, purity, ploidy, beta = NULL, gamma = NULL, ploidy_normal = 2, xlim = c(-Inf, Inf)){
+    tmp = seg  ## only plot seg that we haven't fixed SD for and that have normal cn 1, to minimize confusion
+    dupval = sort(table(tmp$mean), decreasing = TRUE)[1]
+    if (!is.na(dupval))
+        if (dupval>5)
+            tmp = tmp[-which(as.character(tmp$mean) == names(dupval))]
+
+    if (length(tmp)==0)
+        return()
+
+    ## sampling random loci to plot not segments
+    ## segsamp = pmin(sample(tmp$mean, 1e6, replace = T, prob = width(tmp)), xlim[2])
+    tmp = tmp %Q% (!is.na(mean))
+    segsamp = sample(tmp[, "mean"], 1e6, replace = T, prob = width(tmp)) %>% gr2dt
+    segsamp[, mean := pmax(xlim[1], pmin(mean, xlim[2]))]
+    segsamp = segsamp[!is.na(mean)]
+
+    mu = seg$mean
+    w = width(seg)
+    Sw = sum(as.numeric(width(seg)))
+    sd = seg$sd
+    m0 = sum(as.numeric(mu*w))/Sw
+    alpha = purity
+    tau = ploidy
+    ncn = rep(2, length(mu))
+    
+    beta = (tau + ploidy_normal * gamma / 2 ) / m0
+    gamma = 2/alpha - 2
+    grids = 1/beta*(0:1000) + gamma/beta
+    grids = grids[which(grids < segsamp[, max(mean)])]
+
+    
+    h = ggplot(segsamp, aes(x = mean)) +
+        geom_histogram(bins = 1000) +
+        geom_vline(xintercept = grids, lty = 2, color = alpha("red", 0.8), lwd = 0.5) +
+        ## scale_x_continuous(limits = c(0, segsamp[, quantile(mean, 0.99)])) +
+        labs(x = "Segment intensity",
+             title = sprintf('Purity: %.2f Ploidy: %.2f Beta: %.2f Gamma: %.2f', purity, ploidy, beta, gamma)) +
+        theme_minimal(12)
+    
+    return(h)
+    ## ppdf(print(h))
+    
+    ## hist(
+    ##     pmax(xlim[1], pmin(xlim[2], segsamp)),
+    ##     1000, xlab = 'Segment intensity',
+    ##     main = sprintf('Purity: %s Ploidy: %s Beta: %s Gamma: %s', kag$purity, kag$ploidy, round(kag$beta,2), round(kag$gamma,2)),
+    ##     xlim = c(pmax(0, xlim[1]), pmin(xlim[2], max(segsamp, na.rm = T))))
+    ## abline(v = 1/kag$beta*(0:1000) + kag$gamma/kag$beta, col = alpha('red', 0.3), lty = c(4, rep(2, 1000)))
 }
 
 #' @name kallisto.preprocess
@@ -1275,9 +1638,17 @@ kallisto.preprocess = function(kallisto.fname,
         stop("pair cannot be NULL")
     }
 
-    if (is.null(gngt.fname) || !file.exists(gngt.fname)) {
-        stop("gngt.fname cannot be NULL")
+    ## grab correct gene for target id
+    if (is.character(gngt.fname) && file.good(gngt.fname)){
+        ge.data = stack(readRDS(gngt.fname)@data[[1]])
+    } else if (inherits(gngt.fname, "GRanges")){
+        ge.data = gngt.fname
+    } else {
+        stop("Invalid gene model. Please check your --gencode argument.")
     }
+    ## if (is.null(gngt.fname) || !file.exists(gngt.fname)) {
+    ##     stop("gngt.fname cannot be NULL")
+    ## }
 
     kallisto.dt = fread(kallisto.fname, header = TRUE)
 
@@ -1298,14 +1669,13 @@ kallisto.preprocess = function(kallisto.fname,
     if (!all(reqcols %in% colnames(kallisto.dt))) {
         stop("required columns target_id and tpm missing from kallisto output")
     }
+    outcols = c("target_id", outcols)
 
-    ## grab correct gene for target id
-    ge.data = stack(readRDS(gngt.fname)@data[[1]])
     kallisto.dt[, gene := ge.data$gene_name[match(target_id, ge.data$transcript_id)]]
 
     ## subset for high expression and max transcript for that gene
     ## not perfect, but potentially helps to prevent double-counting co-expressed exons
-    kallisto.dt = kallisto.dt[tpm > 0 & !is.na(tpm),][, .(tpm = max(tpm)), by = gene]
+    kallisto.dt = kallisto.dt[tpm > 0 & !is.na(tpm) & !is.na(gene),][, .(tpm = max(tpm), target_id = target_id[which.max(tpm)]), by = gene]
 
     ## reset tpm column
     setnames(kallisto.dt, "tpm", pair)
@@ -1367,8 +1737,8 @@ filter.snpeff = function(vcf, gngt.fname, cgc.fname, ref.name = "hg19", verbose 
         vartype = character(),
         impact = character(),
         annotation = character()
-     )
-        
+    )
+    
     if (is.null(vcf) || is.na(vcf) || !file.exists(vcf)) {
         warning("vcf file missing")
         return(dummy.out)
@@ -1458,7 +1828,7 @@ filter.snpeff = function(vcf, gngt.fname, cgc.fname, ref.name = "hg19", verbose 
                                        REF, ALT, variant.p, vartype, annotation)]
     return(unique(vcf.dt))
 }
-        
+
 #' @name create.summary
 #' @title create.summary
 #'
@@ -1518,13 +1888,13 @@ create.summary = function(jabba_rds,
         message("Fraction affected by CNA: ", out$cna_frac)
     }
 
-    if (!is.null(snv_vcf) && file.exists(snv_vcf)) {
+    if (file.good(snv_vcf)) {
         snv.vcf.gr = rowRanges(readVcf(snv_vcf))[, c()] %>% unique
     } else {
         snv.vcf.gr = GRanges()
     }
 
-    if (!is.null(indel_vcf) && file.exists(indel_vcf)) {
+    if (file.good(indel_vcf)) {
         indel.vcf.gr = rowRanges(readVcf(indel_vcf))[, c()] %>% unique
     } else {
         indel.vcf.gr = GRanges()
