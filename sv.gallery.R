@@ -379,7 +379,7 @@ cn.plot = function(drivers.fname = NULL,
                             name = "drivers",
                             xaxis.chronly = TRUE,
                             ywid = 0.1,
-                            stack.gap = 0.5,
+                            stack.gap = 1e6,
                             yaxis.cex = 0.8)
         
 
@@ -389,7 +389,7 @@ cn.plot = function(drivers.fname = NULL,
             cgc.gt$name = "CGC"
             cgc.gt$ywid = 0.1
             cgc.gt$height = 5
-            cgc.gt$stack.gap = 0.5
+            cgc.gt$stack.gap = 1e6
             gngt$yaxis.cex = 0.8
 
             ## concatenate final gTracks
@@ -562,7 +562,7 @@ sv.plot = function(complex.fname = NULL,
         cgc.gt$name = "CGC"
         cgc.gt$ywid = 0.1
         cgc.gt$height = 5
-        cgc.gt$stack.gap = 0.5
+        cgc.gt$stack.gap = 1e6
         gngt$yaxis.cex = 0.8
 
         ## concatenate final gTracks
