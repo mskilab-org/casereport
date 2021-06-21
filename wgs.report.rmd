@@ -200,6 +200,7 @@ if (file.good(file.path(params$outdir, "fusions.driver.txt"))){
         }
     } else {
         cat("\n", "No fusions to show", "\n")
+    }
 } else {
     cat("\n", "Fusion results not available.", "<br>\n\n")
 }
@@ -217,6 +218,7 @@ if (file.exists(other.fusions.fname)) {
    DT::datatable(dat, options = list(scrollX = TRUE), caption = "Other in-frame non-silent gene fusions")
 } else {
 cat("\n", "No other fusions to show.")
+}
 } else {
 cat("\n", "No other fusions available", "\n")
 }
