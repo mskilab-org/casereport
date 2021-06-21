@@ -296,10 +296,14 @@ if (!opt$knit_only){
                                                  (cnv == "del" & gene_name %in% tsg)]
             driver.genes_expr = genes_cn_annotated[(expr == "over" & gene_name %in% onc) |
                                                    (expr == "under" & gene_name %in% tsg)]
+            #' zchoo Monday, Jun 21, 2021 12:38:24 PM
+            #' add whether gene is TSG or ONCO
+            driver.genes_cn[gene_name %in% onc, annot := "ONC"]
+            driver.genes_cn[gene_name %in% tsg, annot := "TSG"]
             #' zchoo Wednesday, May 12, 2021 05:00:24 PM
             ## subset these to make less overwhelming...
             ## fields = c("gene_name", "cnv", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "number_of_cn_segments", "ncn", "seqnames", "start", "end", "width", "gene_id", "gene_type", "source",  "level", "hgnc_id", "havana_gene", "ev.id", "ev.type")
-            fields = c("gene_name", "cnv", "expr", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "expr.value", "expr.quantile", "seqnames", "start", "end", "width", "ev.id", "ev.type")
+            fields = c("gene_name", "annot", "cnv", "expr", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "expr.value", "expr.quantile", "seqnames", "start", "end", "width", "ev.id", "ev.type")
             fields = intersect(fields, names(driver.genes_cn))
             fwrite(driver.genes_cn[, ..fields], driver.genes.cnv.fn)
             fwrite(driver.genes_expr[, ..fields], driver.genes.expr.fn)
