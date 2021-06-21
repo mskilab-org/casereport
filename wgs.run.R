@@ -378,7 +378,7 @@ if (!opt$knit_only){
         }
         ppng(plot(gt, c(as.character(1:22), "X", "Y")),
              filename  = wgs.gtrack.fname,
-             height = 1500,
+             height = 1000,
              width = 5000)
     } else {
         message("Whole genome gTracks already exist")
@@ -393,7 +393,7 @@ if (!opt$knit_only){
                         cex.points = 0.1,
                         cytoband.path = file.path(opt$libdir, "data", "hg19.cytoband.txt")),
              filename = wgs.circos.fname,
-             height = 1000,
+             height = 850,
              width = 1000)
     } else {
         message("Whole genome circos plot already exists")
@@ -541,7 +541,7 @@ if (!opt$knit_only){
                                                cgc.fname = cgc.fname,
                                                gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
                                                pad = 0.5,
-                                               height = 2000,
+                                               height = 900,
                                                width = 1000,
                                                server = opt$server,
                                                pair = opt$pair,
@@ -593,7 +593,7 @@ if (!opt$knit_only){
                                        server = opt$server,
                                        pair = opt$pair,
                                        pad = 0.5,
-                                       height = 1200, ## png image height
+                                       height = 900, ## png image height
                                        width = 1000, ## png image width
                                        outdir = opt$outdir)
         if (length(sv.slickr.dt)>0){
@@ -622,7 +622,7 @@ if (!opt$knit_only){
                                amp.thresh = opt$amp_thresh,
                                ploidy = pl,
                                pad = 0.5,
-                               height = 1600,
+                               height = 900,
                                width = 1000,
                                outdir = opt$outdir)
         fwrite(cn.slickr.dt, cn.gallery.fn)
