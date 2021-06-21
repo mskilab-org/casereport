@@ -127,7 +127,7 @@ DT::datatable(driver.genes.cnv, options = list(scrollX = TRUE))
 ```
 
 
-## Gallery {.tabset .tabset-fade .tabset-pills}
+## Driver CNV gallery {.tabset .tabset-fade .tabset-pills}
 
 ```{r cn-tabset, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
 cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
@@ -158,19 +158,23 @@ if (nrow(cn.gallery.dt) > 0) {
 # Fusions
 
 ## Known fusions
-Fusions in which at least one involved gene is an oncogene or tumor suppressor.
+
 
 ```{r, driver-fusions-table, results = "asis", out.width= "100%", max.height = 800}
 driver.fusions.fname = file.path(params$outdir, "fusions.driver.txt")
 if (file.exists(driver.fusions.fname)) {
    driver.fusions.dt = fread(driver.fusions.fname)
-   driver.fusions.cols = intersect(c("genes", "walk.id", "driver.name", "chroms", "maxcn", "total.aa", "gene.pc", "ev.id", "ev.type"), colnames(driver.fusions.dt))
-   dat = driver.fusions.dt[, ..driver.fusions.cols]
-   DT::datatable(dat, options = list(scrollX = TRUE))
+   if (nrow(driver.fusions.dt)) {
+      driver.fusions.cols = intersect(c("genes", "walk.id", "driver.name", "chroms", "maxcn", "total.aa", "gene.pc", "ev.id", "ev.type"), colnames(driver.fusions.dt))
+      dat = driver.fusions.dt[, ..driver.fusions.cols]
+      DT::datatable(dat, options = list(scrollX = TRUE), caption = "Fusions in which at least one involved gene is an oncogene or tumor suppressor.")
+   } else {
+     cat("No known driver fusions")
+   }     
 }
 ```
 
-## Gallery {.tabset .tabset-fade .tabset-pills}
+## Known fusions gallery {.tabset .tabset-fade .tabset-pills}
 
 ```{r fusion-tabset, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
 if (file.good(file.path(params$outdir, "fusions.driver.txt"))){
@@ -194,25 +198,33 @@ if (file.good(file.path(params$outdir, "fusions.driver.txt"))){
             )
             cat('\n', '<br>', '\n\n')
         }
+    } else {
+        cat("\n", "No fusions to show", "\n")
     }
 } else {
     cat("\n", "Fusion results not available.", "<br>\n\n")
 }
 ```
 
-## Other in-frame, non-silent gene fusions
+## Other fusions
 
 ```{r, other-fusions-table, results = "asis", max.width= "100%"}
 other.fusions.fname = file.path(params$outdir, "fusions.other.txt")
 if (file.exists(other.fusions.fname)) {
    other.fusions.dt = fread(other.fusions.fname)
+   if (nrow(other.fusions.dt)) {
    other.fusions.cols = intersect(c("genes", "walk.id", "driver.name", "chroms", "maxcn", "total.aa", "gene.pc", "ev.id", "ev.type"), colnames(driver.fusions.dt))
    dat = other.fusions.dt[, ..other.fusions.cols]
-   DT::datatable(dat, options = list(scrollX = TRUE))
+   DT::datatable(dat, options = list(scrollX = TRUE), caption = "Other in-frame non-silent gene fusions")
+} else {
+cat("\n", "No other fusions to show.")
+}
+} else {
+cat("\n", "No other fusions available", "\n")
 }
 ```
 
-## Gallery
+## Other fusions gallery
 
 ```{r, other-fusions-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 
@@ -227,7 +239,6 @@ slick_up
 
 
 ## Altered transcripts
-Coming soon
 
 Under construction
 
@@ -236,18 +247,24 @@ Under construction
 # Over/under-expression of oncogenes/TSGs 
 ```{r, driver-expr-table, results = "asis", max.width= "100%"}
 driver.genes.expr = fread(file.path(params$outdir, "driver.genes.expr.txt"))
-DT::datatable(driver.genes.expr, options = list(scrollX = TRUE))
+if (nrow(driver.genes.expr)) {
+    DT::datatable(driver.genes.expr, options = list(scrollX = TRUE))
+} else {
+    cat("\n", "No overexpressed/underexpressed drivers", "\n")
+}
 ```
 
 ## Waterfall plot
 ```{r, driver-waterfall, results = "asis", max.width = "100%"}
 waterfall.fn = file.path(params$outdir, "waterfall.png")
 if (file.exists(waterfall.fn)) {
-   knitr::include_graphics(waterfall.fn)
+   knitr::include_graphics(waterfall.fn, caption = "Waterfall plot showing relative gene expression of drivers")
+} else {
+   cat("Waterfall plot with relative gene expression of drivers is not available")
 }
 ```
 
-## Gallery {.tabset .tabset-fade .tabset-pills}
+## Expression gallery {.tabset .tabset-fade .tabset-pills}
 
 ```{r expression, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
 if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
@@ -280,6 +297,8 @@ if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
         ## )
         cat('\n', '<br>', '\n\n')
     }
+} else {
+    cat("\n", "Gene expression not available", "\n")
 }
 ```
 
@@ -293,14 +312,19 @@ Count of complex events against background distribution from Cell cohort.
 knitr::include_graphics(file.path(params$outdir, "ridgeplot.png"))
 ```
 
-## Gallery of events
+## Complex SV gallery
 
 ```{r, SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 ## read data table with plot png/URL
 if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
     sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+    if (nrow(sv.slickr.dt)) {
     slick_up = slickR(obj = sv.slickr.dt$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
     slick_up
+} else {
+   cat("\n", "No complex SVs", "\n")
+}} else {
+   cat("\n", "Complex SVs not available", "\n")
 }
 ```
 

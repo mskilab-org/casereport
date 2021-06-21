@@ -135,7 +135,7 @@ rebin = function (cov, binwidth, field = names(values(cov))[1], FUN = median, na
 
 ppng = function (expr, filename = "plot.png", height = 1000, width = 1000, 
                  dim = NULL, cex = 1, title = NULL, cex.pointsize = min(cex), 
-                 cex.title = 1, ...) 
+                 cex.title = 1, mar = c(0.1,3,0.1,1), xaxs = "r", yaxs = "r", line = -5, adj = 0.5, ...) 
 {
     if (length(cex) == 1) 
         cex = rep(cex, 2)
@@ -151,6 +151,7 @@ ppng = function (expr, filename = "plot.png", height = 1000, width = 1000,
     cat("rendering to", filename, "\n")
     png(filename, height = height, width = width, pointsize = 24 * 
                                                       cex.pointsize, ...)
+    par(mar = mar, xaxs = xaxs, yaxs = yaxs)
     if (!is.null(dim)) {
         if (length(dim) == 1) 
             dim = rep(dim, 2)
@@ -160,7 +161,7 @@ ppng = function (expr, filename = "plot.png", height = 1000, width = 1000,
     }
     eval(expr)
     if (!is.null(title)) 
-        title(title, cex.main = cex.title * max(cex))
+        title(title, cex.main = cex.title * max(cex), line = line, adj = adj)
     dev.off()
 }
 
