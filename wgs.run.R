@@ -1109,3 +1109,4 @@ rmarkdown::render(
 
 message("clean up temporary files")
 file.remove(tmp.tpm.cohort.fname)
+message("yes")
