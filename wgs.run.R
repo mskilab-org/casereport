@@ -304,9 +304,10 @@ if (!opt$knit_only){
             ## subset these to make less overwhelming...
             ## fields = c("gene_name", "cnv", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "number_of_cn_segments", "ncn", "seqnames", "start", "end", "width", "gene_id", "gene_type", "source",  "level", "hgnc_id", "havana_gene", "ev.id", "ev.type")
             fields = c("gene_name", "annot", "cnv", "expr", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "expr.value", "expr.quantile", "seqnames", "start", "end", "width", "ev.id", "ev.type")
-            fields = intersect(fields, names(driver.genes_cn))
-            fwrite(driver.genes_cn[, ..fields], driver.genes.cnv.fn)
-            fwrite(driver.genes_expr[, ..fields], driver.genes.expr.fn)
+            cn.fields = intersect(fields, names(driver.genes_cn))
+            expr.fields = intersect(fields, names(driver.genes_expr))
+            fwrite(driver.genes_cn[, ..cn.fields], driver.genes.cnv.fn)
+            fwrite(driver.genes_expr[, ..expr.fields], driver.genes.expr.fn)
         }
     }
 
@@ -318,8 +319,9 @@ if (!opt$knit_only){
     if (check_file(cvgt_fn, overwrite = opt$overwrite)){
         cvgt = readRDS(cvgt_fn)
     } else {
-        ## pull coverage file from jabba_rds
-        cov.file = readRDS(file.path(dirname(opt$jabba_rds), "cmd.args.rds"))$coverage
+        ## pull coverage file from jabba_rds (no, the user shoudl supply the coverage)
+        ## cov.file = readRDS(file.path(dirname(opt$jabba_rds), "cmd.args.rds"))$coverage
+        cov.file = opt$cbs_cov_rds
         cvgt = covcbs(cov.file, purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3,
                       ylab = "CN", y.cap = FALSE, xaxis.chronly = TRUE)
         saveRDS(cvgt, cvgt_fn)
