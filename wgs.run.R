@@ -217,7 +217,7 @@ if (!opt$knit_only){
             tpm.dt)
 
         ## if there's metadata of tumor types
-        if (is.element("tumor_type", colnames(meta))){
+        if (exists("meta") && inherits(meta, "data.table") && is.element("tumor_type", colnames(meta))) {
             melted.expr = data.table::merge.data.table(melted.expr, meta[, .(pair, tumor_type)], by = "pair", all.x = TRUE)
             melted.expr[, tt.qt := rank(as.double(.SD$value))/.N, by = tumor_type]
         }
@@ -286,7 +286,8 @@ if (!opt$knit_only){
 
     driver.genes.cnv.fn = paste0(opt$outdir, '/driver.genes.cnv.txt')
     driver.genes.expr.fn = paste0(opt$outdir, '/driver.genes.expr.txt')
-    if (!check_file(driver.genes.cnv.fn, overwrite = opt$overwrite)){
+    if (!check_file(driver.genes.cnv.fn, overwrite = opt$overwrite) |
+        !check_file(driver.genes.expr.fn, overwrite = opt$overwrite)) {
         if (genes_cn_annotated[, .N] > 0){
             onc = readRDS(oncogenes.fn)
             tsg = readRDS(tsg.fn)
@@ -1097,10 +1098,12 @@ if (!opt$knit_only){
 
 message("Start knitting")
 rmarkdown::render(
-    input = paste0(opt$libdir, "/wgs.report.rmd"),
+    input = normalizePath(paste0(opt$libdir, "/wgs.report.rmd")),
     output_format = "html_document",
-    output_file = paste0(opt$outdir, "/", opt$pair,".wgs.report.html"),
-    knit_root_dir = opt$outdir,
+    output_file = normalizePath(paste0(opt$outdir,
+                                       "/",
+                                       opt$pair,".wgs.report.html")),
+    knit_root_dir = normalizePath(opt$outdir),
     params = list(set_title = paste0(opt$pair),
                   pair = opt$pair,
                   jabba_rds = normalizePath(opt$jabba_rds),
