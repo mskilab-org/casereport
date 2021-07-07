@@ -762,7 +762,7 @@ if (!opt$knit_only){
         waterfall.fn = file.path(opt$outdir, "waterfall.png")
         if (!check_file(waterfall.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
             message("generating waterfall plot")
-            gns = readRDS(cool.exp.fn)$gene ## genes with changes in expression
+            gns = fread(cool.exp.fn)$gene ## genes with changes in expression
             rna.waterfall.plot(melted.expr = melted.expr,
                                pair = opt$pair,
                                out.fn = waterfall.fn,
