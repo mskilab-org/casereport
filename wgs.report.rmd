@@ -257,8 +257,11 @@ if (nrow(driver.genes.expr)) {
 ## Waterfall plot
 ```{r, driver-waterfall, results = "asis", max.width = "100%"}
 waterfall.fn = file.path(params$outdir, "waterfall.png")
+## cat(waterfall.fn)
 if (file.exists(waterfall.fn)) {
-   knitr::include_graphics(waterfall.fn, caption = "Waterfall plot showing relative gene expression of drivers")
+   cat(paste0("![](", waterfall.fn, ")"), "\n")
+   ##knitr::include_graphics(waterfall.fn)
+   cat(paste0("\n", "Waterfall plot showing relative gene expression of drivers.", "\n"))
 } else {
    cat("Waterfall plot with relative gene expression of drivers is not available")
 }
@@ -271,30 +274,36 @@ if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
     cool.exp = readRDS(paste0(params$outdir, "/cool.expr.rds"))
     expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
     cat("\n")
-    for (g in cool.exp[order(qt, decreasing = T), gene]){
+    valid.genes = intersect(cool.exp[, gene], expr.slickr.dt[, gene_name])
+    for (g in valid.genes) {
+    	expr.png.fn = file.path(params$outdir, 
+		      	        paste(g, cool.exp[gene == g, direction], 
+				"expr", "png", sep = ".")
+				)				
+	gg.png.fn = expr.slickr.dt[gene_name == g, plot.fname]
+	## cat(gg.png.fn)
+	## cat(expr.png.fn)
         cat("\n")
+	if (file.exists(expr.png.fn) & file.exists(gg.png.fn)) {
         cat("###", cool.exp[g, paste0(gene, " (", direction, ")", "<br>", "\n")])
-        cat()
+        ## cat()
+        ## cat(paste0("![](", expr.png.fn, ")"), "\n")
+        ## cat("\n")
+        ## cat(paste0("![](", gg.png.fn ,")"), "\n")
+	## }
         cat(
-            paste0("![](", paste0(params$outdir, cool.exp[g, paste0("/", gene, ".", direction, ".expr.png")]),")"), "\n"
+        	paste0(
+        		'<p float="left">',
+        		'<img src="',
+			expr.png.fn,
+        		'" width="45%" />',
+        		'<img src="',
+        		gg.png.fn,
+        		'" width="45%" />',
+        		'</p>'
+        	)
         )
-        cat("\n")
-        cat(
-            paste0("![](", expr.slickr.dt[gene_name == g, plot.fname],")"), "\n"
-        )
-        ## cat(
-        ## 	paste0(
-        ## 		'<p float="left">',
-        ## 		'<img src="',
-        ## 		params$outdir,
-        ## 		cool.exp[g, paste0("/", gene, ".", direction, ".expr.png")],
-        ## 		'" width="45%" />',
-        ## 		'<img src="',
-        ## 		expr.slickr.dt[gene_name == g, plot.fname],
-        ## 		'" width="45%" />',
-        ## 		'</p>'
-        ## 	)
-        ## )
+	}
         cat('\n', '<br>', '\n\n')
     }
 } else {
@@ -451,11 +460,11 @@ grid) align well with the peaks in the raw intensity distribution
 
 
 ```{r ppfit, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
-if (file.exists(paste0(params$outdir, "/ppfit.hist.png"))){
-    cat(
-        paste0("![](", paste0(params$outdir, "/ppfit.hist.png"),")"), "\n\n"
-    )
-}
+## if (file.exists(paste0(params$outdir, "/ppfit.hist.png"))){
+##     cat(
+##         paste0("![](", paste0(params$outdir, "/ppfit.hist.png"),")"), "\n\n"
+##     )
+## }
 ```
 
 ## Total CN

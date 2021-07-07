@@ -1890,18 +1890,28 @@ create.summary = function(jabba_rds,
     }
 
     if (file.good(snv_vcf)) {
-        snv.vcf.gr = rowRanges(readVcf(snv_vcf))[, c()] %>% unique
+        snv.vcf = readVcf(file = snv_vcf)
+        if ("FILTER" %in% names(values(snv.vcf))) {
+            snv.count = sum(values(snv.vcf)$FILTER == "PASS", na.rm = TRUE)
+        } else {
+            snv.count = length(snv.vcf)
+        }
     } else {
-        snv.vcf.gr = GRanges()
+        snv.count = 0
     }
 
     if (file.good(indel_vcf)) {
-        indel.vcf.gr = rowRanges(readVcf(indel_vcf))[, c()] %>% unique
+        indel.vcf = readVcf(file = indel_vcf)
+        if ("FILTER" %in% names(values(indel.vcf))) {
+            indel.count = sum(values(indel.vcf)$FILTER == "PASS", na.rm = TRUE)
+        } else {
+            indel.count = length(indel.vcf)
+        }
     } else {
-        indel.vcf.gr = GRanges()
+        indel.count = 0
     }
 
-    out$mut_count = length(snv.vcf.gr) + length(indel.vcf.gr)
+    out$mut_count = snv.count + indel.count
     out$mut_per_mbp = out$mut_count / total_width
 
     if (verbose) {

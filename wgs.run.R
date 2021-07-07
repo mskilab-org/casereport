@@ -217,7 +217,7 @@ if (!opt$knit_only){
             tpm.dt)
 
         ## if there's metadata of tumor types
-        if (is.element("tumor_type", colnames(meta))){
+        if (exists("meta") && inherits(meta, "data.table") && is.element("tumor_type", colnames(meta))) {
             melted.expr = data.table::merge.data.table(melted.expr, meta[, .(pair, tumor_type)], by = "pair", all.x = TRUE)
             melted.expr[, tt.qt := rank(as.double(.SD$value))/.N, by = tumor_type]
         }
@@ -286,7 +286,8 @@ if (!opt$knit_only){
 
     driver.genes.cnv.fn = paste0(opt$outdir, '/driver.genes.cnv.txt')
     driver.genes.expr.fn = paste0(opt$outdir, '/driver.genes.expr.txt')
-    if (!check_file(driver.genes.cnv.fn, overwrite = opt$overwrite)){
+    if (!check_file(driver.genes.cnv.fn, overwrite = opt$overwrite) |
+        !check_file(driver.genes.expr.fn, overwrite = opt$overwrite)) {
         if (genes_cn_annotated[, .N] > 0){
             onc = readRDS(oncogenes.fn)
             tsg = readRDS(tsg.fn)
@@ -304,9 +305,10 @@ if (!opt$knit_only){
             ## subset these to make less overwhelming...
             ## fields = c("gene_name", "cnv", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "number_of_cn_segments", "ncn", "seqnames", "start", "end", "width", "gene_id", "gene_type", "source",  "level", "hgnc_id", "havana_gene", "ev.id", "ev.type")
             fields = c("gene_name", "annot", "cnv", "expr", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "expr.value", "expr.quantile", "seqnames", "start", "end", "width", "ev.id", "ev.type")
-            fields = intersect(fields, names(driver.genes_cn))
-            fwrite(driver.genes_cn[, ..fields], driver.genes.cnv.fn)
-            fwrite(driver.genes_expr[, ..fields], driver.genes.expr.fn)
+            cn.fields = intersect(fields, names(driver.genes_cn))
+            expr.fields = intersect(fields, names(driver.genes_expr))
+            fwrite(driver.genes_cn[, ..cn.fields], driver.genes.cnv.fn)
+            fwrite(driver.genes_expr[, ..expr.fields], driver.genes.expr.fn)
         }
     }
 
@@ -318,8 +320,9 @@ if (!opt$knit_only){
     if (check_file(cvgt_fn, overwrite = opt$overwrite)){
         cvgt = readRDS(cvgt_fn)
     } else {
-        ## pull coverage file from jabba_rds
-        cov.file = readRDS(file.path(dirname(opt$jabba_rds), "cmd.args.rds"))$coverage
+        ## pull coverage file from jabba_rds (no, the user shoudl supply the coverage)
+        ## cov.file = readRDS(file.path(dirname(opt$jabba_rds), "cmd.args.rds"))$coverage
+        cov.file = opt$cbs_cov_rds
         cvgt = covcbs(cov.file, purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3,
                       ylab = "CN", y.cap = FALSE, xaxis.chronly = TRUE)
         saveRDS(cvgt, cvgt_fn)
@@ -759,7 +762,7 @@ if (!opt$knit_only){
         waterfall.fn = file.path(opt$outdir, "waterfall.png")
         if (!check_file(waterfall.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
             message("generating waterfall plot")
-            gns = readRDS(cool.exp.fn)$gene ## genes with changes in expression
+            gns = fread(cool.exp.fn)$gene ## genes with changes in expression
             rna.waterfall.plot(melted.expr = melted.expr,
                                pair = opt$pair,
                                out.fn = waterfall.fn,
@@ -1095,10 +1098,12 @@ if (!opt$knit_only){
 
 message("Start knitting")
 rmarkdown::render(
-    input = paste0(opt$libdir, "/wgs.report.rmd"),
+    input = normalizePath(paste0(opt$libdir, "/wgs.report.rmd")),
     output_format = "html_document",
-    output_file = paste0(opt$outdir, "/", opt$pair,".wgs.report.html"),
-    knit_root_dir = opt$outdir,
+    output_file = normalizePath(paste0(opt$outdir,
+                                       "/",
+                                       opt$pair,".wgs.report.html")),
+    knit_root_dir = normalizePath(opt$outdir),
     params = list(set_title = paste0(opt$pair),
                   pair = opt$pair,
                   jabba_rds = normalizePath(opt$jabba_rds),
