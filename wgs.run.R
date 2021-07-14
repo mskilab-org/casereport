@@ -137,7 +137,8 @@ if (!opt$knit_only){
     ## } else {
     ##     message("allele CN histogram already exists")
     ## }
-    if (!file.exists(allele.scatter.fname) || opt$overwrite) {
+    if (file.good(opt$het_pileups_wgs)){
+if (!file.exists(allele.scatter.fname) || opt$overwrite) {
         pp_plot(jabba_rds = opt$jabba_rds,
                 cov.fname = opt$cbs_cov_rds,
                 hets.fname = opt$het_pileups_wgs,
@@ -154,6 +155,8 @@ if (!opt$knit_only){
     } else {
         message("allele CN purity/ploidy scatter plot exists!")
     }
+    }
+    
     
 
     ## set up purity ploidy
