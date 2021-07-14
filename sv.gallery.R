@@ -504,8 +504,8 @@ sv.plot = function(complex.fname = NULL,
     complex.ev = this.complex$meta$events[type %in% ev.types,]
 
 
-
-    ## grab plot titles and file names
+    if (nrow(complex.ev)>0){
+## grab plot titles and file names
     complex.ev[, plot.fname := file.path(outdir, paste("event", ev.id, "png", sep = "."))]
     complex.ev[, plot.title := paste(type, "|", "event id:", ev.id)]
 
@@ -597,7 +597,12 @@ sv.plot = function(complex.fname = NULL,
                           width = width)
                  })
 
-    return(complex.ev[, .(plot.fname, plot.link)])
+        return(complex.ev[, .(plot.fname, plot.link)])
+    } else {
+        return(data.table(plot.fname = character(0), plot.link = character(0)))
+    }
+    
+    
 }
                    
 

@@ -966,9 +966,13 @@ get_gene_copy_numbers = function(gg, gene_ranges,
         
     if (!is.null(gg$meta$events) && nrow(gg$meta$events)){
         this.ev = gg$meta$events[type %in% ev.types,]
-        ev.grl = parse.grl(this.ev$footprint)
+        if (nrow(this.ev)>0){
+ev.grl = parse.grl(this.ev$footprint)
         values(ev.grl) = this.ev
         ev.gr = stack(ev.grl)
+        } else {
+            ev.gr = GRanges()
+        }
     } else {
         ev.gr = GRanges()
     }
