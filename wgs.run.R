@@ -1091,6 +1091,30 @@ if (!opt$knit_only){
         message("Summary already exists, skipping")
     }
 
+    ## ################
+    ## create oncotable
+    ## ################
+
+    oncotable.fn = file.path(opt$outdir, "oncotable.txt")
+    if (!file.exists(oncotable.fn) | opt$overwrite) {
+
+        message("Preparing oncotable...")
+        oncotable.input = data.table(pair = opt$pair,
+                                     jabba_rds = opt$jabba_rds,
+                                     fusions = opt$fusions,
+                                     driver_fusions = fusions.driver.fname, ## custom input, driver fusions
+                                     all_fusions = fusions.other.fname, ## custom input, non-driver fusions
+                                     complex = opt$complex,
+                                     scna = genes_cn.fn, ## custom SCNA table with event info
+                                     annotated_bcf = file.path(opt$outdir, "snv", "annotated.bcf"),
+                                     key = "pair")
+        oncotable = oncotable(oncotable.input,
+                              gencode = opt$gencode,
+                              verbose = TRUE)
+        fwrite(oncotable, oncotable.fn)
+    } else {
+        message("Oncotable already exists. Skipping!")
+    }
 }
 
 
