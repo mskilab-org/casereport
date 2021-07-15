@@ -476,7 +476,9 @@ knitr::include_graphics(file.path(params$outdir, "cn.pp.png"))
 ## Allelic CN
 
 ```{r, allelic-cn, echo = FALSE, out.width = "45%", out.height = "45%", fig.show = "hold", fig.align = "center"}
-knitr::include_graphics(file.path(params$outdir, "allele.scatter.png"))
+if (file.good(file.path(params$outdir, "allele.scatter.png"))){
+    knitr::include_graphics(file.path(params$outdir, "allele.scatter.png"))
+}
 ```
 
 ***

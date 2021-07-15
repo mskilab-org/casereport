@@ -488,14 +488,16 @@ fusion.table = function(fusions.fname = NULL,
     values(ev.grl) = this.ev
     ev.gr = stack(ev.grl)
 
+    ev.gr$ev.id = paste(ev.gr$type, ev.gr$ev.id, sep = "_")
+
     ov = gr.findoverlaps(fs.gr, ev.gr,
                          qcol = c("walk.id"),
                          scol = c("ev.id", "type"),
                          return.type = "data.table")
 
-
     if (ov[,.N] > 0){
-        ov = ov[, .(ev.id = paste(unique(ev.id), sep = ","), type = paste(unique(type), sep = ",")), by = walk.id]
+        ## ov = ov[, .(ev.id = paste(unique(ev.id), sep = ","), type = paste(unique(type), sep = ",")), by = walk.id]
+        ov = ov[, .(ev.id = paste(unique(ev.id), collapse = ","), type = paste(unique(type), collapse = ",")), by = walk.id]
         pmt = match(filtered.fusions$dt$walk.id, ov$walk.id)
         filtered.fusions$set(ev.id = ov$ev.id[pmt])
         filtered.fusions$set(ev.type = ov$type[pmt])
