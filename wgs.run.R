@@ -1105,11 +1105,12 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
         oncotable.input = data.table(pair = opt$pair,
                                      jabba_rds = opt$jabba_rds,
                                      fusions = opt$fusions,
-                                     driver_fusions = fusions.driver.fname, ## custom input, driver fusions
-                                     all_fusions = fusions.other.fname, ## custom input, non-driver fusions
                                      complex = opt$complex,
                                      scna = genes_cn.fn, ## custom SCNA table with event info
                                      annotated_bcf = file.path(opt$outdir, "snv", "annotated.bcf"),
+                                     rna = cool.exp.fn,
+                                     proximity = opt$proximity,
+                                     deconstruct_sigs = opt$deconstruct_sigs,
                                      key = "pair")
         oncotable = oncotable(oncotable.input,
                               gencode = opt$gencode,

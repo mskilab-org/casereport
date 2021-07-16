@@ -2202,19 +2202,38 @@ pp_plot = function(jabba_rds = NULL,
 #' @param gencode path to gencode .gtf or .rds with GRanges object, or a GRanges object i.e. resulting from importing the (appropriate) GENCODE .gtf via rtracklayer, note: this input is only used in CNA to gene mapping
 #' @param amp.thresh SCNA amplification threshold to call an amp as a function of ploidy (4)
 #' @param del.thresh SCNA deletion threshold for (het) del as a function of ploidy (by default cn = 1 will be called del, but this allows additoinal regions in high ploidy tumors to be considered het dels)
+#' @param max.reldist (numeric) maximum relativedistance to be considered enh hijacking, default 0.25
+#' @param min.refdist (numeric) minimum reference distance to be considered enh hijacking, default 5e6
 #' @param mc.cores number of cores for multithreading
 #' @param verbose logical flag 
 #' @author Marcin Imielinski
-#' @export
-oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, filter = 'PASS', del.thresh = 0.5, mc.cores = 1)
+
+oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, filter = 'PASS', del.thresh = 0.5, max.reldist = 0.25, min.refdist = 5e6, mc.cores = 1)
 {
-  gencode = process_gencode(gencode)
-
-  pge = gencode %Q% (type  == 'gene' & gene_type == 'protein_coding')
-
-  .oncotable = function(dat, x = dat[[key(dat)]][1], pge, verbose = TRUE, amp.thresh = 4, del.thresh = 0.5, filter = 'PASS')
+  .oncotable = function(dat, x = dat[[key(dat)]][1], pge = NULL, verbose = TRUE, amp.thresh = 4, del.thresh = 0.5, filter = 'PASS', max.reldist = 0.25, min.refdist = 5e6)
   {
     out = data.table()
+
+    ## collect RNA data if it exists
+    if (!is.null(dat[x, rna]) && file.exists(dat[x, rna])) {
+        if (verbose) {
+            message("pulling RNA for ", x)
+        }
+        rna.dt = readRDS(dat[x, rna])
+        if (nrow(rna.dt)) {
+            rna = rna.dt[, .(gene, value, role, quantile = qt, id = x,
+                             type = ifelse(grepl("over", direction, ignore.case = TRUE), "overexpression",
+                                           ifelse(grepl("under", direction, ignore.case = TRUE),
+                                                  "underexpression",
+                                                  NA_character_)),
+                             track = "expression", source = "rna")]
+            out = rbind(out, rna, fill = TRUE, use.names = TRUE)
+        } else {
+            out = rbind(out, data.table(id = x, type = NA, source = "rna"), fill = TRUE, use.names = TRUE)
+        }
+    } else {
+        out = rbind(out, data.table(id = x, type = NA, source = "rna"), fill = TRUE, use.names = TRUE)
+    }
 
     ## collect gene fusions
     if (!is.null(dat$fusions) && file.exists(dat[x, fusions]))
@@ -2224,10 +2243,11 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
       fus = readRDS(dat[x, fusions])$meta
       if (nrow(fus))
       {
-        fus = fus[silent == FALSE, ][!duplicated(genes), ]
-        fus[, vartype := ifelse(in.frame == TRUE, 'fusion', 'outframe_fusion')] # annotate out of frame fusions
-        fus = fus[, .(gene = strsplit(genes, ',') %>% unlist, vartype = rep(vartype, sapply(strsplit(genes, ','), length)))][, id := x][, track := 'variants'][, type := vartype][, source := 'fusions']
-        out = rbind(out, fus, fill = TRUE, use.names = TRUE)
+          fus = fus[silent == FALSE, ][!duplicated(genes), ]
+          fus[, vartype := ifelse(in.frame == TRUE, 'fusion', 'outframe_fusion')] # annotate out of frame fusions
+          fus = fus[, .(gene = strsplit(genes, ',') %>% unlist, vartype = rep(vartype, sapply(strsplit(genes, ','), length)))][, id := x][, track := 'variants'][, type := vartype][, source := 'fusions']
+          out = rbind(out, fus, fill = TRUE, use.names = TRUE)
+
       }
     } 
     else ## signal missing result
@@ -2241,8 +2261,11 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
       sv = readRDS(dat[x, complex])$meta$events
       if (nrow(sv))
       {
-        sv = sv[, .(value = .N), by = type][, id := x][, track := ifelse(type %in% c('del', 'dup', 'invdup', 'tra', 'inv'), 'simple sv', 'complex sv')][, source := 'complex']
-        out = rbind(out, sv, fill = TRUE, use.names = TRUE)
+        ## modified to keep individual complex SV's separate
+        ## sv = sv[, .(value = .N), by = type][, id := x][, track := ifelse(type %in% c('del', 'dup', 'invdup', 'tra', 'inv'), 'simple sv', 'complex sv')][, source := 'complex']
+          sel.cols = intersect(c("type", "ev.id", "footprint"), colnames(sv))
+          sv = sv[, ..sel.cols][, ev.type := type][, id := x][, track := ifelse(type %in% c('del', 'dup', 'invdup', 'tra', 'inv'), 'simple sv', 'complex sv')][, source := 'complex']
+          out = rbind(out, sv, fill = TRUE, use.names = TRUE)
       }
     }
     else
@@ -2258,32 +2281,21 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
                   data.table(id = x, value = c(jab$purity, jab$ploidy), type = c('purity', 'ploidy'), track = 'pp'),
                   fill = TRUE, use.names = TRUE)
 
-      # get the ncn data from jabba
-      ## kag = readRDS(dat[x, gsub("jabba.simple.rds", "karyograph.rds", jabba_rds)])
-      ## nseg = NULL
-      ## if ('ncn' %in% names(mcols(kag$segstats))){
-      ##     nseg = kag$segstats[,c('ncn')]
-      ## }
-      ## scna = get_gene_ampdels_from_jabba(jab, amp.thresh = amp.thresh,
-      ##                                del.thresh = del.thresh, pge = pge, nseg = nseg)
-
-      ##   if (nrow(scna))
-      ##   {
-      ##     scna[, track := 'variants'][, source := 'jabba_rds'][, vartype := 'scna']
-      ##     out = rbind(out,
-      ##                 scna[, .(id = x, value = cn, type, track, gene = gene_name)],
-      ##                 fill = TRUE, use.names = TRUE)
-      ##   }
-
-
       ## grabs SCNA data from pre-computed table
-      if (!is.null(dat$scna) && file.exists(dat$scna)) {
-          scna.dt = readRDS(dat$scna)[cnv %in% c("amp", "del", "homdel", "hetdel"),]
-          if (nrow(scna)) {
-              scna = scna
+      if (!is.null(dat$scna) && file.exists(dat[x, scna])) {
+          scna.dt = readRDS(dat[x, scna])
+
+          ## subset for previously annotated variants if data table is nonempty
+          if (nrow(scna.dt) && "cnv" %in% colnames(scna.dt)) {
+              scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel"),]
+          }
+
+          ## if there are any CN variants, rbind them to existing output
+          if (nrow(scna.dt)) {
+              scna = scna.dt
               out = rbind(out,
                           scna[, .(id = x, min_cn, min_normalized_cn, max_cn, max_normalized_cn,
-                                   expr.quantile, expr.value, ev.id, ev.type, seqnames, start, end.
+                                   expr.quantile, expr.value, ev.id, ev.type, seqnames, start, end,
                                    type = cnv, track = "variants", vartype = "scna", source = "jabba_rds")],
                           fill = TRUE)
           } else {
@@ -2296,17 +2308,32 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
       out = rbind(out, data.table(id = x, type = NA, source = 'jabba_rds'), fill = TRUE, use.names = TRUE)
     }
 
-    ## collect signatures
-    if (!is.null(dat$signature_counts) && file.exists(dat[x, signature_counts]))
+    if (!is.null(dat$proximity) && file.exists(dat[x, proximity]) && nrow(readRDS(dat[x, proximity])$dt)) {
+        proximity.dt = readRDS(opt$proximity)$dt[reldist < max.reldist & refdist > min.refdist,]
+        out = rbind(out, proximity.dt[, .(gene = gene_name, value = reldist,
+                                          reldist, altdist, refdist, n.se, walk.id,
+                                          type = "proximity", source = "proximity", track = "proximity")],
+                    use.names = TRUE,
+                    fill = TRUE)
+    } else {
+        out = rbind(out, data.table(id = x, type = NA, source = "proximity"), fill = TRUE, use.names = TRUE)
+    }
+
+
+    if (!is.null(dat$deconstruct_sigs) && file.exists(dat[x, deconstruct_sigs]))
     {
       if (verbose)
-        message('pulling $signature_counts for ', x)
-      sig = fread(dat[x, signature_counts])
-      sig = sig[, .(id = x, value = num_events, type = Signature, etiology = Etiology, frac = frac.events, track = 'signature', source = 'signature_counts')]
-      out = rbind(out, sig, fill = TRUE, use.names = TRUE)
+        message('pulling $deconstruct_sigs for ', x)
+      sig = readRDS(dat[x, deconstruct_sigs])
+      sig.dt = data.table(id = x,
+                          value = sig$weights,
+                          type = names(sig$weights),
+                          track = "signature",
+                          source = "deconstruct_sigs")
+      out = rbind(out, sig.dt, fill = TRUE, use.names = TRUE)
     }
     else
-      out = rbind(out, data.table(id = x, type = NA, source = 'signature_counts'), fill = TRUE, use.names = TRUE)
+      out = rbind(out, data.table(id = x, type = NA, source = 'deconstruct_sigs'), fill = TRUE, use.names = TRUE)
 
     ## collect gene mutations
     if (!is.null(dat$annotated_bcf) && file.exists(dat[x, annotated_bcf]))
@@ -2350,7 +2377,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
   }
 
   out = mclapply(tumors[[key(tumors)]], .oncotable,
-                 dat = tumors, pge = pge, amp.thresh = amp.thresh, filter = filter, del.thresh = del.thresh, verbose = verbose, mc.cores = mc.cores)
+                 dat = tumors, amp.thresh = amp.thresh, filter = filter, del.thresh = del.thresh, verbose = verbose, mc.cores = mc.cores, max.reldist = max.reldist, min.refdist = min.refdist)
   out = rbindlist(out, fill = TRUE, use.names = TRUE)
 
   setnames(out, 'id', key(tumors))
