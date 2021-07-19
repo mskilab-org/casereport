@@ -2293,11 +2293,21 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
           ## if there are any CN variants, rbind them to existing output
           if (nrow(scna.dt)) {
               scna = scna.dt
-              out = rbind(out,
-                          scna[, .(id = x, min_cn, min_normalized_cn, max_cn, max_normalized_cn,
-                                   expr.quantile, expr.value, ev.id, ev.type, seqnames, start, end,
-                                   type = cnv, track = "variants", vartype = "scna", source = "jabba_rds")],
-                          fill = TRUE)
+              sel.cols = intersect(c("min_cn", "min_normalized_cn", "max_cn", "max_normalized_cn",
+                                     "expr.quantile", "expr.value", "ev.id", "ev.type",
+                                     "seqnames", "start", "end"),
+                                   colnames(scna))
+              out = rbind(out, scna[, ..sel.cols][, ":="(id = x,
+                                                         type = "cnv",
+                                                         track = "variants",
+                                                         vartype = "scna",
+                                                         source = "jabba_rds")],
+                          fill = TRUE, use.names = TRUE)
+              ## out = rbind(out,
+              ##             scna[, .(id = x, min_cn, min_normalized_cn, max_cn, max_normalized_cn,
+              ##                      expr.quantile, expr.value, ev.id, ev.type, seqnames, start, end,
+              ##                      type = cnv, track = "variants", vartype = "scna", source = "jabba_rds")],
+              ##             fill = TRUE)
           } else {
               if (verbose) {
                   message("No SCNAs found")
@@ -2320,8 +2330,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
     }
 
 
-    if (!is.null(dat$deconstruct_sigs) && file.exists(dat[x, deconstruct_sigs]))
-    {
+    if (!is.null(dat$deconstruct_sigs) && file.exists(dat[x, deconstruct_sigs]) & !(dat[x, deconstruct_sigs] == "/dev/null")) {
       if (verbose)
         message('pulling $deconstruct_sigs for ', x)
       sig = readRDS(dat[x, deconstruct_sigs])
@@ -2331,9 +2340,9 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
                           track = "signature",
                           source = "deconstruct_sigs")
       out = rbind(out, sig.dt, fill = TRUE, use.names = TRUE)
-    }
-    else
+    } else {
       out = rbind(out, data.table(id = x, type = NA, source = 'deconstruct_sigs'), fill = TRUE, use.names = TRUE)
+    }
 
     ## collect gene mutations
     if (!is.null(dat$annotated_bcf) && file.exists(dat[x, annotated_bcf]))

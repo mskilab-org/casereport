@@ -65,6 +65,7 @@ suppressMessages(expr = {
         library(ComplexHeatmap)
         library(deconstructSigs)
         library(DT)
+        library(VariantAnnotation)
         message("Loading critical dependencies from KevUtils")
         source(paste0(opt$libdir, "/utils.R"))
         source(paste0(opt$libdir, "/config.R"))
@@ -359,7 +360,7 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
         ## synchronize y0 and y1 of cvgt and agt
         y0 = 0
         gg.max.cn = max(gg$nodes$dt[!is.na(cn) & !is.infinite(cn), cn], na.rm = TRUE)
-        y1 = round(gg.max.cn/10) * 10
+        y1 = gg.max.cn + 1
         
         ## gGraph gTrack formatting
         gg.gt = gg$gt
@@ -386,6 +387,8 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
             ## concatenate with agt
             gt = c(agt, cvgt, gg.gt)
         }
+
+        ## browser()
         ppng(plot(gt, c(as.character(1:22), "X", "Y")),
              filename  = wgs.gtrack.fname,
              height = 1000,
