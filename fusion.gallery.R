@@ -425,13 +425,22 @@ fusion.table = function(fusions.fname = NULL,
 
     ## filter to include only in-frame non-silent
     this.fusions = readRDS(fusions.fname) ## gWalk object
-    if (length(this.fusions)==0){
+    if (length(this.fusions)==0) {
         return(this.fusions)
     }
     filtered.fusions = this.fusions[in.frame == TRUE & silent == FALSE & numgenes > 1]
 
+    if (length(filtered.fusions)==0) {
+        return(filtered.fusions)
+    }
+
     ## compute total number of amino acids and mark
-    n.aa = sapply(filtered.fusions$dt$gene.pc, function(pc) { sum(width(parse.grl(pc))) })
+    grls = lapply(filtered.fusions$dt$gene.pc, parse.grl)
+    n.aa = sapply(grls, function(grl) {
+        wd = ifelse(!is.null(grl), sum(width(grl)), NA)
+        return(wd)
+    })
+
     filtered.fusions$set(total.aa = n.aa)
 
     ## filter so that gene pairs are unique (if multiple choose the one with most AA's)
@@ -483,26 +492,30 @@ fusion.table = function(fusions.fname = NULL,
     fs.gr = stack(fs.grl)
 
     ## overlap with complex events
-    this.ev = readRDS(complex.fname)$meta$events[type %in% ev.types,]
-    ev.grl = parse.grl(this.ev$footprint)
-    values(ev.grl) = this.ev
-    ev.gr = stack(ev.grl)
+    filtered.fusions$set(ev.id = NA, ev.type = NA)
+    this.ev = readRDS(complex.fname)$meta$events
+    if (nrow(this.ev)) {
+        this.ev = this.ev[type %in% ev.types,]
+        if (nrow(this.ev)) {
+            ev.grl = parse.grl(this.ev$footprint)
+            values(ev.grl) = this.ev
+            ev.gr = stack(ev.grl)
 
-    ev.gr$ev.id = paste(ev.gr$type, ev.gr$ev.id, sep = "_")
+            ev.gr$ev.id = paste(ev.gr$type, ev.gr$ev.id, sep = "_")
 
-    ov = gr.findoverlaps(fs.gr, ev.gr,
-                         qcol = c("walk.id"),
-                         scol = c("ev.id", "type"),
-                         return.type = "data.table")
+            ov = gr.findoverlaps(fs.gr, ev.gr,
+                                 qcol = c("walk.id"),
+                                 scol = c("ev.id", "type"),
+                                 return.type = "data.table")
 
-    if (ov[,.N] > 0){
-        ## ov = ov[, .(ev.id = paste(unique(ev.id), sep = ","), type = paste(unique(type), sep = ",")), by = walk.id]
-        ov = ov[, .(ev.id = paste(unique(ev.id), collapse = ","), type = paste(unique(type), collapse = ",")), by = walk.id]
-        pmt = match(filtered.fusions$dt$walk.id, ov$walk.id)
-        filtered.fusions$set(ev.id = ov$ev.id[pmt])
-        filtered.fusions$set(ev.type = ov$type[pmt])
-    } else {
-        filtered.fusions$set(ev.id = NA, ev.type = NA)
+            if (ov[,.N] > 0){
+                ## ov = ov[, .(ev.id = paste(unique(ev.id), sep = ","), type = paste(unique(type), sep = ",")), by = walk.id]
+                ov = ov[, .(ev.id = paste(unique(ev.id), collapse = ","), type = paste(unique(type), collapse = ",")), by = walk.id]
+                pmt = match(filtered.fusions$dt$walk.id, ov$walk.id)
+                filtered.fusions$set(ev.id = ov$ev.id[pmt])
+                filtered.fusions$set(ev.type = ov$type[pmt])
+            }
+        }
     }
 
     return(filtered.fusions)
