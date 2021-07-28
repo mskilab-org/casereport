@@ -425,7 +425,7 @@ away in the reference genome while potentially <1Mbp in the rearranged genome.
 prox.plots = dir(params$outdir, "proximity.png$", full.names = TRUE)
 if (length(prox.plots)>0){
     for (prox.plot in prox.plots){
-        g = gsub(".proximity.png", "", file.name(prox.plot))
+        g = gsub(".proximity.png", "", basename(prox.plot))
         cat("## ", g, "\n<br>\n")
         cat(
             paste0(

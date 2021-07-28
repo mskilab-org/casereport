@@ -497,105 +497,107 @@ sv.plot = function(complex.fname = NULL,
     cvgt = readRDS(cvgt.fname) ## coverage
     gngt = readRDS(gngt.fname) ## gencode gTrack
 
-    if (is.null(this.complex$meta$events)){
+    if (is.null(this.complex$meta$events) || !nrow(this.complex$meta$events)){
         return(list())
     }
     ## extract just complex events
     complex.ev = this.complex$meta$events[type %in% ev.types,]
 
 
-    if (nrow(complex.ev)>0){
-## grab plot titles and file names
-    complex.ev[, plot.fname := file.path(outdir, paste("event", ev.id, "png", sep = "."))]
-    complex.ev[, plot.title := paste(type, "|", "event id:", ev.id)]
+    if (nrow(complex.ev)>0) {
+        
+        ## grab plot titles and file names
+        
+        complex.ev[, plot.fname := file.path(outdir, paste("event", ev.id, "png", sep = "."))]
+        complex.ev[, plot.title := paste(type, "|", "event id:", ev.id)]
 
-    ## make gGnome.js url query parameters
-    complex.ev[, ev.js.range := {
-        gr = gr.reduce(gr.stripstrand(parse.gr(footprint)) + 1e4)
-        paste(gr.string(gr), collapse = "%20|%20")
-    }, by = ev.id]
-    complex.ev[, plot.link := paste0(server, "index.html?file=", pair, ".json&location=", ev.js.range, "&view=")]
+        ## make gGnome.js url query parameters
+        complex.ev[, ev.js.range := {
+            gr = gr.reduce(gr.stripstrand(parse.gr(footprint)) + 1e4)
+            paste(gr.string(gr), collapse = "%20|%20")
+        }, by = ev.id]
+        complex.ev[, plot.link := paste0(server, "index.html?file=", pair, ".json&location=", ev.js.range, "&view=")]
 
-    ## read CGC gTrack if provided
-    if (!is.null(cgcgt.fname)) {
-        if (file.exists(cgcgt.fname)) {
-            cgc.gt = readRDS(cgcgt.fname)
+        ## read CGC gTrack if provided
+        if (!is.null(cgcgt.fname)) {
+            if (file.exists(cgcgt.fname)) {
+                cgc.gt = readRDS(cgcgt.fname)
+            } else {
+                cgc.gt = NULL
+            }
         } else {
             cgc.gt = NULL
         }
-    } else {
-        cgc.gt = NULL
-    }
 
-    ## read allele gTrack if provided
-    if (!is.null(agt.fname)) {
-        if (file.exists(agt.fname)) {
-            agt = readRDS(agt.fname)
+        ## read allele gTrack if provided
+        if (!is.null(agt.fname)) {
+            if (file.exists(agt.fname)) {
+                agt = readRDS(agt.fname)
+            } else {
+                agt = NULL
+            }
         } else {
             agt = NULL
         }
-    } else {
-        agt = NULL
-    }
 
-    ## gTrack formatting
-    cvgt$ylab = "CN"
-    cvgt$name = "cov"
-    cvgt$yaxis.pretty = 3
-    cvgt$xaxis.chronly = TRUE
+        ## gTrack formatting
+        cvgt$ylab = "CN"
+        cvgt$name = "cov"
+        cvgt$yaxis.pretty = 3
+        cvgt$xaxis.chronly = TRUE
 
-    this.complex.gt$ylab = "CN"
-    this.complex.gt$name = "JaBbA"
-    this.complex.gt$yaxis.pretty = 3
-    this.complex.gt$xaxis.chronly = TRUE
+        this.complex.gt$ylab = "CN"
+        this.complex.gt$name = "JaBbA"
+        this.complex.gt$yaxis.pretty = 3
+        this.complex.gt$xaxis.chronly = TRUE
 
-    gngt$cex.label = 0.01 ## no labels for full gencode
-    gngt$xaxis.chronly = TRUE
-    gngt$name = "genes"
-    gngt$ywid = 0.1
-    gngt$height = 2
-    gngt$yaxis.cex = 0.8
-
-    if (!is.null(cgc.gt)) {
-        cgc.gt$cex.label = 0.5
-        cgc.gt$xaxis.chronly = TRUE
-        cgc.gt$name = "CGC"
-        cgc.gt$ywid = 0.1
-        cgc.gt$height = 5
-        cgc.gt$stack.gap = 1e6
+        gngt$cex.label = 0.01 ## no labels for full gencode
+        gngt$xaxis.chronly = TRUE
+        gngt$name = "genes"
+        gngt$ywid = 0.1
+        gngt$height = 2
         gngt$yaxis.cex = 0.8
 
-        ## concatenate final gTracks
-        gt = c(gngt, cgc.gt, cvgt, this.complex.gt)
-    } else {
-        gt = c(gngt, cvgt, this.complex.gt)
-    }
+        if (!is.null(cgc.gt)) {
+            cgc.gt$cex.label = 0.5
+            cgc.gt$xaxis.chronly = TRUE
+            cgc.gt$name = "CGC"
+            cgc.gt$ywid = 0.1
+            cgc.gt$height = 5
+            cgc.gt$stack.gap = 1e6
+            gngt$yaxis.cex = 0.8
 
-    if (!is.null(agt)) {
-        agt$ylab = "CN"
-        agt$yaxis.pretty = 3
-        agt$xaxis.chronly = TRUE
+            ## concatenate final gTracks
+            gt = c(gngt, cgc.gt, cvgt, this.complex.gt)
+        } else {
+            gt = c(gngt, cvgt, this.complex.gt)
+        }
 
-        gt = c(agt, gt)
-    }
+        if (!is.null(agt)) {
+            agt$ylab = "CN"
+            agt$yaxis.pretty = 3
+            agt$xaxis.chronly = TRUE
 
-    ## save plots
-    pts = lapply(1:nrow(complex.ev),
-                 function(ix) {
-                     ## prepare window
-                     win = parse.grl(complex.ev$footprint[[ix]]) %>% unlist
-                     if (pad > 0 & pad <= 1) {
-                         adjust = pmax(1e5, pad * width(win))
-                         win = GenomicRanges::trim(win + adjust)
-                     } else {
-                         win = GenomicRanges::trim(win + pad)
-                     }
-                     ppng(plot(gt, win, legend.params = list(plot = FALSE)),
-                          title = complex.ev$plot.title[ix],
-                          filename = complex.ev$plot.fname[ix],
-                          height = height,
-                          width = width)
-                 })
+            gt = c(agt, gt)
+        }
+
+        ## save plots
+        pts = lapply(1:nrow(complex.ev),
+                     function(ix) {
+                         ## prepare window
+                         win = parse.grl(complex.ev$footprint[[ix]]) %>% unlist
+                         if (pad > 0 & pad <= 1) {
+                             adjust = pmax(1e5, pad * width(win))
+                             win = GenomicRanges::trim(win + adjust)
+                         } else {
+                             win = GenomicRanges::trim(win + pad)
+                         }
+                         ppng(plot(gt, win, legend.params = list(plot = FALSE)),
+                              title = complex.ev$plot.title[ix],
+                              filename = complex.ev$plot.fname[ix],
+                              height = height,
+                              width = width)
+                     })
 
         return(complex.ev[, .(plot.fname, plot.link)])
     } else {

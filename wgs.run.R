@@ -65,6 +65,7 @@ suppressMessages(expr = {
         library(ComplexHeatmap)
         library(deconstructSigs)
         library(DT)
+        library(VariantAnnotation)
         message("Loading critical dependencies from KevUtils")
         source(paste0(opt$libdir, "/utils.R"))
         source(paste0(opt$libdir, "/config.R"))
@@ -359,7 +360,7 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
         ## synchronize y0 and y1 of cvgt and agt
         y0 = 0
         gg.max.cn = max(gg$nodes$dt[!is.na(cn) & !is.infinite(cn), cn], na.rm = TRUE)
-        y1 = round(gg.max.cn/10) * 10
+        y1 = gg.max.cn + 1
         
         ## gGraph gTrack formatting
         gg.gt = gg$gt
@@ -386,6 +387,8 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
             ## concatenate with agt
             gt = c(agt, cvgt, gg.gt)
         }
+
+        ## browser()
         ppng(plot(gt, c(as.character(1:22), "X", "Y")),
              filename  = wgs.gtrack.fname,
              height = 1000,
@@ -1094,6 +1097,31 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
         message("Summary already exists, skipping")
     }
 
+    ## ################
+    ## create oncotable
+    ## ################
+
+    oncotable.fn = file.path(opt$outdir, "oncotable.txt")
+    if (!file.exists(oncotable.fn) | opt$overwrite) {
+
+        message("Preparing oncotable...")
+        oncotable.input = data.table(pair = opt$pair,
+                                     jabba_rds = opt$jabba_rds,
+                                     fusions = opt$fusions,
+                                     complex = opt$complex,
+                                     scna = genes_cn.fn, ## custom SCNA table with event info
+                                     annotated_bcf = file.path(opt$outdir, "snv", "annotated.bcf"),
+                                     rna = cool.exp.fn,
+                                     proximity = opt$proximity,
+                                     deconstruct_sigs = opt$deconstruct_sigs,
+                                     key = "pair")
+        oncotable = oncotable(oncotable.input,
+                              gencode = opt$gencode,
+                              verbose = TRUE)
+        fwrite(oncotable, oncotable.fn)
+    } else {
+        message("Oncotable already exists. Skipping!")
+    }
 }
 
 
