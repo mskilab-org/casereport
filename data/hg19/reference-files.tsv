@@ -1,0 +1,5 @@
+name	path	library_relative_path
+gencode	~/DB/GENCODE/hg19/gencode.v19.annotation.gtf	
+genes	http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf	
+cytoband		data/hg19/hg19.cytoband.txt
+gngt		data/hg19/gt.ge.hg19.rds

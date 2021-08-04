@@ -1227,3 +1227,72 @@ rna.waterfall.plot = function(tpm.cohort = NULL,
     ppng(print(pt), filename = out.fn)
 }
 
+#' @name get_reference_genome_files
+#' @title get_reference_genome_files
+#'
+#' @description
+#'
+#' Get a list of the reference genome files (see https://github.com/mskilab/casereport/wiki/Reference-genome-files)
+#'
+#' @param reference (character) path to tabular file with the paths to the reference genome files
+#' @param libdir path to the casereport library
+#' @return list with the paths to the reference genome files
+get_reference_genome_files = function(reference, libdir){
+    if (is.na(reference)){
+        message('Using the defult hg19 reference files.')
+        reference = file.path(libdir, 'data', 'hg19', 'reference-files.tsv')
+    } else {
+        if (!file.exists(reference)){
+            # check if one of the built-in references has been requested
+            # we expect each built-in reference to have a directory under data that contains a reference-files.tsv
+            # e.g.: data/hg38/reference-files.tsv
+            reference = file.path(libdir, 'data', reference, 'reference-files.tsv')
+            if (!file.exists(reference)){
+                built_in_refs = paste(file.name(dirname(Sys.glob(file.path(opt$libdir, 'data', '*', 'reference-files.tsv')))), collapse = ', ')
+                stop('Invalid "reference": ', reference, '. Please provide a valid path, or use one of the built in references: ', built_in_refs)
+            }
+        }
+    }
+
+    # make sure the ref_file looks good
+    ref.dt = fread(reference)
+
+    cnames = names(ref.dt)
+    if (!(('name' %in% cnames) & ('path' %in% cnames | 'library_relative_path' %in% cnames))){
+        stop('reference table must include a "name" column and at least one of "path" or "library_relative_path" columns')
+    }
+    
+    expected_reference_files = c('gencode', 'genes', 'cytoband', 'gngt')
+    for (entry_name in expected_reference_files){
+        ref[entry_name] = get_reference_entry(ref.dt, entry_name, libdir)
+    }
+    return(ref)
+}
+
+#' @name get_reference_entry
+#' @title get_reference_entry
+#'
+#' @description
+#'
+#' Get path for an entry in the reference table and check that it exists
+#'
+#' @param ref.dt (data.table)
+#' @param entry_name one of the values in the "name" column of ref.dt
+#' @param libdir
+#' @return path
+get_reference_entry(ref.dt, entry_name, libdir){
+    if (!(entry_name %in% ref.dt$name)){
+        stop('reference must include an entry for "', entry_name, '".')
+    }
+    fn = ref.dt[name == entry_name, path]
+    if (!file.exists(fn)){
+        fn = ref.dt[name == entry_name, file.path(libdir, ref.dt[name == entry_name, library_relative_path])]
+        if (!file.exists(fn)){
+            stop('Invalid path provided for ', entry_name, ' in the reference.')
+        }
+    }
+    return(fn)
+}
+
+
+    

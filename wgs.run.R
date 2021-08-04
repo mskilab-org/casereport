@@ -18,10 +18,8 @@ if (!exists("opt")){
         make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample"),
         make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
         make_option(c("--hrd_results"), type = "character", default = NA_character_, help = "The comprehensive HRDetect module results"),
-        make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
-        make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
+        make_option(c("--reference"), type = "character", default = NA_character_, help = "Either a name of one of the built in references (e.g. hg19, hg38) or a path to a tabular file with 3 columns (with a header): 'name', 'path', 'library_relative_path'. An example file could be found here: "),
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
-        make_option(c("--chrom_sizes"), type = "character", default = "~/DB/UCSC/hg19.broad.chrom.sizes", help = "chrom.sizes file of the reference genome"),
         make_option(c("--knit_only"), type = "logical", default = FALSE, action = "store_true", help = "if true, skip module and just knit"),
         make_option(c("--amp_thresh"), type = "numeric", default = 4,
                     help = "Threshold over ploidy to call amplification"),
@@ -69,6 +67,8 @@ suppressMessages(expr = {
 if (!opt$knit_only){
     message("Preparing data and plots")
 
+    ref = get_reference_genome_files(opt$reference, opt$libdir)
+
     message("Returning Purity, Ploidy, and run 'events' if not already provided")
     jabba = readRDS(opt$jabba_rds)
 
@@ -113,7 +113,7 @@ if (!opt$knit_only){
         #' zchoo Monday, May 03, 2021 02:33:55 PM
         #' add ploidy to avoid bug
         #' simplify seqnames to avoid empty data tables
-        genes_cn = get_gene_copy_numbers(gg, gene_ranges = opt$genes, nseg = nseg, ploidy = kag$ploidy, simplify_seqnames = TRUE, complex.fname = opt$complex)
+        genes_cn = get_gene_copy_numbers(gg, gene_ranges = ref$genes, nseg = nseg, ploidy = kag$ploidy, simplify_seqnames = TRUE, complex.fname = opt$complex)
         genes_cn_annotated = get_gene_ampdel_annotations(genes_cn, amp.thresh = opt$amp_thresh,
                                        del.thresh = opt$del_thresh)
 
@@ -266,7 +266,7 @@ if (!opt$knit_only){
                         field = "cn",
                         link.h.ratio = 0.1,
                         cex.points = 0.1,
-                        cytoband.path = file.path(opt$libdir, "data", "hg19.cytoband.txt")),
+                        cytoband.path = ref$cytoband,
              filename = wgs.circos.fname,
              height = 1000,
              width = 1000)
@@ -302,7 +302,7 @@ if (!opt$knit_only){
                                            cvgt = cvgt_fn,
                                            agt.fname = agt_fn,
                                            cgc.fname = cgc.fname,
-                                           gngt = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                           gngt = ref$gngt,
                                            pad = 0.5,
                                            height = 2000,
                                            width = 1000,
@@ -345,7 +345,7 @@ if (!opt$knit_only){
         sv.slickr.dt = gallery.wrapper(complex.fname = opt$complex,
                                        background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
                                        cvgt.fname = cvgt_fn,
-                                       gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                       gngt.fname = ref$gngt,
                                        cgcgt.fname = cgc.gtrack.fname,
                                        agt.fname = agt_fn,
                                        server = opt$server,
@@ -369,7 +369,7 @@ if (!opt$knit_only){
         cn.slickr.dt = cn.plot(drivers.fname = driver.genes.cnv.fn,
                                opt$complex,
                                cvgt.fname = cvgt_fn,
-                               gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                               gngt.fname = ref$gngt,
                                cgcgt.fname = cgc.gtrack.fname,
                                agt.fname = agt_fn,
                                server = opt$server,
@@ -449,7 +449,7 @@ if (!opt$knit_only){
             expr.slickr.dt = cn.plot(drivers.fname = cool.exp.fn,
                                      opt$complex,
                                      cvgt.fname = cvgt_fn,
-                                     gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                     gngt.fname = ref$gngt,
                                      cgcgt.fname = cgc.gtrack.fname,
                                      agt.fname = agt_fn,
                                      server = opt$server,
