@@ -661,7 +661,7 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
         ## melted.expr[, ":="(qt = rank(as.double(.SD$value))/.N), by = gene]
         
         ## TODO: make the quantile threshold adjustable
-        cool.exp = melted.expr[pair==opt$pair][(role=="TSG" & qt<0.05) | (role=="ONC" & qt>0.95)]
+        cool.exp = melted.expr[!is.na(value)][pair==opt$pair][(role=="TSG" & qt<0.05) | (role=="ONC" & qt>0.95)]
         ## cool.exp[order(qt)]
 
         
@@ -755,7 +755,7 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
         waterfall.fn = file.path(opt$outdir, "waterfall.png")
         if (!check_file(waterfall.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
             message("generating waterfall plot")
-            gns = fread(cool.exp.fn)$gene ## genes with changes in expression
+            gns = readRDS(cool.exp.fn)$gene ## genes with changes in expression
             rna.waterfall.plot(melted.expr = melted.expr,
                                pair = opt$pair,
                                out.fn = waterfall.fn,

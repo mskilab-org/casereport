@@ -1193,7 +1193,7 @@ rna.quantile = function(tpm.cohort, pair, tpm.pair = NULL) {
                                          variable.name = "pair")
 
     melted.tpm.cohort[, qt := rank(as.double(.SD$value))/.N, by = gene]
-    return(melted.tpm.cohort)
+    return(melted.tpm.cohort[!is.na(value)])
 }
 
 #' @name rna.waterfall.plot
@@ -1669,7 +1669,7 @@ rna_reformat = function(kallisto.fname,
     ## check if target_id and tpm are in kallisto
     salmon.reqcols = c("Name", "TPM") ## required columns in Salmon output
     kallisto.reqcols = c("target_id", "tpm") ## required columns in kallisto output
-    browser()
+    ## browser()
     if (all(salmon.reqcols %in% colnames(kallisto.dt))) {
 
         ## preprocess salmon input
