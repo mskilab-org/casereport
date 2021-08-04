@@ -181,9 +181,9 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
         ## ge.data = stack(readRDS(file.path(opt$libdir, "data", "gt.ge.hg19.rds"))@data[[1]]) %Q% (type=="gene")##  & gene_type=="protein_coding" & level<3)
         ge.data = stack(readRDS(file.path(opt$libdir, "data", "gt.ge.hg19.rds"))@data[[1]])
 
-        tpm.dt = kallisto.preprocess(opt$tpm,
-                                     pair = opt$pair,
-                                     gngt.fname = ge.data)
+        tpm.dt = rna_reformat(opt$tpm,
+                              pair = opt$pair,
+                              gngt.fname = ge.data)
 
 
         if (!file.good(tmp.tpm.cohort.fname) | opt$overwrite){
@@ -646,22 +646,9 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
     ## ##################
     ## RNA expression level over a cohort
     ## ##################
+    cool.exp.fn = file.path(opt$outdir, "cool.expr.rds")
     if (file.good(opt$tpm) && file.good(opt$tpm_cohort)){
-        ## tpm_cohort = fread(opt$tpm_cohort, header = TRUE)
-        ## tpm.cohort = readRDS(tmp.tpm.cohort.fname)
 
-        ## if (is.element(opt$pair, colnames(tpm_cohort))){
-        ##     message("Found this sample in the cohort expression matrix")
-        ##     if (file.good(opt$tpm)){
-        ##         tpm = fread(opt$tpm, header = TRUE)
-                
-        ##         message("Found this sample's input expression matrix, overwriting...")
-        ##         tpm_cohort[[opt$pair]] = NULL
-        ##         tpm_cohort = data.table::merge.data.table(
-        ##             tpm_cohort, tpm, by = "gene", all.x = TRUE)
-        ##     }
-        ## }
-        
         ## limit to annotated ONC/TSG
         melted.expr = melted.expr[gene %in% c(onc, tsg)]
         melted.expr[, role := case_when(gene %in% onc ~ "ONC",
@@ -674,10 +661,10 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
         ## melted.expr[, ":="(qt = rank(as.double(.SD$value))/.N), by = gene]
         
         ## TODO: make the quantile threshold adjustable
-        cool.exp = melted.expr[pair==opt$pair][(role=="TSG" & qt<0.05) | (role=="ONC" & qt>0.95)]
+        cool.exp = melted.expr[!is.na(value)][pair==opt$pair][(role=="TSG" & qt<0.05) | (role=="ONC" & qt>0.95)]
         ## cool.exp[order(qt)]
 
-        cool.exp.fn = file.path(opt$outdir, "cool.expr.rds")
+        
         if (nrow(cool.exp)>0){
             cool.exp[, direction := ifelse(qt>0.95, "over", "under")]
             cool.exp[, gf := paste0(opt$outdir, "/", gene, ".", direction, ".expr.png")]
@@ -768,7 +755,7 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
         waterfall.fn = file.path(opt$outdir, "waterfall.png")
         if (!check_file(waterfall.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
             message("generating waterfall plot")
-            gns = fread(cool.exp.fn)$gene ## genes with changes in expression
+            gns = readRDS(cool.exp.fn)$gene ## genes with changes in expression
             rna.waterfall.plot(melted.expr = melted.expr,
                                pair = opt$pair,
                                out.fn = waterfall.fn,
@@ -1146,3 +1133,4 @@ rmarkdown::render(
 message("clean up temporary files")
 file.remove(tmp.tpm.cohort.fname)
 message("yes")
+
