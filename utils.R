@@ -1618,21 +1618,21 @@ ggplot_ppfit = function(seg, purity, ploidy, beta = NULL, gamma = NULL, ploidy_n
     ## abline(v = 1/kag$beta*(0:1000) + kag$gamma/kag$beta, col = alpha('red', 0.3), lty = c(4, rep(2, 1000)))
 }
 
-#' @name kallisto.preprocess
-#' @title kallisto.preprocess
+#' @name rna_reformat
+#' @title rna_reformat
 #'
 #' @description
 #'
-#' preprocess kallisto raw tsv file for downstream analysis
+#' preprocess kallisto/salmon raw tsv files for downstream analysis
 #' 
 #' @param kallisto.fname (character) path to kallisto output
 #' @param pair (character) id
 #' @param gngt.fname (character) gencode gTrack file name
 #'
 #' @return data.table with columns gene, pair
-kallisto.preprocess = function(kallisto.fname,
-                               pair = NULL,
-                               gngt.fname = NULL) {
+rna_reformat = function(kallisto.fname,
+                        pair = NULL,
+                        gngt.fname = NULL) {
 
     ## check files all valid
     if (is.null(kallisto.fname) || !file.exists(kallisto.fname)) {
@@ -1651,9 +1651,6 @@ kallisto.preprocess = function(kallisto.fname,
     } else {
         stop("Invalid gene model. Please check your --gencode argument.")
     }
-    ## if (is.null(gngt.fname) || !file.exists(gngt.fname)) {
-    ##     stop("gngt.fname cannot be NULL")
-    ## }
 
     kallisto.dt = fread(kallisto.fname, header = TRUE)
 
@@ -1670,20 +1667,42 @@ kallisto.preprocess = function(kallisto.fname,
     }
 
     ## check if target_id and tpm are in kallisto
-    reqcols = c("target_id", "tpm")
-    if (!all(reqcols %in% colnames(kallisto.dt))) {
+    salmon.reqcols = c("Name", "TPM") ## required columns in Salmon output
+    kallisto.reqcols = c("target_id", "tpm") ## required columns in kallisto output
+    browser()
+    if (all(salmon.reqcols %in% colnames(kallisto.dt))) {
+
+        ## preprocess salmon input
+        message("RNA input type: Salmon")
+
+        outcols = c("target_id", outcols)
+
+        gene.symbols = unlist(lapply(strsplit(kallisto.dt[, Name], "\\|"), function(x) {x[[5]]}))
+        kallisto.dt[, gene := gene.symbols]
+        kallisto.dt = kallisto.dt[TPM > 0 & !is.na(TPM) & !is.na(gene),
+                                  .(TPM = max(TPM)),
+                                  by = gene]
+        setnames(kallisto.dt, "TPM", pair)
+        kallisto.dt[, target_id := gene]
+    } else if (all(kallisto.reqcols %in% colnames(kallisto.dt))) {
+
+        ## preprocess Kallisto input
+        message("RNA input type: Kallisto")
+
+        outcols = c("target_id", outcols)
+
+        kallisto.dt[, gene := ge.data$gene_name[match(target_id, ge.data$transcript_id)]]
+
+        ## subset for high expression and max transcript for that gene
+        ## not perfect, but potentially helps to prevent double-counting co-expressed exons
+        kallisto.dt = kallisto.dt[tpm > 0 & !is.na(tpm) & !is.na(gene),][, .(tpm = max(tpm), target_id = target_id[which.max(tpm)]), by = gene]
+
+        ## reset tpm column
+        setnames(kallisto.dt, "tpm", pair)
+        
+    } else {
         stop("required columns target_id and tpm missing from kallisto output")
     }
-    outcols = c("target_id", outcols)
-
-    kallisto.dt[, gene := ge.data$gene_name[match(target_id, ge.data$transcript_id)]]
-
-    ## subset for high expression and max transcript for that gene
-    ## not perfect, but potentially helps to prevent double-counting co-expressed exons
-    kallisto.dt = kallisto.dt[tpm > 0 & !is.na(tpm) & !is.na(gene),][, .(tpm = max(tpm), target_id = target_id[which.max(tpm)]), by = gene]
-
-    ## reset tpm column
-    setnames(kallisto.dt, "tpm", pair)
 
     return(kallisto.dt[!is.na(gene), ..outcols])
 }
@@ -2318,7 +2337,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
       out = rbind(out, data.table(id = x, type = NA, source = 'jabba_rds'), fill = TRUE, use.names = TRUE)
     }
 
-    if (!is.null(dat$proximity) && file.exists(dat[x, proximity]) && nrow(readRDS(dat[x, proximity])$dt)) {
+    if (!is.null(dat$proximity) && file.exists(dat[x, proximity]) && !(dat[x, proximity] == "/dev/null")  && nrow(readRDS(dat[x, proximity])$dt)) {
         proximity.dt = readRDS(opt$proximity)$dt[reldist < max.reldist & refdist > min.refdist,]
         out = rbind(out, proximity.dt[, .(gene = gene_name, value = reldist,
                                           reldist, altdist, refdist, n.se, walk.id,
