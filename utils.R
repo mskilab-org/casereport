@@ -2340,7 +2340,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
     if (!is.null(dat$proximity) && file.exists(dat[x, proximity]) && !(dat[x, proximity] == "/dev/null")  && nrow(readRDS(dat[x, proximity])$dt)) {
         proximity.dt = readRDS(opt$proximity)$dt[reldist < max.reldist & refdist > min.refdist,]
         out = rbind(out, proximity.dt[, .(gene = gene_name, value = reldist,
-                                          reldist, altdist, refdist, n.se, walk.id,
+                                          reldist, altdist, refdist, walk.id,
                                           type = "proximity", source = "proximity", track = "proximity")],
                     use.names = TRUE,
                     fill = TRUE)
