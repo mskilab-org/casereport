@@ -389,7 +389,12 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
         }
 
         ## browser()
-        ppng(plot(gt, c(as.character(1:22), "X", "Y")),
+        seqs = c(as.character(1:22), "X", "Y")
+        plot.chrs = intersect(seqlevels(gg), c(paste0('chr', seqs), seqs))
+        if (length(plot.chrs) == 0){
+            stop('None of the sequences in your genome graph matches the default set of sequences.')
+        }
+        ppng(plot(gt, plot.chrs),
              filename  = wgs.gtrack.fname,
              height = 1000,
              width = 5000)
