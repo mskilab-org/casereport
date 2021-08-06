@@ -7,6 +7,7 @@ if (!exists("opt")){
         make_option(c("--pair"), type = "character", help = "ID of this sample"),
         make_option(c("--jabba_rds"), type = "character", help = "jabba output, 'jabba.simple.rds'"),
         make_option(c("--cbs_cov_rds"), type = "character", default = NA_character_, help = "cbs_cov output"),
+        make_option(c("--cbs_nseg_rds"), type = "character", default = NA_character_, help = "cbs_nseg_rds output"),
         make_option(c("--het_pileups_wgs"), type = "character", default = NA_character_, help = "cbs_cov output"),
         make_option(c("--complex"), type = "character", help = "complex event caller, RDS"),
         make_option(c("--fusions"), type = "character", help = "fusions module output, RDS"),
@@ -243,17 +244,25 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
     } else {
         kag_rds = gsub("jabba.simple.rds", "karyograph.rds", opt$jabba_rds)
         nseg = NULL
-        if (file.exists(kag_rds) & file.size(kag_rds) > 0){
-            message('Loading JaBbA karyograph from ', kag_rds)
-            kag = readRDS(kag_rds)
-            if ('ncn' %in% names(mcols(kag$segstats))){
-                nseg = kag$segstats[,c('ncn')]
-            } else {
-                message('JaBbA karyograph does not contain the "ncn" field so CN = 2 will be assumed for the normal copy number of all seqnames.')
+        if (!is.na(opt$cbs_nseg_rds)){
+            if (file.exists(opt$cbs_nseg_rds) & file.size(opt$cbs_nseg_rds) > 0){
+                if (verbose)
+                    message('Reading normal segmentation copy number from: ', opt$cbs_nseg_rds)
+                nseg = readRDS(opt$cbs_nseg_rds)
             }
         } else {
+            if (file.exists(kag_rds) & file.size(kag_rds) > 0){
+                message('Loading JaBbA karyograph from ', kag_rds)
+                kag = readRDS(kag_rds)
+                if ('ncn' %in% names(mcols(kag$segstats))){
+                    nseg = kag$segstats[,c('ncn')]
+                } else {
+                    message('JaBbA karyograph does not contain the "ncn" field so CN = 2 will be assumed for the normal copy number of all seqnames.')
+                }
+            } else {
             ## # TODO: perhaps we should allow to directly provide a nseg input
-            message('JaBbA karyograph was not found at the expected location (', kag_rds, ') so we will use CN = 2 for the normal copy number of all chromosomes.')
+            message('No cbs_nseg_rds was provided and the JaBbA karyograph was not found at the expected location (', kag_rds, ') so we will use CN = 2 for the normal copy number of all chromosomes.')
+            }
         }
 
         #' zchoo Monday, May 03, 2021 02:33:55 PM
