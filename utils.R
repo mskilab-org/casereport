@@ -886,7 +886,8 @@ get_gene_copy_numbers = function(gg, gene_ranges,
                                               "tic", "bfb", "dm", "chromoplexy",
                                               "chromothripsis", "tyfonas", "rigma", "pyrgo", "cpxdm"),
                                  output_type = 'data.table',
-                                 ploidy = 2){
+                                 ploidy = 2,
+                                 verbose = TRUE){
     if (is.character(gg)){
         gg = readRDS(gg)
     }
@@ -903,8 +904,20 @@ get_gene_copy_numbers = function(gg, gene_ranges,
         ngr = gr.sub(ngr)
         gene_ranges = gr.sub(gene_ranges)
     }
-    GRanges_are_compatible = check_GRanges_compatibility(ngr, gene_ranges, 'gGraph segments', 'genes')
+    if (verbose)
+        GRanges_are_compatible = check_GRanges_compatibility(ngr, gene_ranges, 'gGraph segments', 'genes')
 
+    if (is.character(nseg)){
+        if (file.exists(nseg) & endsWith(nseg, '.rds')){
+            nseg = readRDS(nseg)
+        }
+        if (!inherits(nseg, 'GRanges')){
+            nseg = NULL
+        } else {
+            if (verbose)
+                GRanges_are_compatible = check_GRanges_compatibility(ngr, nseg, 'gGraph segments', 'nseg')
+        }
+    }
     if (!is.null(nseg)){
         ngr = ngr %$% nseg[, c('ncn')]
     } else {
@@ -920,7 +933,7 @@ get_gene_copy_numbers = function(gg, gene_ranges,
 
                                         # normalize the CN by ploidy and by local normal copy number
     ## ndt[, normalized_cn := cn * normal_ploidy / (jab$ploidy * ncn)] ## error because jab does not exist!
-    ndt[, normalized_cn := cn * normal_ploidy / (ploidy * ncn)]
+    ndt[, normalized_cn := ifelse(ncn == 0, 0, cn * normal_ploidy / (ploidy * ncn))]
 
                                         # overlapping copy number segments with gene ranges
     gene_cn_segments = dt2gr(ndt, seqlengths = seqlengths(gg)) %*% gene_ranges %>% gr2dt
@@ -938,11 +951,19 @@ get_gene_copy_numbers = function(gg, gene_ranges,
                                    cn = NULL,
                                    normalized_cn = NULL)]
 
-    gene_cn_split_genes_min = gene_cn_segments[get(gene_id_col) %in% split_genes, .SD[which.min(cn)], by = gene_id_col]
+    gene_cn_split_genes_min = gene_cn_segments[get(gene_id_col) %in% split_genes, .SD[which.min(cn)], by = gene_id_col][,.(get(gene_id_col), cn, ncn, normalized_cn)]
     gene_cn_split_genes_min[, `:=`(min_normalized_cn = normalized_cn,
-                                   min_cn = cn,
-                                   cn = NULL,
-                                   normalized_cn = NULL)]
+                                   min_cn = cn)]
+    setnames(gene_cn_split_genes_min, 'V1', gene_id_col)
+
+    # set the ranges properly using the gene_ranges object (to guarantee that gene ranges in the output are identical to the ranges defined in gene_ranges and not some (quite arbitrary) subset of the range due to segmentation in the genome graph.
+    mfields = intersect(names(values(gene_ranges)), mfields)
+    if (length(mfields) == 0){
+        warning('There is no overlap between the fields in the gene_ranges object and the fields provided in "mfields". We will just default to use all fields from the gene_ranges object: ', names(gene_ranges_dt))
+        mfields = names(values(gene_ranges))
+    }
+    gene_ranges_dt = gr2dt(gene_ranges[,mfields])
+    gene_cn_split_genes_min = merge.data.table(gene_ranges_dt, gene_cn_split_genes_min, by = gene_id_col) 
 
 
     gene_cn_split_genes_max = gene_cn_segments[get(gene_id_col) %in% split_genes,
@@ -956,7 +977,9 @@ get_gene_copy_numbers = function(gg, gene_ranges,
     gene_cn_split_genes = merge.data.table(gene_cn_split_genes_min, gene_cn_split_genes_max, by = gene_id_col)
     gene_cn_split_genes = merge.data.table(gene_cn_split_genes, number_of_segments_per_split_gene, by = gene_id_col)
 
-    gene_cn_table = rbind(gene_cn_split_genes, gene_cn_non_split_genes)
+    keep.fields = c('ncn', 'min_normalized_cn', 'min_cn', 'max_normalized_cn', 'max_cn', 'number_of_cn_segments')
+    keep.fields = c(keep.fields, mfields, 'seqnames', 'start', 'end', 'strand')
+    gene_cn_table = rbind(gene_cn_split_genes[, ..keep.fields], gene_cn_non_split_genes[, ..keep.fields])
 
     ## overlap with event calls
     ## had done this up front
@@ -967,7 +990,7 @@ get_gene_copy_numbers = function(gg, gene_ranges,
     if (!is.null(gg$meta$events) && nrow(gg$meta$events)){
         this.ev = gg$meta$events[type %in% ev.types,]
         if (nrow(this.ev)>0){
-ev.grl = parse.grl(this.ev$footprint)
+            ev.grl = parse.grl(this.ev$footprint)
         values(ev.grl) = this.ev
         ev.gr = stack(ev.grl)
         } else {
