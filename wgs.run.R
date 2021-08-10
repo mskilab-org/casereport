@@ -37,6 +37,7 @@ if (!exists("opt")){
         make_option(c("--cohort_metadata"), type = "character", default = NA_character_, help = "Metadata of the background cohort"),
         make_option(c("--pmkb_interpretations"), type = "character", default = NA_character_, help = "Path to CVS with PMKB interpretations. If not provided, then a default table will be used (in data/pmkb-interpretations-06-11-2021.csv). See https://pmkb.weill.cornell.edu/about for details about PMKB."),
         make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir")
+        make_option(c("--verbose"), type = "logical", default = TRUE, action = "store_true", help = "Be verbose and write more messages during the process of producing the report.")
     )
     parseobj = OptionParser(option_list = option_list)
     opt = parse_args(parseobj)
@@ -81,6 +82,7 @@ if (!opt$knit_only){
 
     message("Returning Purity, Ploidy, and run 'events' if not already provided")
     jabba = readRDS(opt$jabba_rds)
+    verbose = opt$verbose
 
     if (file.exists(paste0(opt$outdir, "/complex.rds"))){
         gg = readRDS(paste0(opt$outdir, "/complex.rds"))
