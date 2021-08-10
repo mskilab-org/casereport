@@ -1015,7 +1015,7 @@ get_gene_copy_numbers = function(gg, gene_ranges,
     
 
     if (ov[,.N] > 0){
-        ov = ov[, .(ev.id = paste(unique(ev.id), sep = ","), ev.type = paste(unique(type), sep = ",")), by = gene_name]
+        ov = ov[!duplicated(paste0(ev.id, type, gene_name)), .(ev.id = paste(unique(ev.id), collapse = ","), ev.type = type), by = .(gene_name, type)]
         gene_cn_table = merge.data.table(gene_cn_table, ov, by = "gene_name", all.x = TRUE)
     } else {
         gene_cn_table[, ":="(ev.id = NA, type = NA)]
