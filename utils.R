@@ -965,7 +965,6 @@ get_gene_copy_numbers = function(gg, gene_ranges,
     gene_ranges_dt = gr2dt(gene_ranges[,mfields])
     gene_cn_split_genes_min = merge.data.table(gene_ranges_dt, gene_cn_split_genes_min, by = gene_id_col) 
 
-
     gene_cn_split_genes_max = gene_cn_segments[get(gene_id_col) %in% split_genes,
                                                .SD[which.max(cn)], by = gene_id_col][, .(get(gene_id_col),
                                                                                          max_normalized_cn = normalized_cn,
@@ -981,12 +980,6 @@ get_gene_copy_numbers = function(gg, gene_ranges,
     keep.fields = c(keep.fields, mfields, 'seqnames', 'start', 'end', 'strand')
     gene_cn_table = rbind(gene_cn_split_genes[, ..keep.fields], gene_cn_non_split_genes[, ..keep.fields])
 
-    ## overlap with event calls
-    ## had done this up front
-    ## if (is.null(gg$meta$events)){
-    ##     gg = events(gg)
-    ## }
-        
     if (!is.null(gg$meta$events) && nrow(gg$meta$events)){
         this.ev = gg$meta$events[type %in% ev.types,]
         if (nrow(this.ev)>0){
@@ -1000,7 +993,6 @@ get_gene_copy_numbers = function(gg, gene_ranges,
         ev.gr = GRanges()
     }
     
-
     ## get genes as granges
     gene_cn_gr = dt2gr(gene_cn_table, seqlengths = seqlengths(gene_ranges))
 
@@ -1015,7 +1007,9 @@ get_gene_copy_numbers = function(gg, gene_ranges,
     
 
     if (ov[,.N] > 0){
-        ov = ov[!duplicated(paste0(ev.id, type, gene_name)), .(ev.id = paste(unique(ev.id), collapse = ","), ev.type = type), by = .(gene_name, type)]
+        ov[, uid := paste0(gene_name, '_', type, '_', ev.id)]
+        ov = ov[!duplicated(uid)]
+        ov = ov[, .(ev.id = paste(ev.id, collapse = ","), ev.type = paste(type, collapse = ",")), by = gene_name]
         gene_cn_table = merge.data.table(gene_cn_table, ov, by = "gene_name", all.x = TRUE)
     } else {
         gene_cn_table[, ":="(ev.id = NA, type = NA)]
