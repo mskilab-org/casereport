@@ -765,8 +765,19 @@ get_TSG_with_homdels = function(oncotable){
     return(strout)
 }
 
+#' @name check_file
+#' @title check_file
+#'
+#' @description
+#'
+#' check whether file needs to be generated/regenerated
+#' @param fn (character) path
+#' @param overwrite (logical) overwrite path even if existing, default FALSE
+#' @param verbose (logical)
+#'
+#' @return TRUE if file exists and does not need to be regenerated, otherwise FALSE
 check_file = function(fn, overwrite = FALSE, verbose = TRUE){
-    if (file.exists(fn) & file.size(fn) > 0 & !overwrite){
+    if (file.good(fn) & !overwrite) {
         if (verbose){
             message('Found ', fn, ' so reading it. If you wish to regenerate, please repeat with "overwrite = TRUE".')
         }
