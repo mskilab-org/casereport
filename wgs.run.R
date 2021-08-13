@@ -37,7 +37,8 @@ if (!exists("opt")){
         make_option(c("--cohort_metadata"), type = "character", default = NA_character_, help = "Metadata of the background cohort"),
         make_option(c("--pmkb_interpretations"), type = "character", default = NA_character_, help = "Path to CVS with PMKB interpretations. If not provided, then a default table will be used (in data/pmkb-interpretations-06-11-2021.csv). See https://pmkb.weill.cornell.edu/about for details about PMKB."),
         make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir")
-        make_option(c("--verbose"), type = "logical", default = TRUE, action = "store_true", help = "Be verbose and write more messages during the process of producing the report.")
+        make_option(c("--verbose"), type = "logical", default = TRUE, action = "store_true", help = "Be verbose and write more messages during the process of producing the report."),
+        make_option(c("--quantile_thresh"), type = "numeric", default = 0.05, help = "threshold for quantile for RNA expression")
     )
     parseobj = OptionParser(option_list = option_list)
     opt = parse_args(parseobj)
@@ -104,9 +105,8 @@ if (!opt$knit_only){
     ##
     ###################
     cn.plot.fname = normalizePath(file.path(opt$outdir, "cn.pp.png"))
-    ## allele.plot.fname = normalizePath(file.path(opt$outdir, "allele.pp.png"))
     allele.scatter.fname = normalizePath(file.path(opt$outdir, "allele.scatter.png"))
-    if (!file.exists(cn.plot.fname) || opt$overwrite) {
+    if (!check_file(cn.plot.fname, opt$overwrite, verbose = opt$verbose)) {
         message("generating total CN purity/ploidy plots")
         pp_plot(jabba_rds = opt$jabba_rds,
                 cov.fname = opt$cbs_cov_rds,
@@ -120,77 +120,57 @@ if (!opt$knit_only){
                 width = 500,
                 output.fname = cn.plot.fname,
                 verbose = TRUE)
+    } 
+
+    if (file.good(opt$het_pileups_wgs)) {
+        if (!check_file(allele.scatter.fname, opt$overwrite, verbose = opt$verbose)) {
+            pp_plot(jabba_rds = opt$jabba_rds,
+                    cov.fname = opt$cbs_cov_rds,
+                    hets.fname = opt$het_pileups_wgs,
+                    allele = TRUE,
+                    field = "count",
+                    plot.min = -2,
+                    plot.max = 2,
+                    scatter = TRUE,
+                    bins = 100,
+                    height = 500,
+                    width = 500,
+                    output.fname = allele.scatter.fname,
+                    verbose = TRUE)
+        } 
     } else {
-        message("total CN purity/ploidy plot exists!")
+        message("No hets supplied so no allele CN plot is generated.")
     }
-    ## if (!file.exists(allele.plot.fname) || opt$overwrite) {
-    ##     message("generating allele CN purity/ploidy plots")
-    ##     pp_plot(jabba_rds = opt$jabba_rds,
-    ##             cov.fname = opt$cbs_cov_rds,
-    ##             hets.fname = opt$het_pileups_wgs,
-    ##             allele = TRUE,
-    ##             field = "count",
-    ##             plot.min = -2,
-    ##             plot.max = 2,
-    ##             scatter = FALSE,
-    ##             bins = 100,
-    ##             height = 500,
-    ##             width = 500,
-    ##             output.fname = allele.plot.fname,
-    ##             verbose = TRUE)
-    ## } else {
-    ##     message("allele CN histogram already exists")
-    ## }
-    if (file.good(opt$het_pileups_wgs)){
-if (!file.exists(allele.scatter.fname) || opt$overwrite) {
-        pp_plot(jabba_rds = opt$jabba_rds,
-                cov.fname = opt$cbs_cov_rds,
-                hets.fname = opt$het_pileups_wgs,
-                allele = TRUE,
-                field = "count",
-                plot.min = -2,
-                plot.max = 2,
-                scatter = TRUE,
-                bins = 100,
-                height = 500,
-                width = 500,
-                output.fname = allele.scatter.fname,
-                verbose = TRUE)
-    } else {
-        message("allele CN purity/ploidy scatter plot exists!")
-    }
-    }
-    
-    
 
     ## set up purity ploidy
     gg$set(purity = jabba$purity)
     gg$set(ploidy = jabba$ploidy)
 
-
     message("Checking for cohort metadata")
-    if (file.good(opt$cohort_metadata)){
+    if (file.good(opt$cohort_metadata)) {
+        message("Metadata found! Reading...")
         meta = data.table::fread(opt$cohort_metadata)
+    } else {
+        message("TPM cohort metadata not supplied.")
+        meta = data.table() ## empty data table to avoid existence errors
     }
     
     message("Checking for RNA expression input")
     tmp.tpm.cohort.fname = paste0(opt$outdir, "/tmp.tpm.cohort.rds")
+    tpm.quantiles.fname = paste0(opt$outdir, "/", "tmp.quantiles.txt")
     if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {
-        ## what if it's already processed?
-        ## save reformatted TPM data
+
         tpm.fn = file.path(opt$outdir, "tpm.txt")
-
-        ## if this file exists
-        ## ge.data = stack(readRDS(file.path(opt$libdir, "data", "gt.ge.hg19.rds"))@data[[1]]) %Q% (type=="gene")##  & gene_type=="protein_coding" & level<3)
         ge.data = stack(readRDS(file.path(opt$libdir, "data", "gt.ge.hg19.rds"))@data[[1]])
-
         tpm.dt = rna_reformat(opt$tpm,
                               pair = opt$pair,
                               gngt.fname = ge.data)
 
-
-        if (!file.good(tmp.tpm.cohort.fname) | opt$overwrite){
+        if (check_file(tpm.tpm.cohort.fname, opt$overwrite, verbose = opt$verbose)) {
+            tpm.cohort = readRDS(tpm.tpm.cohort.fname)
+        } else {
             tpm.cohort = data.table::fread(opt$tpm_cohort, header = TRUE)
+            
             ## if there are only transcript level annotation, map to the genes the same map as individual kallisto
             if (is.element("gene", colnames(tpm.cohort))) {
                 message("Cohort RNA expression ready.")
@@ -210,29 +190,32 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
                 stop("There must be a 'gene|Transcript|target_id' column in the cohort RNA expression levels.")
             }
             tpm.cohort = tpm.cohort[!duplicated(gene)]
-            ## temporarily save
             saveRDS(tpm.cohort, tmp.tpm.cohort.fname)
-            
+        }
+
+        if (check_file(tpm.quantiles.fname, opt$overwrite, verbose = TRUE)) {
+            melted.expr = fread(tpm.quantiles.fname, header = TRUE)
         } else {
-            tpm.cohort = readRDS(tmp.tpm.cohort.fname)
+            message("Computing RNA expression quantiles relative to supplied cohort")
+            melted.expr = rna.quantile(
+                tpm.cohort,
+                opt$pair,
+                tpm.dt)
+
+            if (nrow(meta) && ("tumor_type" %in% colnames(meta))) {
+
+                message("Computing tumor type-specific expression quantiles given supplied cohort metadata.")
+                melted.expr = data.table::merge.data.table(melted.expr,
+                                                           meta[, .(pair, tumor_type)],
+                                                           by = "pair",
+                                                           all.x = TRUE)
+                melted.expr[, tt.qt := rank(as.double(.SD$value))/.N, by = tumor_type]
+            }
+            fwrite(melted.expr, tpm.quantiles.fname)
         }
 
-        message("Computing quantiles")
-        melted.expr = rna.quantile(
-            tpm.cohort,
-            opt$pair,
-            tpm.dt)
-
-        ## if there's metadata of tumor types
-        if (exists("meta") && inherits(meta, "data.table") && is.element("tumor_type", colnames(meta))) {
-            melted.expr = data.table::merge.data.table(melted.expr, meta[, .(pair, tumor_type)], by = "pair", all.x = TRUE)
-            melted.expr[, tt.qt := rank(as.double(.SD$value))/.N, by = tumor_type]
-        }
-
-        ## check for and process kallisto input
         fwrite(tpm.dt, tpm.fn)
         opt$tpm = tpm.fn
-
         message("Found and preprocessed TPM input")
     }
 
@@ -241,7 +224,7 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
     genes_cn.fn = paste0(opt$outdir, '/genes_cn.rds')
     oncogenes.fn = file.path(opt$libdir, "data", "onc.rds")
     tsg.fn = file.path(opt$libdir, "data", "tsg.rds")
-    if (check_file(genes_cn.fn, overwrite = opt$overwrite)){
+    if (check_file(genes_cn.fn, overwrite = opt$overwrite, verbose = opt$verbose)){
         genes_cn_annotated = readRDS(genes_cn.fn)
     } else {
         kag_rds = gsub("jabba.simple.rds", "karyograph.rds", opt$jabba_rds)
@@ -274,15 +257,14 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
         genes_cn_annotated = get_gene_ampdel_annotations(genes_cn, amp.thresh = opt$amp_thresh,
                                                          del.thresh = opt$del_thresh)
 
-
-
         #' zchoo Wednesday, May 12, 2021 04:17:06 PM
         #' integrate RNA expression data with genes data
         if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {            
-            message("Done computing quantiles")
             genes_cn_annotated = merge.data.table(genes_cn_annotated,
                                                   melted.expr[pair == opt$pair,
-                                                              .(gene_name = gene, expr.quantile = qt, expr.value = value)],
+                                                              .(gene_name = gene,
+                                                                expr.quantile = qt,
+                                                                expr.value = value)],
                                                   by = "gene_name",
                                                   all.x = TRUE)
             message("Done merging")
@@ -290,10 +272,8 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
             genes_cn_annotated[, ":="(expr.quantile = NA, expr.value = NA)]
         }
 
-        ## add over/under expression annotations
-        qt.thres = 0.05 ## expose this parameter later
-        genes_cn_annotated[expr.quantile < qt.thres, expr := "under"]
-        genes_cn_annotated[expr.quantile > (1 - qt.thres), expr := "over"]
+        genes_cn_annotated[expr.quantile < opt$quantile_thresh, expr := "under"]
+        genes_cn_annotated[expr.quantile > (1 - opt$quantile_thresh), expr := "over"]
 
         ## save annotated genes
         saveRDS(genes_cn_annotated, genes_cn.fn)
@@ -332,11 +312,9 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
 
     message("Prepare coverage data")
     cvgt_fn = paste0(opt$outdir, "/coverage.gtrack.rds")
-    if (check_file(cvgt_fn, overwrite = opt$overwrite)){
+    if (check_file(cvgt_fn, overwrite = opt$overwrite, verbose = opt$verbose)){
         cvgt = readRDS(cvgt_fn)
     } else {
-        ## pull coverage file from jabba_rds (no, the user shoudl supply the coverage)
-        ## cov.file = readRDS(file.path(dirname(opt$jabba_rds), "cmd.args.rds"))$coverage
         cov.file = opt$cbs_cov_rds
         cvgt = covcbs(cov.file, purity = jabba$purity, ploidy = jabba$ploidy, rebin = 5e3,
                       ylab = "CN", y.cap = FALSE, xaxis.chronly = TRUE)
@@ -366,7 +344,8 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
 
     wgs.gtrack.fname = file.path(opt$outdir, "wgs.gtrack.png")
     wgs.circos.fname = file.path(opt$outdir, "wgs.circos.png")
-    if (opt$overwrite | !file.exists(wgs.gtrack.fname)) {
+    if (!check_file(wgs.gtrack.fname, opt$overwrite, opt$verbose)) {
+
         message("Generating whole-genome gTrack plots")
         ## synchronize y0 and y1 of cvgt and agt
         y0 = 0
@@ -409,11 +388,13 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
              filename  = wgs.gtrack.fname,
              height = 1000,
              width = 5000)
+        
     } else {
         message("Whole genome gTracks already exist")
     }
 
-    if (opt$overwrite | !file.exists(wgs.circos.fname)) {
+    if (!check_file(wgs.circos.fname, opt$overwrite, opt$verbose)) {
+        
         message("Generating whole-genome circos plot")
         ppng(wgs.circos(junctions = gg$junctions[type == "ALT"],
                         cov = cvgt@data[[1]],
@@ -424,6 +405,7 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
              filename = wgs.circos.fname,
              height = 850,
              width = 1000)
+        
     } else {
         message("Whole genome circos plot already exists")
     }
@@ -432,80 +414,116 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
     ## Driver gene mutations
     ## ##################
     driver.mutations.fname = file.path(opt$outdir, "driver.mutations.txt")
-    snv.bcf.fname = file.path(opt$outdir, "snpeff", "snv", "annotated.bcf")
-    indel.bcf.fname = file.path(opt$outdir, "snpeff", "indel", "annotated.bcf")
-    if (opt$overwrite | !file.exists(driver.mutations.fname)) {
+    ## snv.bcf.fname = file.path(opt$outdir, "snpeff", "snv", "annotated.bcf")
+    ## indel.bcf.fname = file.path(opt$outdir, "snpeff", "indel", "annotated.bcf")
+    if (check_file(driver.mutations.fname, opt$overwrite, opt$verbose)) {
+        message("Driver mutation analysis already exists.")
+    } else {
 
         ## ################
         ## read cgc gene list
         ## ################
         
-        cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers),
+        cgc.fname = ifelse(!file.good(opt$drivers),
                            file.path(opt$libdir, "data", "cancerGeneList.tsv"),
                            opt$drivers)
 
-        ## ################
-        ## run SnpEff
-        ## ################
-        
-        if ( (!is.null(opt$snpeff_snv)) && file.exists(opt$snpeff_snv)) {
 
-            message("Running SNV SnpEff")
-            snpeff.libdir = normalizePath(file.path(opt$libdir, "SnpEff_module"))
-            snpeff.ref = opt$ref
-            snpeff.vcf = normalizePath(opt$snpeff_snv)
-            snpeff.outdir = normalizePath(file.path(opt$outdir, "snpeff", "snv"))
-            snpeff.config = normalizePath(opt$snpeff_config)
-
-            snpeff.cm = paste("sh", file.path(snpeff.libdir, "run.sh"),
-                              snpeff.libdir,
-                              snpeff.ref,
-                              snpeff.vcf,
-                              snpeff.outdir,
-                              snpeff.config)
-
-            system(snpeff.cm)
+        ## check if SNPEFF needs to be run for SNVs
+        if (file.good(opt$snpeff_snv_bcf)) {
+            message("snpEff snv supplied. Filtering for oncogenes/TSGs.")
 
             ## grab annotations
-            snv.dt = filter.snpeff(vcf = snv.bcf.fname, ##opt$snpeff_snv,
+            snv.dt = filter.snpeff(vcf = opt$snpeff_snv_bcf,
                                    gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
                                    cgc.fname = cgc.fname,
                                    ref.name = opt$ref,
-                                   verbose = TRUE)            
+                                   verbose = TRUE)
+
         } else {
-            message("SNV vcf does not exist")
-            snv.dt = NULL
+        
+            if (file.good(opt$snv_vcf)) {
+
+                message("Running SNV SnpEff")
+                snpeff.libdir = normalizePath(file.path(opt$libdir, "SnpEff_module"))
+                snpeff.ref = opt$ref
+                snpeff.vcf = normalizePath(opt$snv_vcf)
+                snpeff.outdir = normalizePath(file.path(opt$outdir, "snpeff", "snv"))
+                snpeff.config = normalizePath(opt$snpeff_config)
+
+                snpeff.cm = paste("sh", file.path(snpeff.libdir, "run.sh"),
+                                  snpeff.libdir,
+                                  snpeff.ref,
+                                  snpeff.vcf,
+                                  snpeff.outdir,
+                                  snpeff.config)
+
+                system(snpeff.cm)
+
+                opt$snpeff_snv_bcf = snv.bcf.fname
+                saveRDS(opt, "cmd.args.rds")
+
+                ## grab annotations
+                snv.dt = filter.snpeff(vcf = opt$snpeff_snv_bcf,
+                                       gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                       cgc.fname = cgc.fname,
+                                       ref.name = opt$ref,
+                                       verbose = TRUE)
+                
+            } else {
+                message("SNV vcf does not exist or is empty")
+                snv.dt = NULL
+            }
+
+        }
+
+        ## check if SNPEFF needs to be run for indels
+        if (file.good(opt$snpeff_indel_bcf)) {
+            message("snpEff snv supplied. Filtering for oncogenes/TSGs.")
+
+            ## grab annotations
+            indel.dt = filter.snpeff(vcf = opt$snpeff_indel_bcf,
+                                   gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                   cgc.fname = cgc.fname,
+                                   ref.name = opt$ref,
+                                   verbose = TRUE)
+        } else {
+
+        
+            if (file.good(opt$indel_vcf)) {
+
+                message("Running SNV SnpEff")
+                snpeff.libdir = normalizePath(file.path(opt$libdir, "SnpEff_module"))
+                snpeff.ref = opt$ref
+                snpeff.vcf = normalizePath(opt$indel_vcf)
+                snpeff.outdir = normalizePath(file.path(opt$outdir, "snpeff", "snv"))
+                snpeff.config = normalizePath(opt$snpeff_config)
+
+                snpeff.cm = paste("sh", file.path(snpeff.libdir, "run.sh"),
+                                  snpeff.libdir,
+                                  snpeff.ref,
+                                  snpeff.vcf,
+                                  snpeff.outdir,
+                                  snpeff.config)
+
+                system(snpeff.cm)
+
+                opt$snpeff_indel_bcf = indel.bcf.fname
+                saveRDS(opt, "cmd.args.rds")
+
+                ## grab annotations
+                indel.dt = filter.snpeff(vcf = opt$snpeff_indel_bcf,
+                                       gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                       cgc.fname = cgc.fname,
+                                       ref.name = opt$ref,
+                                       verbose = TRUE)
+                
+            } else {
+                message("Indel vcf does not exist or is empty")
+                indel.dt = NULL
+            }
         }
         
-        if ( (!is.null(opt$snpeff_indel)) && file.exists(opt$snpeff_indel)) {
-
-            message("Running indel SnpEff")
-            snpeff.libdir = file.path(opt$libdir, "SnpEff_module")
-            snpeff.ref = opt$ref
-            snpeff.vcf = opt$snpeff_indel
-            snpeff.outdir = file.path(opt$outdir, "snpeff", "indel")
-            snpeff.config = normalizePath(opt$snpeff_config)
-
-            snpeff.cm = paste("sh", file.path(snpeff.libdir, "run.sh"),
-                              snpeff.libdir,
-                              snpeff.ref,
-                              snpeff.vcf,
-                              snpeff.outdir,
-                              snpeff.config)
-
-            system(snpeff.cm)
-
-            indel.dt = filter.snpeff(vcf = indel.bcf.fname, ## opt$snpeff_indel,
-                                     gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
-                                     cgc.fname = cgc.fname,
-                                     ref.name = opt$ref,
-                                     verbose = TRUE)
-
-        } else {
-            message("indel snv does not exist")
-            indel.dt = NULL
-        }
-
         if (!is.null(snv.dt) & !is.null(indel.dt)) {
             driver.mutations.dt = rbind(snv.dt, indel.dt, use.names =  TRUE, fill = TRUE)
         } else if (!is.null(snv.dt)) {
@@ -525,77 +543,83 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
         cgc = fread(cgc.fname)
         tsg = cgc[get('Is Tumor Suppressor Gene') == 'Yes', get('Hugo Symbol')]
         onc = cgc[get('Is Oncogene') == 'Yes', get('Hugo Symbol')]
+
         driver.mutations.dt[gene %in% tsg, gene.type := 'TSG']
         driver.mutations.dt[gene %in% onc, gene.type := 'ONC']
         # some genes are annotated in CGC as both
         driver.mutations.dt[gene %in% onc & gene %in% tsg, gene.type := 'ONC|TSG']
 
         fwrite(driver.mutations.dt, driver.mutations.fname)
-    } else {
-        message("Driver mutations file already exists")
-    }
+    } 
 
     ## ##################
     ## Fusions
     ## ##################
     fusions.driver.fname = file.path(opt$outdir, "fusions.driver.txt")
     fusions.other.fname = file.path(opt$outdir, "fusions.other.txt")
-    if (opt$overwrite | !file.exists(fusions.driver.fname) | !file.exists(fusions.other.fname)) {
+    if (check_file(fusions.driver.fname, opt$overwrite, opt$verbose) &
+        check_file(fusions.other.fname, opt$overwrite, opt$verbose)) {
+
+        message("Fusions analysis already exists!")
+
+    } else {
+        
         ## if opt$fusions not available, run it
-        if (!file.exists(opt$fusions) | file.size(opt$fusions)==0){
-            message('Computig fusions')
-            if (file.exists(paste0(opt$outdir, "/fusions.rds"))){
-                opt$fusions = paste0(opt$outdir, "/fusions.rds")
-            } else {
-                if (!exists("gff")){
-                    gff = skidb::read_gencode(fn = opt$gencode)
-                }
-                fu = fusions(gg, gff)
-                saveRDS(fu, paste0(opt$outdir, "/fusions.rds"))
-                opt$fusions = paste0(opt$outdir, "/fusions.rds")
-                saveRDS(opt, "cmd.args.rds")
-            }
-        } else {
-            message('Found fusion calls: ', opt$fusions)
+        if (check_file(opt$fusions, overwrite = FALSE, verbose = opt$verbose)) {
             fu = readRDS(opt$fusions)
-        }
-        message("Preparing fusion genes report")
-        if (length(fu)>0){
-            ## grab name of driver genes file
-            cgc.fname = ifelse(is.null(opt$drivers) || is.na(opt$drivers), file.path(opt$libdir, "data", "cgc.tsv"), opt$drivers)
-            fusions.slickr.dt = fusion.wrapper(fusions.fname = opt$fusions,
-                                               complex.fname = opt$complex,
-                                               cvgt.fname = cvgt_fn,
-                                               agt.fname = agt_fn,
-                                               cgc.fname = cgc.fname,
-                                               gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
-                                               pad = 0.5,
-                                               height = 900,
-                                               width = 1000,
-                                               server = opt$server,
-                                               pair = opt$pair,
-                                               outdir = opt$outdir)
+        } else {
+            
+            warning('Fusions were not supplied! Computing fusions can be time/memory intensive')
 
-            ## make sure data table is not empty
-            if (nrow(fusions.slickr.dt) == 0) {
-
-                ## write empty data table, rmd file will deal with this.
-                fwrite(fusions.slickr.dt, fusions.driver.fname)
-                fwrite(fusions.slickr.dt, fusions.other.fname)
+            if (!exists("gff")){
                 
-            } else {
-
-                ## save data table for drivers and non-drivers separately
-                fwrite(fusions.slickr.dt[driver == TRUE,], fusions.driver.fname)
-                fwrite(fusions.slickr.dt[driver == FALSE,], fusions.other.fname)
-
+                gff = skidb::read_gencode(fn = opt$gencode)
             }
             
-        }
-    } else {
-            message("Fusion files already exist")
-    }
+            fu = fusions(gg, gff)
+            saveRDS(fu, paste0(opt$outdir, "/fusions.rds"))
+            opt$fusions = paste0(opt$outdir, "/fusions.rds")
+            saveRDS(opt, "cmd.args.rds")
 
+        }
+            
+        message("Preparing fusion genes report")
+        
+        ## grab name of driver genes file
+        if (file.good(opt$drivers)) {
+            cgc.fname = opt$drivers
+        } else {
+            cgc.fname = file.path(opt$libdir, "data", "cgc.tsv")
+        }
+        
+        fusions.slickr.dt = fusion.wrapper(fusions.fname = opt$fusions,
+                                           complex.fname = opt$complex,
+                                           cvgt.fname = cvgt_fn,
+                                           agt.fname = agt_fn,
+                                           cgc.fname = cgc.fname,
+                                           gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                           pad = 0.5,
+                                           height = 900,
+                                           width = 1000,
+                                           server = opt$server,
+                                           pair = opt$pair,
+                                           outdir = opt$outdir)
+
+        ## make sure data table is not empty
+        if (nrow(fusions.slickr.dt) == 0) {
+
+            ## write empty data table, rmd file will deal with this.
+            fwrite(fusions.slickr.dt, fusions.driver.fname)
+            fwrite(fusions.slickr.dt, fusions.other.fname)
+            
+        } else {
+
+            ## save data table for drivers and non-drivers separately
+            fwrite(fusions.slickr.dt[driver == TRUE,], fusions.driver.fname)
+            fwrite(fusions.slickr.dt[driver == FALSE,], fusions.other.fname)
+
+        }
+    }
     
     
     ## ##################
@@ -671,15 +695,10 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
                                        gene %in% tsg ~ "TSG",
                                        TRUE ~ NA_character_)]
         
-        ## melt to analyze
-        ## melted.expr = data.table::melt(tpm_cohort, id.vars = c("gene", "role"),
-        ##                         variable.name = "pair")
-        ## melted.expr[, ":="(qt = rank(as.double(.SD$value))/.N), by = gene]
         
         ## TODO: make the quantile threshold adjustable
-        cool.exp = melted.expr[!is.na(value)][pair==opt$pair][(role=="TSG" & qt<0.05) | (role=="ONC" & qt>0.95)]
-        ## cool.exp[order(qt)]
-
+        cool.exp = melted.expr[!is.na(value)][pair==opt$pair][(role=="TSG" & qt < opt$quantile_thresh) |
+                                                              (role=="ONC" & qt> opt$quantil_thresh)]
         
         if (nrow(cool.exp)>0){
             cool.exp[, direction := ifelse(qt>0.95, "over", "under")]
@@ -1087,7 +1106,7 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
     ## summarize
     ## #################
     summary.fn = normalizePath(file.path(opt$outdir, "summary.rds"))
-    if (!file.exists(summary.fn) | opt$overwrite) {
+    if (check_file(summary.fn, opt$overwrite, opt$verbose)) {
         message("Computing CN/mutation summary")
         summary.list = create.summary(jabba_rds = opt$jabba_rds,
                                       snv_vcf = opt$snpeff_snv,
@@ -1105,7 +1124,7 @@ if (!file.exists(allele.scatter.fname) || opt$overwrite) {
     ## ################
 
     oncotable.fn = file.path(opt$outdir, "oncotable.txt")
-    if (!file.exists(oncotable.fn) | opt$overwrite) {
+    if (check_file(oncotable_fn, opt$overwrite, opt$verbose)) {
 
         message("Preparing oncotable...")
         oncotable.input = data.table(pair = opt$pair,
