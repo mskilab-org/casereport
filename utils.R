@@ -2262,7 +2262,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
     out = data.table()
 
     ## collect RNA data if it exists
-    if (!is.null(dat[x, rna]) && file.exists(dat[x, rna])) {
+    if (file.good(dat[x, rna])) {
         if (verbose) {
             message("pulling RNA for ", x)
         }
@@ -2301,7 +2301,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
       out = rbind(out, data.table(id = x, type = NA, source = 'fusions'), fill = TRUE, use.names = TRUE)
 
     ## collect complex events
-    if (!is.null(dat$complex) && file.exists(dat[x, complex]))
+    if (file.good(dat$complex))
     {
       if (verbose)
         message('pulling $complex events for ', x)
@@ -2365,7 +2365,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
       out = rbind(out, data.table(id = x, type = NA, source = 'jabba_rds'), fill = TRUE, use.names = TRUE)
     }
 
-    if (!is.null(dat$proximity) && file.exists(dat[x, proximity]) && !(dat[x, proximity] == "/dev/null")  && nrow(readRDS(dat[x, proximity])$dt)) {
+    if (file.good(dat[x, proximity]) && nrow(readRDS(dat[x, proximity])$dt)) {
         if (verbose)
             message('Processing proximity results.')
         proximity.dt = readRDS(opt$proximity)$dt[reldist < max.reldist & refdist > min.refdist,]
@@ -2386,7 +2386,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
     }
 
 
-    if (!is.null(dat$deconstruct_sigs) && file.exists(dat[x, deconstruct_sigs]) & !(dat[x, deconstruct_sigs] == "/dev/null")) {
+    if (file.good(dat[x, deconstruct_sigs])) {
       if (verbose)
         message('pulling $deconstruct_sigs for ', x)
       sig = readRDS(dat[x, deconstruct_sigs])
@@ -2401,7 +2401,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
     }
 
     ## collect gene mutations
-    if (!is.null(dat$annotated_bcf) && file.exists(dat[x, annotated_bcf]))
+    if (file.good(dat$annotated_bcf))
     {
       if (verbose)
         message('pulling $annotated_bcf for ', x, ' using FILTER=', filter)
