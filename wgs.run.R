@@ -168,8 +168,8 @@ if (!opt$knit_only){
                               pair = opt$pair,
                               gngt.fname = ge.data)
 
-        if (check_file(tpm.tpm.cohort.fname, opt$overwrite, verbose = opt$verbose)) {
-            tpm.cohort = readRDS(tpm.tpm.cohort.fname)
+        if (check_file(tmp.tpm.cohort.fname, opt$overwrite, verbose = opt$verbose)) {
+            tpm.cohort = readRDS(tmp.tpm.cohort.fname)
         } else {
             tpm.cohort = data.table::fread(opt$tpm_cohort, header = TRUE)
             
@@ -381,8 +381,10 @@ if (!opt$knit_only){
         }
 
         ## browser()
-        seqs = c(as.character(1:22), "X", "Y")
-        plot.chrs = intersect(seqlevels(gg), c(paste0('chr', seqs), seqs))
+        ## check gTrack specifically
+        plot.chrs = grep("(^(chr)*[0-9XY]+$)", seqlevels(gt@data[[1]]), value = TRUE)
+        ## seqs = c(as.character(1:22), "X", "Y")
+        ## plot.chrs = intersect(seqlevels(gg), c(paste0('chr', seqs), seqs))
         if (length(plot.chrs) == 0){
             stop('None of the sequences in your genome graph matches the default set of sequences.')
         }
