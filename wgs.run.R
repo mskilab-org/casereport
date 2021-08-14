@@ -19,8 +19,10 @@ if (!exists("opt")){
         make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample (raw kallisto output acceptable)"),
         make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
         make_option(c("--hrd_results"), type = "character", default = NA_character_, help = "The comprehensive HRDetect module results"),
-        make_option(c("--snpeff_snv"), type = "character", default = NA_character_, help = "snpeff snv results"),
-        make_option(c("--snpeff_indel"), type = "character", default = NA_character_, help = "snpeff indel results"),
+        make_option(c("--snv_vcf"), type = "character", default = NA_character_, help = "SNV vcf file (e.g. strelka)"),
+        make_option(c("--indel_vcf"), type = "character", default = NA_character_, help = "indel vcf file (e.g. strelka)"),
+        make_option(c("--snpeff_snv_bcf"), type = "character", default = NA_character_, help = "snpeff snv results )bcf)"),
+        make_option(c("--snpeff_indel_bcf"), type = "character", default = NA_character_, help = "snpeff indel results (bcf)"),
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
         make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
@@ -36,7 +38,7 @@ if (!exists("opt")){
         make_option(c("--snpeff_config"), type = "character", default = "~/modules/SnpEff/snpEff.config", help = "snpeff.config file path"),
         make_option(c("--cohort_metadata"), type = "character", default = NA_character_, help = "Metadata of the background cohort"),
         make_option(c("--pmkb_interpretations"), type = "character", default = NA_character_, help = "Path to CVS with PMKB interpretations. If not provided, then a default table will be used (in data/pmkb-interpretations-06-11-2021.csv). See https://pmkb.weill.cornell.edu/about for details about PMKB."),
-        make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir")
+        make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir"),
         make_option(c("--verbose"), type = "logical", default = TRUE, action = "store_true", help = "Be verbose and write more messages during the process of producing the report."),
         make_option(c("--quantile_thresh"), type = "numeric", default = 0.05, help = "threshold for quantile for RNA expression")
     )
@@ -698,7 +700,7 @@ if (!opt$knit_only){
         
         ## TODO: make the quantile threshold adjustable
         cool.exp = melted.expr[!is.na(value)][pair==opt$pair][(role=="TSG" & qt < opt$quantile_thresh) |
-                                                              (role=="ONC" & qt> opt$quantil_thresh)]
+                                                              (role=="ONC" & qt> opt$quantile_thresh)]
         
         if (nrow(cool.exp)>0){
             cool.exp[, direction := ifelse(qt>0.95, "over", "under")]
@@ -1132,7 +1134,7 @@ if (!opt$knit_only){
                                      fusions = opt$fusions,
                                      complex = opt$complex,
                                      scna = genes_cn.fn, ## custom SCNA table with event info
-                                     annotated_bcf = file.path(opt$outdir, "snv", "annotated.bcf"),
+                                     annotated_bcf = opt$snpeff_indel_bcf,
                                      rna = cool.exp.fn,
                                      proximity = opt$proximity,
                                      deconstruct_sigs = opt$deconstruct_sigs,
