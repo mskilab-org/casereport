@@ -2290,10 +2290,7 @@ pp_plot = function(jabba_rds = NULL,
     if (verbose) {
         message("Saving results to: ", normalizePath(output.fname))
     }
-    
-    ppng(print(pt), filename = normalizePath(output.fname), height = height, width = width)
-
-    return(output.fname)
+    return(pt) ##ppng(print(pt), filename = normalizePath(output.fname), height = height, width = width)
 }
 
 #' @name oncotable
@@ -2672,3 +2669,49 @@ plot_expression_histograms = function(rna.change.fn = NULL,
     return(plot.dt)
 }
 
+#' @name wgs_gtrack
+#' @title wgs_gtrack
+#'
+#' @param jabba_rds (character) path to jabba
+#' @param cvgt.fname (character) coverage gTrack
+#' @param agt.fname (character) allele gtrack
+#'
+#' @return gTrack object with nice formatting
+wgs_gtrack = function(jabba_rds, cvgt.fname, agt.fname = NULL) {
+
+    gg = gG(jabba = jabba_rds)
+    cvgt = readRDS(cvgt.fname)
+
+    y0 = 0
+    gg.max.cn = max(gg$nodes$dt[!is.na(cn) & !is.infinite(cn), cn], na.rm = TRUE)
+    y1 = gg.max.cn + 1
+    
+    ## gGraph gTrack formatting
+    gg.gt = gg$gt
+    gg.gt$yaxis.pretty = 4
+    gg.gt$ylab = "CN"
+    gg.gt$y0 = 0
+    gg.gt$y1 = y1
+    gg.gt$gap = 1e7 ## gap between chromosomes
+
+    ## coverage gTrack formatting
+    cvgt$yaxis.pretty = 4
+    cvgt$y0 = 0
+    cvgt$y1 = y1
+    
+    if (!file.good(agt.fname)) {
+        gt = c(cvgt, gg.gt)
+    } else {
+
+        agt = readRDS(agt.fname)
+
+        ## agtrack formatting
+        agt$y0 = 0
+        agt$y1 = y1
+        agt$yaxis.pretty = 4
+
+        ## concatenate with agt
+        gt = c(agt, cvgt, gg.gt)
+    }
+    return(gt)
+}

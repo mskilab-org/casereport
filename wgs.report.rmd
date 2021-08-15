@@ -413,29 +413,25 @@ hijacking_. We identify such pairs of gene-enhancer where they are >5Mbp
 away in the reference genome while potentially <1Mbp in the rearranged genome.
 
 ```{r, enhancer hijacking, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
-prox.plots = dir(params$outdir, "proximity.png$", full.names = TRUE)
-if (length(prox.plots)>0){
-    for (prox.plot in prox.plots){
-        g = gsub(".proximity.png", "", basename(prox.plot))
-        cat("## ", g, "\n<br>\n")
-        cat(
-            paste0(
-                '<p float="left">',
-                '<img src="',
-                prox.plot,
-                '" width="45%" />',
-                '<img src="',
-                cool.exp[g, gf],
-                '" width="45%" />',
-                '</p>'
-            )
-        )
-        ## cat(
-        ##     paste0("![](", prox.plot,")"), "\n\n"
-        ## )
-        cat('\n', '<br>', '\n\n')
-    }
+proximity.gallery.dt = fread(paste0(params$outdir, "/", "proximity.gallery.txt"))
+expr.histograms.dt = fread(paste0(params$outdir, "/", "expr.histograms.txt"))
+
+gns = intersect(proximity.gallery.dt$gene, expr.histograms.dt$gene)
+for (g in gns) {
+    cat("## ", g, "\n<br>\n")
+    cat(
+	paste0(
+	'<p float="left">',
+	'<img src="',
+	proximity.gallery.dt[gene == g, plot.fname],
+	'" width="45%" />',
+	'<img src="',
+	expr.histograms.dt[gene == g, expr.hist.fname],
+	'" width="45%" />',
+	'</p>')
+    )
 }
+cat('\n', '<br>', '\n\n')
 ```
 ***
 # Loose ends

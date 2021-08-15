@@ -1,12 +1,12 @@
 #Module casereport ("<libdir>run.sh <libdir>wgs.run.R --libdir <libdir> --pair <pair> --jabba_rds <jabba_rds> --cbs_cov_r...")
 ~/git/casereport
 input	pair	 pair  value
-input	jabba_rds	 jabba_rds  path
-input	complex	 complex  path	    /dev/null
-input	fusions	fusions	path	/dev/null
+input	jabba_rds	 jabba_rds	path
+input	cbs_cov_rds	 cbs_cov_rds	path
+input	fusions		 fusions	path
+input	complex		 complex	path
 input	proximity	proximity.rds	path	/dev/null
 input	enhancer	enhancer	path	~/DB/Pubs/Hnisz2013/rd.se.1e4.rds
-input	cbs_cov_rds	 cbs_cov_rds  path	/dev/null
 input	het_pileups_wgs	het_pileups_wgs	path	/dev/null
 input	deconstruct_sigs	 deconstruct_sigs  path	/dev/null
 input	deconstruct_variants	 deconstruct_variants  path	/dev/null
