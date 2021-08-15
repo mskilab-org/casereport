@@ -1161,8 +1161,8 @@ grab.agtrack = function(agt.fname = NULL,
     return (agt)
 }
 
-#' @name rna.quantile
-#' @title rna.quantile
+#' @name rna_quantile
+#' @title rna_quantile
 #'
 #' @description
 #'
@@ -1173,7 +1173,7 @@ grab.agtrack = function(agt.fname = NULL,
 #' @param tpm.pair file path of data.table with column gene, pair
 #'
 #' @return data table with column gene and quantile representing expression quantile for the pair of interest relative to rest of cohort
-rna.quantile = function(tpm.cohort, pair, tpm.pair = NULL) {
+rna_quantile = function(tpm.cohort, pair, tpm.pair = NULL) {
     ## this is now a required argument
     ## if (is.null(pair)) {
     ##     stop("must supply pair")
@@ -1224,6 +1224,106 @@ rna.quantile = function(tpm.cohort, pair, tpm.pair = NULL) {
     return(melted.tpm.cohort[!is.na(value)])
 }
 
+#' @name deconstructsigs_histogram
+#' @title deconstructsigs_histogram
+#'
+#' @description
+#'
+#' TODO
+#'
+#' create histogram plot for deconstructSigs
+#' 
+#' @param sigs.fn (character) deconstructSigs results path
+#' @param sigs.cohort.fn (character) path to cohort
+#' @param pair (character)
+#' @param cohort.type (character) e.g. supplied, Cell, tumor type ( actually optional )
+#' @param ... additional params passed ppng
+#'
+#' @return histogram which you can then ppng etc.
+deconstructsigs_histogram = function(sigs.fn = NULL,
+                                     sigs.cohort.fn = NULL,
+                                     id = "",
+                                     cohort.type = "",
+                                     ...) {
+
+    allsig = data.table::fread(sigs.cohort.fn)
+    allsig = data.table::melt(allsig, id = "pair", variable.name = "Signature", value.name = "sig_count")
+
+    ## counts of variants for just this pair
+    var = fread(sigs.fn)[nchar(max.post)>0]
+    sct = var[, .(sig_count = .N), by = .(Signature = max.post)]
+    sct[, pair := id]
+
+    ## recast as character to avoid releveling for now
+    allsig[, Signature := as.character(Signature)]
+    sct[, Signature := as.character(Signature)]
+
+    if (opt$pair %in% allsig[, pair]){
+        ## remove existing record from the cohort first
+        allsig = allsig[pair != id]
+    }
+
+    allsig = rbind(allsig, sct)
+    
+    ## calculate percentile
+    allsig[, perc := rank(.SD$sig_count)/.N, by = Signature]
+
+    ## highlight the tracks where the signature is non-zero in this sample
+    allsig = allsig[!is.na(Signature) & (Signature %in% sct$Signature)]
+
+    ## only keep seqlevels with nonzero variants in this pair
+    keep.slevels = allsig[pair == id, Signature] %>% as.character
+    allsig = allsig[!is.na(Signature) & Signature %in% keep.slevels,]
+    allsig[, Signature := gsub("Signature.", "", Signature)]
+
+    ## reorder seqlevels by count
+    new.slevels = allsig[pair == id,][order(sig_count), Signature]
+    allsig[, Signature := factor(Signature, levels = new.slevels)]
+
+    sigbar = ggplot(allsig, aes(y = Signature, x = sig_count, fill = Signature)) +
+        geom_density_ridges(bandwidth = 0.1,
+                            alpha = 0.5,
+                            scale = 0.9,
+                            rel_min_height = 0.01,
+                            color = NA,
+                            jittered_points = TRUE,
+                            position = position_points_jitter(width = 0.01, height = 0),
+                            point_shape = '|',
+                            point_size = 3,
+                            point_alpha = 0.3,
+                            point_colour = "black") +
+        geom_segment(data = allsig[pair==id & sig_count>0],
+                     aes(x = sig_count, xend = sig_count,
+                         y = as.numeric(Signature), yend = as.numeric(Signature) + 0.9),
+                     color = "red", size = 1, alpha = 0.5) +
+        geom_label(data = allsig[pair == id],
+                   aes(x = sig_count, y = as.numeric(Signature) + 0.8,
+                       label = paste0("qt ", format(perc * 100, digits = 2), "%")),
+                   nudge_x = 0.2,
+                   hjust = "left",
+                   color = "black",
+                   label.size = 0,
+                   alpha = 0.5) +
+        scale_x_continuous(trans = "log1p",
+                           breaks = c(0, 1, 10, 100, 1000, 10000, 100000),
+                           labels = c(0, 1, 10,
+                                      expression(10^2),
+                                      expression(10^3),
+                                      expression(10^4),
+                                      expression(10^5)),
+                           limits = c(0, 100000)) +
+        labs(title = paste0("Signatures vs. ", cohort.type, " background"), x = "Burden") +
+        theme_minimal() +
+        theme(legend.position = "none",
+              title = element_text(size = 20, family = "sans"),
+              axis.title = element_text(size = 20, family = "sans"),
+              axis.text.x = element_text(size = 15, family = "sans"),
+              axis.text.y = element_text(size = 20, family = "sans"))
+    
+    return(sigbar)
+}
+    
+
 #' @name rna.waterfall.plot
 #' @title rna.waterfall.plot
 #'
@@ -1231,39 +1331,24 @@ rna.quantile = function(tpm.cohort, pair, tpm.pair = NULL) {
 #'
 #' create waterfall plot
 #' 
-#' @param tpm.cohort file path data.table with id column gene and other columns representing pairs
+#' @param tpm.quantiles.fn file path data.table with column gene and tpm
+#' @param rna.change.fn (character) genes with chagne in RNA expression
 #' @param pair character pair of interest. must be a column in tpm.cohort if tpm.pair is NULL
-#' @param tpm.pair file path of data.table with column gene, pair
-#' @param out.fn output file name
-#' @param genes.to.label (character) label these genes
 #'
 #' @return creates a plot
-rna.waterfall.plot = function(melted.expr,
-                              pair,
-                              out.fn = NULL,
-                              genes.to.label = NULL,
-                              ...) {
+rna.waterfall.plot = function(melted.expr.fn,
+                              rna.change.fn,
+                              pair) {
 
-    ## if (is.null(pair)) {
-    ##     stop("must supply pair")
-    ## }
-    ## tpm.cohort = data.table::fread(tpm.cohort, header = TRUE)
-    ## tpm.pair = data.table::fread(tpm.pair, header = TRUE)
-    
-    ## if (!is.null(tpm.pair)) {
-    ##     if (pair %in% colnames(tpm.cohort)) {
-    ##         tpm.cohort[[pair]] = NULL ## overwite pair if it exists
-    ##         tpm.cohort = merge.data.table(tpm.cohort, tpm.pair, by = "gene", all.x = TRUE)
-    ##     } else {
-    ##         tpm.cohort = merge.data.table(tpm.cohort, tpm.pair, by = "gene", all.x = TRUE)
-    ##     }
-    ## }
-    ## if (!(pair %in% colnames(tpm.cohort))) {
-    ##     stop("pair must be in tpm.cohort columns")
-    ## }
-    ## melted.tpm.cohort = data.table::melt(tpm.cohort,
-    ##                                      id.vars = c("gene"),
-    ##                                      variable.name = "pair")
+    rna.change = fread(rna.change.fn, header = TRUE)
+    if (!("gene" %in% colnames(rna.change))) {
+        warning("Genes to label must contain column $gene")
+        genes.to.label = c()
+    } else {
+        genes.to.label = rna.change[, gene]
+    }
+
+    melted.expr = fread(melted.expr.fn, header = TRUE)
 
     ## compute zscores
     melted.expr[, value := as.double(value)]
@@ -1283,22 +1368,22 @@ rna.waterfall.plot = function(melted.expr,
         ds[, gene.label := ifelse(as.character(gene) %in% genes.to.label,
                                   as.character(gene), NA)]
         ds[gene %in% genes.to.label, role := "onc"]
-        ds[gene %in% genes.to.label, label.y := ifelse(zs > 0,
-                                                       zs + 0.1,
-                                                       zs - 0.1)]
+        ds[gene %in% genes.to.label, label.y := ifelse(zs > 0, zs + 0.1, zs - 0.1)]
         
     } else {
         ds[, gene.label := NA]
         ds[, role := NA]
         ds[, label.y := NA]
     }
+    
     pt = ggplot(ds, aes(x = gene, y = zs)) +
         geom_bar(stat = "identity", width = 1) +
         geom_label_repel(mapping = aes(label = gene.label,
                                        x = as.numeric(gene),
                                        y = label.y),
                          data = ds[!is.na(gene.label)],
-                         alpha = 0.8)
+                         alpha = 0.8,
+                         max.overlaps = 100)
 
     pad = nrow(ds) * 0.05
     pt = pt +
@@ -1315,7 +1400,7 @@ rna.waterfall.plot = function(melted.expr,
               panel.grid.minor = element_blank(),
               plot.margin=unit(c(1,1,1,1),"cm"))
 
-    ppng(print(pt), filename = out.fn)
+    return(pt)
 }
 
 
@@ -1672,7 +1757,7 @@ rna_reformat = function(kallisto.fname,
     }
 
     ## grab correct gene for target id
-    if (is.character(gngt.fname) && file.good(gngt.fname)){
+    if (file.good(gngt.fname)){
         ge.data = stack(readRDS(gngt.fname)@data[[1]])
     } else if (inherits(gngt.fname, "GRanges")){
         ge.data = gngt.fname
@@ -2255,196 +2340,335 @@ pp_plot = function(jabba_rds = NULL,
 #' @param verbose logical flag 
 #' @author Marcin Imielinski
 
-oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, filter = 'PASS', del.thresh = 0.5, max.reldist = 0.25, min.refdist = 5e6, mc.cores = 1)
-{
-  .oncotable = function(dat, x = dat[[key(dat)]][1], pge = NULL, verbose = TRUE, amp.thresh = 4, del.thresh = 0.5, filter = 'PASS', max.reldist = 0.25, min.refdist = 5e6)
-  {
-    out = data.table()
+oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, filter = 'PASS', del.thresh = 0.5, max.reldist = 0.25, min.refdist = 5e6, mc.cores = 1) {
+    require(skitools)
+    .oncotable = function(dat, x = dat[[key(dat)]][1], pge = NULL, verbose = TRUE, amp.thresh = 4, del.thresh = 0.5, filter = 'PASS', max.reldist = 0.25, min.refdist = 5e6)
+    {
+        out = data.table()
 
-    ## collect RNA data if it exists
-    if (file.good(dat[x, rna])) {
-        if (verbose) {
-            message("pulling RNA for ", x)
-        }
-        rna.dt = readRDS(dat[x, rna])
-        if (nrow(rna.dt)) {
-            rna = rna.dt[, .(gene, value, role, quantile = qt, id = x,
-                             type = ifelse(grepl("over", direction, ignore.case = TRUE), "overexpression",
-                                           ifelse(grepl("under", direction, ignore.case = TRUE),
-                                                  "underexpression",
-                                                  NA_character_)),
-                             track = "expression", source = "rna")]
-            out = rbind(out, rna, fill = TRUE, use.names = TRUE)
+        ## collect RNA data if it exists
+        if (file.good(dat[x, rna])) {
+            if (verbose) {
+                message("pulling RNA for ", x)
+            }
+            rna.dt = readRDS(dat[x, rna])
+            if (nrow(rna.dt)) {
+                rna = rna.dt[, .(gene, value, role, quantile = qt, id = x,
+                                 type = ifelse(grepl("over", direction, ignore.case = TRUE), "overexpression",
+                                        ifelse(grepl("under", direction, ignore.case = TRUE),
+                                               "underexpression",
+                                               NA_character_)),
+                                 track = "expression", source = "rna")]
+                out = rbind(out, rna, fill = TRUE, use.names = TRUE)
+            } else {
+                out = rbind(out, data.table(id = x, type = NA, source = "rna"), fill = TRUE, use.names = TRUE)
+            }
         } else {
             out = rbind(out, data.table(id = x, type = NA, source = "rna"), fill = TRUE, use.names = TRUE)
         }
-    } else {
-        out = rbind(out, data.table(id = x, type = NA, source = "rna"), fill = TRUE, use.names = TRUE)
-    }
 
-    ## collect gene fusions
-    if (!is.null(dat$fusions) && file.exists(dat[x, fusions]))
-    {
-      if (verbose)
-        message('pulling $fusions for ', x)
-      fus = readRDS(dat[x, fusions])$meta
-      if (nrow(fus))
-      {
-          fus = fus[silent == FALSE, ][!duplicated(genes), ]
-          fus[, vartype := ifelse(in.frame == TRUE, 'fusion', 'outframe_fusion')] # annotate out of frame fusions
-          fus = fus[, .(gene = strsplit(genes, ',') %>% unlist, vartype = rep(vartype, sapply(strsplit(genes, ','), length)))][, id := x][, track := 'variants'][, type := vartype][, source := 'fusions']
-          out = rbind(out, fus, fill = TRUE, use.names = TRUE)
-
-      }
-    } 
-    else ## signal missing result
-      out = rbind(out, data.table(id = x, type = NA, source = 'fusions'), fill = TRUE, use.names = TRUE)
-
-    ## collect complex events
-    if (file.good(dat$complex))
-    {
-      if (verbose)
-        message('pulling $complex events for ', x)
-      sv = readRDS(dat[x, complex])$meta$events
-      if (nrow(sv))
-      {
-        ## modified to keep individual complex SV's separate
-        ## sv = sv[, .(value = .N), by = type][, id := x][, track := ifelse(type %in% c('del', 'dup', 'invdup', 'tra', 'inv'), 'simple sv', 'complex sv')][, source := 'complex']
-          sel.cols = intersect(c("type", "ev.id", "footprint"), colnames(sv))
-          sv = sv[, ..sel.cols][, ev.type := type][, id := x][, track := ifelse(type %in% c('del', 'dup', 'invdup', 'tra', 'inv'), 'simple sv', 'complex sv')][, source := 'complex']
-          out = rbind(out, sv, fill = TRUE, use.names = TRUE)
-      }
-    }
-    else
-      out = rbind(out, data.table(id = x, type = NA, source = 'complex'), fill = TRUE, use.names = TRUE)
-
-    ## collect copy number / jabba
-    if (!is.null(dat$jabba_rds) && file.exists(dat[x, jabba_rds]))
-    {
-      if (verbose)
-        message('pulling $jabba_rds to get SCNA and purity / ploidy for ', x)
-      jab = readRDS(dat[x, jabba_rds])
-      out = rbind(out,
-                  data.table(id = x, value = c(jab$purity, jab$ploidy), type = c('purity', 'ploidy'), track = 'pp'),
-                  fill = TRUE, use.names = TRUE)
-
-      ## grabs SCNA data from pre-computed table
-      if (!is.null(dat$scna) && file.exists(dat[x, scna])) {
-          scna.dt = readRDS(dat[x, scna])
-
-          ## subset for previously annotated variants if data table is nonempty
-          if (nrow(scna.dt) && "cnv" %in% colnames(scna.dt)) {
-              scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel"),]
-          }
-
-          ## if there are any CN variants, rbind them to existing output
-          if (nrow(scna.dt)) {
-              scna = scna.dt
-              sel.cols = intersect(c("min_cn", "min_normalized_cn", "max_cn", "max_normalized_cn",
-                                     "expr.quantile", "expr.value", "ev.id", "ev.type",
-                                     "seqnames", "start", "end"),
-                                   colnames(scna))
-              out = rbind(out, scna[, ..sel.cols][, ":="(id = x,
-                                                         type = "cnv",
-                                                         track = "variants",
-                                                         vartype = "scna",
-                                                         source = "jabba_rds")],
-                          fill = TRUE, use.names = TRUE)
-              ## out = rbind(out,
-              ##             scna[, .(id = x, min_cn, min_normalized_cn, max_cn, max_normalized_cn,
-              ##                      expr.quantile, expr.value, ev.id, ev.type, seqnames, start, end,
-              ##                      type = cnv, track = "variants", vartype = "scna", source = "jabba_rds")],
-              ##             fill = TRUE)
-          } else {
-              if (verbose) {
-                  message("No SCNAs found")
-              }
-          }
-      }
-    } else {
-      out = rbind(out, data.table(id = x, type = NA, source = 'jabba_rds'), fill = TRUE, use.names = TRUE)
-    }
-
-    if (file.good(dat[x, proximity]) && nrow(readRDS(dat[x, proximity])$dt)) {
-        if (verbose)
-            message('Processing proximity results.')
-        proximity.dt = readRDS(opt$proximity)$dt[reldist < max.reldist & refdist > min.refdist,]
-        if (proximity.dt[,.N] > 0){
-            out = rbind(out, proximity.dt[, .(gene = gene_name, value = reldist,
-                                              reldist, altdist, refdist, walk.id,
-                                              type = "proximity", source = "proximity", track = "proximity")],
-                        use.names = TRUE,
-                        fill = TRUE)
+        ## collect gene fusions
+        if (file.good(dat$fusions))
+        {
             if (verbose)
-                message('Adding ', proximity.dt[,.N], ' proximity entries.')
-        } else {
+                message('pulling $fusions for ', x)
+            fus = readRDS(dat[x, fusions])$meta
+            if (nrow(fus))
+            {
+                fus = fus[silent == FALSE, ][!duplicated(genes), ]
+                fus[, vartype := ifelse(in.frame == TRUE, 'fusion', 'outframe_fusion')] # annotate out of frame fusions
+                fus = fus[, .(gene = strsplit(genes, ',') %>% unlist, vartype = rep(vartype, sapply(strsplit(genes, ','), length)))][, id := x][, track := 'variants'][, type := vartype][, source := 'fusions']
+                out = rbind(out, fus, fill = TRUE, use.names = TRUE)
+
+            }
+        } 
+        else ## signal missing result
+            out = rbind(out, data.table(id = x, type = NA, source = 'fusions'), fill = TRUE, use.names = TRUE)
+
+        ## collect complex events
+        if (file.good(dat$complex))
+        {
             if (verbose)
-                message('No proximity hits found')
+                message('pulling $complex events for ', x)
+            sv = readRDS(dat[x, complex])$meta$events
+            if (nrow(sv))
+            {
+                ## modified to keep individual complex SV's separate
+                ## sv = sv[, .(value = .N), by = type][, id := x][, track := ifelse(type %in% c('del', 'dup', 'invdup', 'tra', 'inv'), 'simple sv', 'complex sv')][, source := 'complex']
+                sel.cols = intersect(c("type", "ev.id", "footprint"), colnames(sv))
+                sv = sv[, ..sel.cols][, ev.type := type][, id := x][, track := ifelse(type %in% c('del', 'dup', 'invdup', 'tra', 'inv'), 'simple sv', 'complex sv')][, source := 'complex']
+                out = rbind(out, sv, fill = TRUE, use.names = TRUE)
+            }
         }
-    } else {
-        out = rbind(out, data.table(id = x, type = NA, source = "proximity"), fill = TRUE, use.names = TRUE)
+        else
+            out = rbind(out, data.table(id = x, type = NA, source = 'complex'), fill = TRUE, use.names = TRUE)
+
+        ## collect copy number / jabba
+        if (!is.null(dat$jabba_rds) && file.exists(dat[x, jabba_rds]))
+        {
+            if (verbose)
+                message('pulling $jabba_rds to get SCNA and purity / ploidy for ', x)
+            jab = readRDS(dat[x, jabba_rds])
+            out = rbind(out,
+                        data.table(id = x, value = c(jab$purity, jab$ploidy), type = c('purity', 'ploidy'), track = 'pp'),
+                        fill = TRUE, use.names = TRUE)
+
+            ## grabs SCNA data from pre-computed table
+            if (!is.null(dat$scna) && file.exists(dat[x, scna])) {
+                scna.dt = readRDS(dat[x, scna])
+
+                ## subset for previously annotated variants if data table is nonempty
+                if (nrow(scna.dt) && "cnv" %in% colnames(scna.dt)) {
+                    scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel"),]
+                }
+
+                ## if there are any CN variants, rbind them to existing output
+                if (nrow(scna.dt)) {
+                    scna = scna.dt
+                    sel.cols = intersect(c("min_cn", "min_normalized_cn", "max_cn", "max_normalized_cn",
+                                           "expr.quantile", "expr.value", "ev.id", "ev.type",
+                                           "seqnames", "start", "end"),
+                                         colnames(scna))
+                    out = rbind(out, scna[, ..sel.cols][, ":="(id = x,
+                                                               type = "cnv",
+                                                               track = "variants",
+                                                               vartype = "scna",
+                                                               source = "jabba_rds")],
+                                fill = TRUE, use.names = TRUE)
+                    ## out = rbind(out,
+                    ##             scna[, .(id = x, min_cn, min_normalized_cn, max_cn, max_normalized_cn,
+                    ##                      expr.quantile, expr.value, ev.id, ev.type, seqnames, start, end,
+                    ##                      type = cnv, track = "variants", vartype = "scna", source = "jabba_rds")],
+                    ##             fill = TRUE)
+                } else {
+                    if (verbose) {
+                        message("No SCNAs found")
+                    }
+                }
+            }
+        } else {
+            out = rbind(out, data.table(id = x, type = NA, source = 'jabba_rds'), fill = TRUE, use.names = TRUE)
+        }
+
+        if (file.good(dat[x, proximity]) && nrow(readRDS(dat[x, proximity])$dt)) {
+            if (verbose)
+                message('Processing proximity results.')
+            proximity.dt = readRDS(opt$proximity)$dt[reldist < max.reldist & refdist > min.refdist,]
+            if (proximity.dt[,.N] > 0){
+                out = rbind(out, proximity.dt[, .(gene = gene_name, value = reldist,
+                                                  reldist, altdist, refdist, walk.id,
+                                                  type = "proximity", source = "proximity", track = "proximity")],
+                            use.names = TRUE,
+                            fill = TRUE)
+                if (verbose)
+                    message('Adding ', proximity.dt[,.N], ' proximity entries.')
+            } else {
+                if (verbose)
+                    message('No proximity hits found')
+            }
+        } else {
+            out = rbind(out, data.table(id = x, type = NA, source = "proximity"), fill = TRUE, use.names = TRUE)
+        }
+
+
+        if (file.good(dat[x, deconstruct_sigs])) {
+            if (verbose)
+                message('pulling $deconstruct_sigs for ', x)
+            sig = readRDS(dat[x, deconstruct_sigs])
+            sig.dt = data.table(id = x,
+                                value = sig$weights,
+                                type = names(sig$weights),
+                                track = "signature",
+                                source = "deconstruct_sigs")
+            out = rbind(out, sig.dt, fill = TRUE, use.names = TRUE)
+        } else {
+            out = rbind(out, data.table(id = x, type = NA, source = 'deconstruct_sigs'), fill = TRUE, use.names = TRUE)
+        }
+
+        ## collect gene mutations
+        if (file.good(dat$annotated_bcf))
+        {
+            if (verbose)
+                message('pulling $annotated_bcf for ', x, ' using FILTER=', filter)
+            bcf = grok_bcf(dat[x, annotated_bcf], label = x, long = TRUE, filter = filter)
+            if (verbose)
+                message(length(bcf), ' variants pass filter')
+            genome.size = sum(seqlengths(bcf))/1e6
+            nmut = data.table(as.character(seqnames(bcf)), start(bcf), end(bcf), bcf$REF, bcf$ALT) %>% unique %>% nrow
+            mut.density = data.table(id = x, value = c(nmut, nmut/genome.size), type = c('count', 'density'),  track = 'tmb', source = 'annotated_bcf')
+            out = rbind(out, mut.density, fill = TRUE, use.names = TRUE)
+            keepeff = c('trunc', 'cnadel', 'cnadup', 'complexsv', 'splice', 'inframe_indel', 'fusion', 'missense', 'promoter', 'regulatory','mir')
+            bcf = bcf[bcf$short %in% keepeff]
+            if (verbose)
+                message(length(bcf), ' variants pass keepeff')
+            vars = NULL
+            if (length(bcf))
+            {
+                bcf$variant.g = paste0(seqnames(bcf), ':', start(bcf), '-', end(bcf), ' ', bcf$ALT, '>', bcf$REF)
+                vars = gr2dt(bcf)[, .(id = x, gene, vartype, variant.g, variant.p, distance, annotation, type = short, track = 'variants', source = 'annotated_bcf')] %>% unique
+            }
+            out = rbind(out, vars, fill = TRUE, use.names = TRUE)
+        }
+        else
+            out = rbind(out, data.table(id = x, type = NA, source = 'annotated_bcf'), fill = TRUE, use.names = TRUE)
+
+        if (verbose)
+            message('done ', x)
+
+        return(out)
     }
 
-
-    if (file.good(dat[x, deconstruct_sigs])) {
-      if (verbose)
-        message('pulling $deconstruct_sigs for ', x)
-      sig = readRDS(dat[x, deconstruct_sigs])
-      sig.dt = data.table(id = x,
-                          value = sig$weights,
-                          type = names(sig$weights),
-                          track = "signature",
-                          source = "deconstruct_sigs")
-      out = rbind(out, sig.dt, fill = TRUE, use.names = TRUE)
-    } else {
-      out = rbind(out, data.table(id = x, type = NA, source = 'deconstruct_sigs'), fill = TRUE, use.names = TRUE)
-    }
-
-    ## collect gene mutations
-    if (file.good(dat$annotated_bcf))
+    if (is.null(key(tumors)))
     {
-      if (verbose)
-        message('pulling $annotated_bcf for ', x, ' using FILTER=', filter)
-      bcf = grok_bcf(dat[x, annotated_bcf], label = x, long = TRUE, filter = filter)
-      if (verbose)
-        message(length(bcf), ' variants pass filter')
-      genome.size = sum(seqlengths(bcf))/1e6
-      nmut = data.table(as.character(seqnames(bcf)), start(bcf), end(bcf), bcf$REF, bcf$ALT) %>% unique %>% nrow
-      mut.density = data.table(id = x, value = c(nmut, nmut/genome.size), type = c('count', 'density'),  track = 'tmb', source = 'annotated_bcf')
-      out = rbind(out, mut.density, fill = TRUE, use.names = TRUE)
-      keepeff = c('trunc', 'cnadel', 'cnadup', 'complexsv', 'splice', 'inframe_indel', 'fusion', 'missense', 'promoter', 'regulatory','mir')
-      bcf = bcf[bcf$short %in% keepeff]
-      if (verbose)
-        message(length(bcf), ' variants pass keepeff')
-      vars = NULL
-      if (length(bcf))
-      {
-        bcf$variant.g = paste0(seqnames(bcf), ':', start(bcf), '-', end(bcf), ' ', bcf$ALT, '>', bcf$REF)
-        vars = gr2dt(bcf)[, .(id = x, gene, vartype, variant.g, variant.p, distance, annotation, type = short, track = 'variants', source = 'annotated_bcf')] %>% unique
-      }
-      out = rbind(out, vars, fill = TRUE, use.names = TRUE)
+        if (is.null(tumors$id))
+            stop('Input tumors table must be keyed or have column $id')
+        else
+            setkey(tumors, id)
     }
-    else
-      out = rbind(out, data.table(id = x, type = NA, source = 'annotated_bcf'), fill = TRUE, use.names = TRUE)
 
-    if (verbose)
-      message('done ', x)
+    out = mclapply(tumors[[key(tumors)]], .oncotable,
+                   dat = tumors, amp.thresh = amp.thresh, filter = filter, del.thresh = del.thresh, verbose = verbose, mc.cores = mc.cores, max.reldist = max.reldist, min.refdist = min.refdist)
+    out = rbindlist(out, fill = TRUE, use.names = TRUE)
 
+    setnames(out, 'id', key(tumors))
     return(out)
-  }
-
-  if (is.null(key(tumors)))
-  {
-    if (is.null(tumors$id))
-      stop('Input tumors table must be keyed or have column $id')
-    else
-      setkey(tumors, id)
-  }
-
-  out = mclapply(tumors[[key(tumors)]], .oncotable,
-                 dat = tumors, amp.thresh = amp.thresh, filter = filter, del.thresh = del.thresh, verbose = verbose, mc.cores = mc.cores, max.reldist = max.reldist, min.refdist = min.refdist)
-  out = rbindlist(out, fill = TRUE, use.names = TRUE)
-
-  setnames(out, 'id', key(tumors))
-  return(out)
 }
+
+#' @name compute_rna_quantiles
+#' @title compute_rna_quantiles
+#'
+#' @description
+#'
+#' Creates a data.table containing the expression level of each gene relative to a cohort.
+#' If supplied, also adds role of gene (e.g. ONC/TSG)
+#' 
+#' @param tpm (character) path to file with RNA TPM input (can be kallisto, salmon, or prespecified format)
+#' @param tpm_cohort (character) path to file with cohort expression
+#' @param onc (character) character vector of oncogenes
+#' @param tsg (character) character vector of TSGs
+#' @param id (character) id of current sample
+#' @param gencode.gtrack (character) path to gencode gTrack
+#' @param quantile.thresh (numeric) default 0.05
+#' @param verbose (logical) 
+#'
+#' @return data.table with columns gene, pair, value, qt, role, and direction of over/under expression
+compute_rna_quantiles = function(tpm = NULL,
+                                 tpm.cohort = NULL,
+                                 onc = as.character(),
+                                 tsg = as.character(),
+                                 id = NULL,
+                                 gencode.gtrack = NULL,
+                                 quantile.thresh = 0.05,                                 
+                                 verbose = FALSE) {
+
+    if (is.null(id) | is.na(id)) {
+        stop("id must be supplied")
+    }
+
+    if (!file.good(tpm)) {
+        stop("tpm not valid")
+    }
+
+    if (!file.good(tpm.cohort)) {
+        stop("tpm_cohort not valid")
+    }
+
+    if (verbose) {
+        message("Reading TPM and cohort inputs")
+    }
+
+    tpm.dt = rna_reformat(tpm, pair = id, gngt.fname = gencode.gtrack)
+    tpm.cohort.dt = data.table::fread(tpm.cohort, header = TRUE)
+
+    if (!is.element("gene", colnames(tpm.cohort.dt))) {
+        stop("There must be a 'gene' column in the cohort RNA expression levels containing gene symbol")
+    }
+
+    tpm.cohort.dt = tpm.cohort.dt[!duplicated(gene)]
+
+    if (verbose) {
+        message("Computing RNA expression quantiles")
+    }
+
+    melted.expr = rna_quantile(tpm.cohort.dt, id, tpm.dt)
+    melted.expr = melted.expr[!is.na(value),]
+
+    if (verbose) {
+        message("Annotating with supplied TSG and oncogenes")
+    }
+
+    melted.expr[(gene %in% onc) & (gene %in% tsg), role := "ONC|TSG"]
+    melted.expr[(gene %in% onc) & !(gene %in% tsg), role := "ONC"]
+    melted.expr[!(gene %in% onc) & (gene %in% tsg), role := "TSG"]
+
+    if (verbose) {
+        message("Identifying over/under expressed genes")
+    }
+
+    melted.expr[role %like% "ONC" & qt >= (1 - quantile.thresh), direction := "over"]
+    melted.expr[role %like% "TSG" & qt < quantile.thresh, direction := "under"]
+
+    return(melted.expr)
+}
+
+#' @name plot_expression_histograms
+#' @title plot_expression_histograms
+#'
+#' @description
+#'
+#' Produce histograms for RNA expression TPM
+#' 
+#' @param rna.change.fn (character) path to over/underexpressed oncogenes file
+#' @param melted.expr.fn (character) path to melted expression file
+#' @param pair (character)
+#' @param outdir (character) where to save plots
+#' @param ... additional arguments to ppng
+#'
+#' @return data.table with columns $gene and $expr.hist.fname
+plot_expression_histograms = function(rna.change.fn = NULL,
+                                      melted.expr.fn = NULL,
+                                      pair = NULL,
+                                      outdir = ".",
+                                      ...) {
+
+    rna.change = fread(rna.change.fn, header = TRUE)
+    melted.expr = fread(melted.expr.fn, header = TRUE)
+
+    if (!nrow(rna.change)) {
+        return(data.table(gene = as.character(), expr.hist.fname = as.character()))
+    }
+    
+    plot.dt = lapply(rna.change[, gene],
+                     function (g) {
+                         direction = rna.change[gene == g, direction]
+                         gene.dt = melted.expr[gene == g & !is.na(value)]
+                         fn = paste0(outdir, "/", g, ".", direction, ".expr.png")
+                         p = ggplot(gene.dt, aes(x = value, y = gene)) +
+                             geom_density_ridges2(                            
+                                 bandwidth = 0.1,
+                                 alpha = 0.5,
+                                 scale = 0.9,
+                                 rel_min_height = 0.01,
+                                 color = NA,
+                                 jittered_points = TRUE,
+                                 position = position_points_jitter(width = 0.01, height = 0),
+                                 point_shape = '|',
+                                 point_size = 3,
+                                 point_alpha = 0.3,
+                                 point_colour = "black") +
+                             geom_vline(
+                                 xintercept = rna.change[gene == g, value],
+                                 color = ifelse(direction=="over", "red", "blue"),
+                                 lty = "dashed", lwd = 3) +
+                             scale_x_continuous(trans = "log1p",
+                                                breaks = c(1, 10, 100, 1000, 10000)) +
+                             theme_minimal(32) +
+                             theme(axis.text.x = element_text(angle = 45, vjust = 1)) +
+                             labs(x = "TPM")
+                         ppng(print(p), filename = fn, ...)
+                         return(data.table(gene = g, expr.hist.fname = fn))
+                     })
+    plot.dt = rbindlist(plot.dt, fill = TRUE)
+    return(plot.dt)
+}
+

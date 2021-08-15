@@ -80,9 +80,24 @@ suppressMessages(expr = {
     })
 })
 
-if (!opt$knit_only){
-    message("Preparing data and plots")
+##################
+## Initialize a report config
+##################
 
+if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
+    report.config = readRDS(paste0(opt$outdir, "/", "report.config.rds"))
+} else {
+
+    ## copy report.config from opt
+    report.config = opt
+
+    ## add oncogenes, etc. to report config
+    report.config$onc = file.path(opt$libdir, "data", "onc.rds")
+    report.config$tsg = file.path(opt$libdir, "data", "tsg.rds")
+    
+}
+
+if (!opt$knit_only){
     message("Returning Purity, Ploidy, and run 'events' if not already provided")
     jabba = readRDS(opt$jabba_rds)
     verbose = opt$verbose
@@ -93,18 +108,13 @@ if (!opt$knit_only){
         file.copy(opt$complex, paste0(opt$outdir, "/complex.rds"))
         gg = gGnome::refresh(readRDS(opt$complex))
     } else {
-        ## if (file.exists(opt$complex) & file.size(opt$complex)>0){
-        ##     file.copy(opt$complex, paste0(opt$outdir, "/complex.rds"))
-        ##     gg = readRDS(opt$complex)
-        ## } else {
         gg = gGnome::events(gG(jabba = jabba))
         saveRDS(gg, paste0(opt$outdir, "/complex.rds"))
-        ## }
     }
+
 
     ###################
     ## purity/ploidy QC plots
-    ##
     ###################
     cn.plot.fname = normalizePath(file.path(opt$outdir, "cn.pp.png"))
     allele.scatter.fname = normalizePath(file.path(opt$outdir, "allele.scatter.png"))
@@ -158,68 +168,46 @@ if (!opt$knit_only){
     }
     
     message("Checking for RNA expression input")
-    tmp.tpm.cohort.fname = paste0(opt$outdir, "/tmp.tpm.cohort.rds")
     tpm.quantiles.fname = paste0(opt$outdir, "/", "tmp.quantiles.txt")
-    if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {
-
-        tpm.fn = file.path(opt$outdir, "tpm.txt")
-        ge.data = stack(readRDS(file.path(opt$libdir, "data", "gt.ge.hg19.rds"))@data[[1]])
-        tpm.dt = rna_reformat(opt$tpm,
-                              pair = opt$pair,
-                              gngt.fname = ge.data)
-
-        if (check_file(tmp.tpm.cohort.fname, opt$overwrite, verbose = opt$verbose)) {
-            tpm.cohort = readRDS(tmp.tpm.cohort.fname)
-        } else {
-            tpm.cohort = data.table::fread(opt$tpm_cohort, header = TRUE)
+    if (check_file(tpm.quantiles.fname, opt$overwrite, opt$verbose)) {
+        message("RNA quantiles analysis already exists")
+    } else {
+        if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {
             
-            ## if there are only transcript level annotation, map to the genes the same map as individual kallisto
-            if (is.element("gene", colnames(tpm.cohort))) {
-                message("Cohort RNA expression ready.")
-            } else if (any(grepl("Transcript|target_id", colnames(tpm.cohort)))){
-                tfield = grep("Transcript|target_id", colnames(tpm.cohort), value = TRUE)[1]
-                if (any(grepl("Transcript|target_id", colnames(tpm.dt)))){
-                    tfield2 = grep("Transcript|target_id", colnames(tpm.dt), value = TRUE)[1]
-                    tgmap = setNames(tpm.dt$gene, tpm.dt[[tfield2]])
-                    tpm.cohort[, gene := tgmap[tpm.cohort[[tfield]]]]
-                } else {
-                    tgmap = gr2dt(ge.data)
-                    tgm = match(tpm.cohort[[tfield]], tgmap$transcript_id)
-                    tpm.cohort$gene = tgmap[tgm, gene_name]
-                }
-                tpm.cohort = tpm.cohort[!is.na(gene)]
-            } else {
-                stop("There must be a 'gene|Transcript|target_id' column in the cohort RNA expression levels.")
-            }
-            tpm.cohort = tpm.cohort[!duplicated(gene)]
-            saveRDS(tpm.cohort, tmp.tpm.cohort.fname)
-        }
-
-        if (check_file(tpm.quantiles.fname, opt$overwrite, verbose = TRUE)) {
-            melted.expr = fread(tpm.quantiles.fname, header = TRUE)
+            melted.expr = compute_rna_quantiles(tpm = opt$tpm,
+                                                tpm.cohort = opt$tpm_cohort,
+                                                onc = readRDS(report.config$onc),
+                                                tsg = readRDS(report.config$tsg),
+                                                id = opt$pair,
+                                                gencode.gtrack = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                                quantile.thresh = opt$quantile_thresh,
+                                                verbose = opt$verbose)
         } else {
-            message("Computing RNA expression quantiles relative to supplied cohort")
-            melted.expr = rna.quantile(
-                tpm.cohort,
-                opt$pair,
-                tpm.dt)
-
-            if (nrow(meta) && ("tumor_type" %in% colnames(meta))) {
-
-                message("Computing tumor type-specific expression quantiles given supplied cohort metadata.")
-                melted.expr = data.table::merge.data.table(melted.expr,
-                                                           meta[, .(pair, tumor_type)],
-                                                           by = "pair",
-                                                           all.x = TRUE)
-                melted.expr[, tt.qt := rank(as.double(.SD$value))/.N, by = tumor_type]
-            }
-            fwrite(melted.expr, tpm.quantiles.fname)
+            message("RNA input not supplied.")
+            melted.expr = data.table(gene = as.character(),
+                                     pair = as.character(),
+                                     value = as.numeric(),
+                                     qt = as.numeric(),
+                                     role = as.character(),
+                                     direction = as.character())
         }
-
-        fwrite(tpm.dt, tpm.fn)
-        opt$tpm = tpm.fn
-        message("Found and preprocessed TPM input")
+        fwrite(melted.expr, tpm.quantiles.fname)
     }
+
+    rna.change.fname = paste0(opt$outdir, "/", "rna.change.txt")
+    if (check_file(rna.change.fname, opt$overwrite, opt$verbose)) {
+        message("Over/underexpressed driver genes already identified")
+    } else {
+        melted.expr = data.table::fread(tpm.quantiles.fname, header = TRUE)
+        if (nrow(melted.expr)) {
+            rna.change.dt = melted.expr[pair == opt$pair,][(role %like% "ONC" & qt > (1 - opt$quantile_thresh)) |
+                                                           (role %like% "TSG" & qt < opt$quantile_thresh)]
+        } else {
+            rna.change.dt = melted.expr
+        }
+        fwrite(rna.change.dt, rna.change.fname)
+    }
+            
 
     message('Calling CNVs for oncogenes and tumor suppressor genes')
     ## # get the ncn data from jabba
@@ -252,16 +240,22 @@ if (!opt$knit_only){
             }
         }
 
-        #' zchoo Monday, May 03, 2021 02:33:55 PM
-        #' add ploidy to avoid bug
-        #' simplify seqnames to avoid empty data tables
-        genes_cn = get_gene_copy_numbers(gg, gene_ranges = opt$genes, nseg = nseg, ploidy = kag$ploidy, simplify_seqnames = TRUE, complex.fname = opt$complex)
-        genes_cn_annotated = get_gene_ampdel_annotations(genes_cn, amp.thresh = opt$amp_thresh,
+        genes_cn = get_gene_copy_numbers(gg,
+                                         gene_ranges = opt$genes,
+                                         nseg = nseg,
+                                         ploidy = kag$ploidy,
+                                         simplify_seqnames = TRUE,
+                                         complex.fname = opt$complex)
+        
+        genes_cn_annotated = get_gene_ampdel_annotations(genes_cn,
+                                                         amp.thresh = opt$amp_thresh,
                                                          del.thresh = opt$del_thresh)
 
-        #' zchoo Wednesday, May 12, 2021 04:17:06 PM
-        #' integrate RNA expression data with genes data
-        if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {            
+        if (file.good(tpm.quantiles.fname)) {
+
+            message ("Merging SCNAs with RNA expression")
+            
+            melted.expr = data.table::fread(tpm.quantiles.fname, header = TRUE)
             genes_cn_annotated = merge.data.table(genes_cn_annotated,
                                                   melted.expr[pair == opt$pair,
                                                               .(gene_name = gene,
@@ -269,44 +263,88 @@ if (!opt$knit_only){
                                                                 expr.value = value)],
                                                   by = "gene_name",
                                                   all.x = TRUE)
-            message("Done merging")
+            
+            genes_cn_annotated[expr.quantile < opt$quantile_thresh, expr := "under"]
+            genes_cn_annotated[expr.quantile > (1 - opt$quantile_thresh), expr := "over"]
+
+
         } else {
-            genes_cn_annotated[, ":="(expr.quantile = NA, expr.value = NA)]
+            genes_cn_annotated[, ":="(expr.quantile = NA, expr.value = NA, expr = NA)]
         }
-
-        genes_cn_annotated[expr.quantile < opt$quantile_thresh, expr := "under"]
-        genes_cn_annotated[expr.quantile > (1 - opt$quantile_thresh), expr := "over"]
-
+        
         ## save annotated genes
         saveRDS(genes_cn_annotated, genes_cn.fn)
     }
 
     driver.genes.cnv.fn = paste0(opt$outdir, '/driver.genes.cnv.txt')
-    driver.genes.expr.fn = paste0(opt$outdir, '/driver.genes.expr.txt')
-    if (!check_file(driver.genes.cnv.fn, overwrite = opt$overwrite) |
-        !check_file(driver.genes.expr.fn, overwrite = opt$overwrite)) {
+    if (check_file(driver.genes.cnv.fn, overwrite = opt$overwrite)) {
+
+        message("Driver gene SCNAs already identified")
+
+    } else {
+
+        ## read table of SCNAs
+        if (file.good(genes_cn.fn)) {
+            genes_cn_annotated = readRDS(genes_cn.fn)
+        } else {
+            stop("SCNA analysis failed.")
+        }
+            
         if (genes_cn_annotated[, .N] > 0){
-            onc = readRDS(oncogenes.fn)
-            tsg = readRDS(tsg.fn)
-            #' zchoo Tuesday, May 04, 2021 10:41:25 PM
-            ## save just expression change and just CNA separately
+
+            ## read oncogenes and TSGs from config
+            onc = readRDS(report.config$onc)
+            tsg = readRDS(report.config$tsg)
+
             driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
                                                  (cnv == "del" & gene_name %in% tsg)]
-            driver.genes_expr = genes_cn_annotated[(expr == "over" & gene_name %in% onc) |
-                                                   (expr == "under" & gene_name %in% tsg)]
-            #' zchoo Monday, Jun 21, 2021 12:38:24 PM
+            
             #' add whether gene is TSG or ONCO
             driver.genes_cn[gene_name %in% onc, annot := "ONC"]
             driver.genes_cn[gene_name %in% tsg, annot := "TSG"]
-            #' zchoo Wednesday, May 12, 2021 05:00:24 PM
-            ## subset these to make less overwhelming...
-            ## fields = c("gene_name", "cnv", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "number_of_cn_segments", "ncn", "seqnames", "start", "end", "width", "gene_id", "gene_type", "source",  "level", "hgnc_id", "havana_gene", "ev.id", "ev.type")
-            fields = c("gene_name", "annot", "cnv", "expr", "min_cn", "max_cn", "min_normalized_cn", "max_normalized_cn", "expr.value", "expr.quantile", "seqnames", "start", "end", "width", "ev.id", "ev.type")
+
+            fields = c("gene_name", "annot", "cnv", "expr", "min_cn",
+                       "max_cn", "min_normalized_cn", "max_normalized_cn",
+                       "expr.value", "expr.quantile",
+                       "seqnames", "start", "end", "width", "ev.id", "ev.type")
+            
             cn.fields = intersect(fields, names(driver.genes_cn))
-            expr.fields = intersect(fields, names(driver.genes_expr))
+            
             fwrite(driver.genes_cn[, ..cn.fields], driver.genes.cnv.fn)
-            fwrite(driver.genes_expr[, ..expr.fields], driver.genes.expr.fn)
         }
+    }
+
+    driver.genes.expr.fn = paste0(opt$outdir, "/", "driver.genes.expr.txt")
+    if (check_file(driver.genes.expr.fn, opt$overwrite, opt$verbose)) {
+        message("Driver gene expression changes already identified")
+    } else {
+
+        if (file.good(rna.change.fname)) {
+            rna.change.dt = fread(rna.change.fname, header = TRUE)
+        } else {
+            stop("RNA expression analysis failed")
+        }
+        
+        if (file.good(genes_cn.fn)) {
+            genes_cn_annotated = readRDS(genes_cn.fn)
+        } else {
+            stop("SCNA analysis failed")
+        }
+
+        fields = c("gene_name", "annot", "min_cn",
+                   "max_cn", "min_normalized_cn", "max_normalized_cn",
+                   "seqnames", "start", "end", "width", "ev.id", "ev.type")
+        cn.fields = intersect(fields, colnames(genes_cn_annotated))
+        
+        driver.genes.expr.dt = merge.data.table(rna.change.dt[, .(gene, expr = direction,
+                                                                  expr.value = value,
+                                                                  expr.quantile = qt,
+                                                                  role)],
+                                                genes_cn_annotated[, ..cn.fields],
+                                                by.x = "gene",
+                                                by.y = "gene_name",
+                                                all.x = TRUE)
+        fwrite(driver.genes.expr.dt, driver.genes.expr.fn)
     }
 
     ## prepare driver gallery
@@ -380,11 +418,7 @@ if (!opt$knit_only){
             gt = c(agt, cvgt, gg.gt)
         }
 
-        ## browser()
-        ## check gTrack specifically
         plot.chrs = grep("(^(chr)*[0-9XY]+$)", seqlevels(gt@data[[1]]), value = TRUE)
-        ## seqs = c(as.character(1:22), "X", "Y")
-        ## plot.chrs = intersect(seqlevels(gg), c(paste0('chr', seqs), seqs))
         if (length(plot.chrs) == 0){
             stop('None of the sequences in your genome graph matches the default set of sequences.')
         }
@@ -637,7 +671,10 @@ if (!opt$knit_only){
                                   gencode.fname = opt$gencode,
                                   outdir = opt$outdir)
 
-    if (opt$overwrite | !file.exists(file.path(opt$outdir, "sv.gallery.txt"))) {
+    sv.gallery.fname = paste0(opt$outdir, "/", "sv.gallery.txt")
+    if (check_file(sv.gallery.fname, opt$overwrite, opt$verbose)) {
+        message("SV gallery files already exist")
+    } else {
         message("Preparing SV gallery")
 
 
@@ -653,12 +690,9 @@ if (!opt$knit_only){
                                        height = 900, ## png image height
                                        width = 1000, ## png image width
                                        outdir = opt$outdir)
-        if (length(sv.slickr.dt)>0){
-            fwrite(sv.slickr.dt, file.path(opt$outdir, "sv.gallery.txt"))
-        }
-    } else {
-        message("SV gallery files already exist")
-    }
+        
+        fwrite(sv.slickr.dt, sv.gallery.fname)
+    } 
 
     ## #################
     ## CN gallery
@@ -687,153 +721,86 @@ if (!opt$knit_only){
         message("CN gallery files already exist")
     }
 
-    ## ##################
-    ## RNA expression level over a cohort
-    ## ##################
-    cool.exp.fn = file.path(opt$outdir, "cool.expr.rds")
-    if (file.good(opt$tpm) && file.good(opt$tpm_cohort)){
-
-        ## limit to annotated ONC/TSG
-        melted.expr = melted.expr[gene %in% c(onc, tsg)]
-        melted.expr[, role := case_when(gene %in% onc ~ "ONC",
-                                       gene %in% tsg ~ "TSG",
-                                       TRUE ~ NA_character_)]
-        
-        
-        ## TODO: make the quantile threshold adjustable
-        cool.exp = melted.expr[!is.na(value)][pair==opt$pair][(role=="TSG" & qt < opt$quantile_thresh) |
-                                                              (role=="ONC" & qt> opt$quantile_thresh)]
-        
-        if (nrow(cool.exp)>0){
-            cool.exp[, direction := ifelse(qt>0.95, "over", "under")]
-            cool.exp[, gf := paste0(opt$outdir, "/", gene, ".", direction, ".expr.png")]
-            setkey(cool.exp, "gene")
-            for (g in cool.exp$gene){
-                if (!file.good(cool.exp[g, gf])){
-                    png(filename = cool.exp[g, gf], width = 1600, height = 900)
-                    d = melted.expr[gene==g][!is.na(value)]
-                    message(g)
-                    ## ppng({
-                    p = ggplot(d, aes(x = value, y = gene))
-                    if (is.element("tumor_type", colnames(d))){
-                        p = p +
-                            geom_density_ridges2(
-                            aes(point_colour = tumor_type==opt$tumor_type,
-                                fill = tumor_type==opt$tumor_type),
-                            bandwidth = 0.1,
-                            alpha = 0.5,
-                            scale = 0.9,
-                            rel_min_height = 0.01,
-                            color = NA,
-                            jittered_points = TRUE,
-                            position = position_points_jitter(width = 0.01, height = 0),
-                            point_shape = '|',
-                            point_size = 3,
-                            point_alpha = 0.3,
-                            point_colour = "black") +
-                            scale_fill_manual(values = binary.cols, name = "Tumor type", breaks = c(FALSE, TRUE), labels = c("Other", opt$tumor_type))
-                    } else {
-                        p = p + geom_density_ridges2(                            
-                                    bandwidth = 0.1,
-                                    alpha = 0.5,
-                                    scale = 0.9,
-                                    rel_min_height = 0.01,
-                                    color = NA,
-                                    jittered_points = TRUE,
-                                    position = position_points_jitter(width = 0.01, height = 0),
-                                    point_shape = '|',
-                                    point_size = 3,
-                                    point_alpha = 0.3,
-                                    point_colour = "black")
-                    }
-                    p = p +
-                        geom_vline(
-                            xintercept = cool.exp[g, value],
-                            color = ifelse(cool.exp[g, direction]=="over", "red", "blue"),
-                            lty = "dashed", lwd = 3) +
-                        scale_x_continuous(trans = "log1p",
-                                           breaks = c(1, 10, 100, 1000, 10000)) +
-                        ## scale_y_continuous(expand = c(0, 0)) +
-                        theme_minimal(32) +
-                        theme(axis.text.x = element_text(angle = 45, vjust = 1)) +
-                        labs(x = "TPM")
-                    print(p)
-                    ## }, width = 1600, height = 900)
-                    dev.off()
-                }
-            }
-            saveRDS(cool.exp, cool.exp.fn)
-        }
-
-        ## expression change gallery
-        expr.gallery.fn = file.path(opt$outdir, "expr.gallery.txt")
-        if (!check_file(expr.gallery.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
-            message("preparing expression gallery")
-            #grab ploidy
-            pl = readRDS(opt$jabba_rds)$ploidy
-            expr.slickr.dt = cn.plot(drivers.fname = cool.exp.fn,
-                                     opt$complex,
-                                     cvgt.fname = cvgt_fn,
-                                     gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
-                                     cgcgt.fname = cgc.gtrack.fname,
-                                     agt.fname = agt_fn,
-                                     server = opt$server,
-                                     pair = opt$pair,
-                                     amp.thresh = opt$amp_thresh,
-                                     ploidy = pl,
-                                     pad = 0.5,
-                                     height = 1600,
-                                     width = 1000,
-                                     outdir = opt$outdir)
-            fwrite(expr.slickr.dt, expr.gallery.fn)
-        } else {
-            message("expression gallery files already exist")
-        }
-
-        ## expression waterfall plot
-        waterfall.fn = file.path(opt$outdir, "waterfall.png")
-        if (!check_file(waterfall.fn, overwrite = opt$overwrite) & file.exists(cool.exp.fn)) {
-            message("generating waterfall plot")
-            gns = readRDS(cool.exp.fn)$gene ## genes with changes in expression
-            rna.waterfall.plot(melted.expr = melted.expr,
-                               pair = opt$pair,
-                               out.fn = waterfall.fn,
-                               genes.to.label = gns,
-                               width = 1600, height = 1200)
-        } else {
-            message("Expression gallery files already exist")
-        }
+    ## histograms of over and under-expressed genes
+    expr.histograms.fn = file.path(opt$outdir, "expr.histograms.txt")
+    if (check_file(expr.histograms.fn, opt$overwrite, opt$verbose)) {
+        message("expression histograms already exist")
+    } else {
+        expr.histograms.dt = plot_expression_histograms(rna.change.fname,
+                                                        tpm.quantiles.fname,
+                                                        pair = opt$pair,
+                                                        outdir = opt$outdir,
+                                                        res = 150)
+        fwrite(expr.histograms.dt, expr.histograms.fn)
+    }
+    
+    ## gTrack of over and under-expressed genes
+    expr.gallery.fn = file.path(opt$outdir, "expr.gallery.txt")
+    if (check_file(expr.gallery.fn, overwrite = opt$overwrite, verbose = opt$verbose)) {
+        message("gTracks of over/underexpressed genes already exist")
+    } else {
+        message("preparing expression gallery")
+        pl = readRDS(opt$jabba_rds)$ploidy
+        expr.slickr.dt = cn.plot(drivers.fname = rna.change.fname,
+                                 complex.fname = opt$complex,
+                                 cvgt.fname = cvgt_fn,
+                                 gngt.fname = file.path(opt$libdir, "data", "gt.ge.hg19.rds"),
+                                 cgcgt.fname = cgc.gtrack.fname,
+                                 agt.fname = agt_fn,
+                                 server = opt$server,
+                                 pair = opt$pair,
+                                 amp.thresh = opt$amp_thresh,
+                                 ploidy = pl,
+                                 pad = 0.5,
+                                 height = 1600,
+                                 width = 1000,
+                                 outdir = opt$outdir)
+        fwrite(expr.slickr.dt, expr.gallery.fn)
     }
 
-    ## ##################
-    ## SNV signatures
-    ## ##################
-    if (file.good(opt$deconstruct_sigs)) {
-        ## signatures
-        sig = readRDS(opt$deconstruct_sigs)
-        sigd = as.data.table(sig$weights) %>% data.table::melt(variable.name = "Signature", value.name = "Proportion") %>% data.table
-        sigd[, Signature := factor(Signature, levels = rev(levels(Signature)))]
-        sigd[, pair := opt$pair]
+    ## expression waterfall plot
+    waterfall.fn = file.path(opt$outdir, "waterfall.png")
+    if (check_file(waterfall.fn, overwrite = opt$overwrite, verbose = opt$verbose)) {
+        message("Waterfall plot already exists")
+    } else {
+        message("Generating waterfall plot")
+        pt = rna.waterfall.plot(melted.expr.fn = tpm.quantiles.fname,
+                           rna.change.fn = rna.change.fname,
+                           pair = opt$pair)
+        ppng(print(pt), filename = waterfall.fn, width = 1600, height = 1200, res = 150)
+    } 
 
-        ## counts of variants
-        var = fread(opt$deconstruct_variants)[nchar(max.post)>0]
-        sct = var[, .(sig_count = .N), by = .(Signature = max.post)]
-        sct[, pair := opt$pair]
-
-        if (!file.exists(paste0(opt$outdir, "/deconstruct_sigs.png")) | opt$overwrite){
-            ## ppng({
+    ## ##################
+    ## deconstructSigs composition plot
+    ## ##################
+    sigs.composition.fn = paste0(opt$outdir, "/deconstruct_sigs.png")
+    if (check_file(sigs.composition.fn, opt$overwrite, opt$verbose)) {
+        message("Signatures composition plot already exists")
+    } else {
+        if (file.good(opt$deconstruct_sigs)) {
+            message("Creating signatures composition plot from deconstructSigs input")
+            sig = readRDS(opt$deconstruct_sigs)
             png(filename = paste0(opt$outdir, "/deconstruct_sigs.png"), width = 1000, height = 1000)
             deconstructSigs::plotSignatures(sig)
             dev.off()
-            ## makePie(sig)
-            ## }, "deconstruct_sigs.png", width = 1600, height = 1200)
+        } else {
+            message("deconstructSigs not supplied. skipping signatures composition")
         }
+    }
 
-        if (!file.exists(paste0(opt$outdir, "/sig.composition.png")) | opt$overwrite) {
+    ######################
+    ## deconstructSigs histogram
+    ######################
+    sigs.histogram.fn = paste0(opt$outdir, "/", "sig.composition.png")
+    if (check_file(sigs.histogram.fn, overwrite = opt$overwrite, verbose = opt$verbose)) {
+        message("Signatures histogram plot already exists")
+    } else {
 
+        if (file.good(opt$deconstruct_variants)) {
+
+            ## identify correct background type
             sig.fn = file.path(opt$libdir, "data", "all.signatures.txt")
             background.type = "Cell cohort"
-            
             if (file.good(opt$sigs_cohort)){
                 sig.fn = opt$sigs_cohort
                 background.type = "supplied" ## what is the background dist, used for plot title
@@ -855,90 +822,21 @@ if (!opt$knit_only){
                     message("Using background signature burden for whole Cell cohort")
                 }
             }
-
             
-            allsig = data.table::fread(sig.fn)
-            allsig = data.table::melt(allsig, id = "pair", variable.name = "Signature", value.name = "sig_count")
-
-            ## recast as character to avoid releveling for now
-            allsig[, Signature := as.character(Signature)]
-            sct[, Signature := as.character(Signature)]
-
-            if (opt$pair %in% allsig[, pair]){
-                ## remove existing record from the cohort first
-                allsig = allsig[pair!=opt$pair]
-            }
-
-            ## sct[, Signature := factor(Signature, levels = levels(allsig$Signature))][!is.na(Signature)]
-            allsig = rbind(allsig, sct)
-            
-            ## calculate percentile
-            allsig[, perc := rank(sig_count)/.N, by = Signature]
-
-            ## highlight the tracks where the signature is non-zero in this sample
-            ## allsig[, highlight := as.character(Signature) %in% as.character(sct[, Signature])]
-            allsig = allsig[!is.na(Signature) & (Signature %in% sct$Signature)]
-
-            ## order levels...
-            keep.slevels = allsig[pair == opt$pair, Signature] %>% as.character
-            ## allsig[, Signature := factor(Signature, levels = new.slevels)]
-
-            allsig = allsig[!is.na(Signature) & Signature %in% keep.slevels,][, Signature := gsub("Signature.", "", Signature)]
-            ## just level one time
-            new.slevels = allsig[pair == opt$pair,][order(sig_count), Signature]
-            allsig[, Signature := factor(Signature, levels = new.slevels)]
-            
-            sigbar = ggplot(allsig,aes(y = Signature, x = sig_count, fill = Signature)) +
-                geom_density_ridges(bandwidth = 0.1,
-                                    alpha = 0.5,
-                                    scale = 0.9,
-                                    rel_min_height = 0.01,
-                                    color = NA,
-                                    jittered_points = TRUE,
-                                    position = position_points_jitter(width = 0.01, height = 0),
-                                    point_shape = '|',
-                                    point_size = 3,
-                                    point_alpha = 0.3,
-                                    point_colour = "black") +
-                geom_segment(data = allsig[pair==opt$pair & sig_count>0],
-                             aes(x = sig_count, xend = sig_count,
-                                 y = as.numeric(Signature), yend = as.numeric(Signature) + 0.9),
-                             color = "red", size = 1, alpha = 0.5) +
-                geom_label(data = allsig[pair==opt$pair],
-                           aes(x = sig_count, y = as.numeric(Signature) + 0.8,
-                               label = paste0("qt ", format(perc * 100, digits = 2), "%")),
-                           nudge_x = 0.2,
-                           hjust = "left",
-                           color = "black",
-                           label.size = 0,
-                           alpha = 0.5) +
-                scale_x_continuous(trans = "log1p",
-                                   breaks = c(0, 1, 10, 100, 1000, 10000, 100000),
-                                   labels = c(0, 1, 10,
-                                              expression(10^2),
-                                              expression(10^3),
-                                              expression(10^4),
-                                              expression(10^5)),
-                                   limits = c(0, 100000)) +
-                labs(title = paste0("Signatures vs. ", background.type, " background"), x = "Burden") +
-                theme_minimal() +
-                theme(legend.position = "none",
-                      title = element_text(size = 20, family = "sans"),
-                      axis.title = element_text(size = 20, family = "sans"),
-                      axis.text.x = element_text(size = 15, family = "sans"),
-                      axis.text.y = element_text(size = 20, family = "sans"))
+            sigbar = deconstructsigs_histogram(sigs.fn = opt$deconstruct_variants,
+                                               sigs.cohort.fn = sig.fn,
+                                               id = opt$pair,
+                                               cohort.type = background.type)
 
             ppng(print(sigbar),
-                 filename = paste0(opt$outdir, "/sig.composition.png"),
-                 height = 800, width = 800)
-            
+                 filename = sigs.histogram.fn,
+                 height = 800, width = 800, res = 150)
             
         } else {
-            message("signature compsition plot already exists")
+            message("deconstructSigs output not supplied.")
         }
-    } else {
-        message("deconstruct sigs not supplied")
     }
+            
 
     ## ##################
     ## HRDetect results
@@ -1044,6 +942,14 @@ if (!opt$knit_only){
                 ##                               expression(10^4),
                 ##                               expression(10^5)),
                 ##                    limits = c(0, 100000)) +
+                ## labs(title = paste0("HRDetect features compared to Davies et al. 2017"), x = "Burden") +                ## scale_x_continuous(trans = "log1p",
+                ##                    breaks = c(0, 1, 10, 100, 1000, 10000, 100000),
+                ##                    labels = c(0, 1, 10,
+                ##                               expression(10^2),
+                ##                               expression(10^3),
+                ##                               expression(10^4),
+                ##                               expression(10^5)),
+                ##                    limits = c(0, 100000)) +
                 ## labs(title = paste0("HRDetect features compared to Davies et al. 2017"), x = "Burden") +
                 theme_minimal() +
                 theme(legend.position = "bottom",
@@ -1071,7 +977,12 @@ if (!opt$knit_only){
     ## ##################
     ## Enhancer/gene proximity
     ## ##################
-    if (file.good(opt$proximity) && file.good(cool.exp.fn <- paste0(opt$outdir, "/cool.expr.rds"))){
+    proximity.gallery.fname = paste0(opt$outdir, "/", "proximity.gallery.txt")
+    if (check_file(proximity.gallery.fname, overwrite = opt$overwrite, verbose = opt$verbose)) {
+        message("Proximity gallery already exists")
+    } else {
+        if (!file.good(rna.change.fname)) {
+    
         prox = readRDS(opt$proximity)
         pdt = prox$dt
         pdt = pdt[reldist<0.25 & refdist>5e6]
@@ -1085,9 +996,6 @@ if (!opt$knit_only){
             gt.cgc$name = "CGC"
             enh = readRDS(opt$enhancer)
 
-            ## ## create a dir for the plots
-            ## prox.plot.dir = paste0(opt$outdir, "/proximity.")
-            
             for (g in pgs){
                 this.png = paste0(opt$outdir, "/", g, ".proximity.png")
                 if (!file.exists(this.png) | opt$overwrite){
@@ -1111,16 +1019,16 @@ if (!opt$knit_only){
     ## #################
     summary.fn = normalizePath(file.path(opt$outdir, "summary.rds"))
     if (check_file(summary.fn, opt$overwrite, opt$verbose)) {
+        message("Summary already exists, skipping")
+    } else {
         message("Computing CN/mutation summary")
         summary.list = create.summary(jabba_rds = opt$jabba_rds,
-                                      snv_vcf = opt$snpeff_snv,
-                                      indel_vcf = opt$snpeff_indel,
+                                      snv_vcf = opt$snv_vcf,
+                                      indel_vcf = opt$indel_vcf,
                                       verbose = TRUE,
                                       amp.thresh = opt$amp_thresh,
                                       del.thresh = opt$del_thresh)
         saveRDS(summary.list, summary.fn)
-    } else {
-        message("Summary already exists, skipping")
     }
 
     ## ################
@@ -1128,8 +1036,9 @@ if (!opt$knit_only){
     ## ################
 
     oncotable.fn = file.path(opt$outdir, "oncotable.txt")
-    if (check_file(oncotable_fn, opt$overwrite, opt$verbose)) {
-
+    if (check_file(oncotable.fn, opt$overwrite, opt$verbose)) {
+        message("Oncotable already exists. Skipping!")
+    } else {
         message("Preparing oncotable...")
         oncotable.input = data.table(pair = opt$pair,
                                      jabba_rds = opt$jabba_rds,
@@ -1145,9 +1054,7 @@ if (!opt$knit_only){
                               gencode = opt$gencode,
                               verbose = TRUE)
         fwrite(oncotable, oncotable.fn)
-    } else {
-        message("Oncotable already exists. Skipping!")
-    }
+    } 
 }
 
 
@@ -1169,7 +1076,4 @@ rmarkdown::render(
                   server = opt$server),
     quiet = FALSE)
 
-message("clean up temporary files")
-file.remove(tmp.tpm.cohort.fname)
 message("yes")
-

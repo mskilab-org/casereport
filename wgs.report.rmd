@@ -270,27 +270,18 @@ if (file.exists(waterfall.fn)) {
 ## Expression gallery {.tabset .tabset-fade .tabset-pills}
 
 ```{r expression, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
-if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
-    cool.exp = readRDS(paste0(params$outdir, "/cool.expr.rds"))
+if (file.good(paste0(params$outdir, "/", "rna.change.txt"))) {
+    expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
+    cool.exp = fread(paste0(params$outdir, "/", "rna.change.txt"))
     expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
     cat("\n")
-    valid.genes = intersect(cool.exp[, gene], expr.slickr.dt[, gene_name])
+    valid.genes = intersect(expr.hist.dt[, gene], expr.slickr.dt[, gene_name])
     for (g in valid.genes) {
-    	expr.png.fn = file.path(params$outdir, 
-		      	        paste(g, cool.exp[gene == g, direction], 
-				"expr", "png", sep = ".")
-				)				
-	gg.png.fn = expr.slickr.dt[gene_name == g, plot.fname]
-	## cat(gg.png.fn)
-	## cat(expr.png.fn)
+    	expr.png.fn = expr.hist.dt[gene == g, expr.hist.fname][1]
+	gg.png.fn = expr.slickr.dt[gene_name == g, plot.fname][1]
         cat("\n")
 	if (file.exists(expr.png.fn) & file.exists(gg.png.fn)) {
-        cat("###", cool.exp[g, paste0(gene, " (", direction, ")", "<br>", "\n")])
-        ## cat()
-        ## cat(paste0("![](", expr.png.fn, ")"), "\n")
-        ## cat("\n")
-        ## cat(paste0("![](", gg.png.fn ,")"), "\n")
-	## }
+        cat("###", cool.exp[gene == g, paste0(gene, " (", direction, ")", "<br>", "\n")])
         cat(
         	paste0(
         		'<p float="left">',
