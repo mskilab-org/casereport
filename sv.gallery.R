@@ -1,17 +1,16 @@
 #' zchoo Monday, Apr 26, 2021 02:24:31 PM
 ## This is a script to generate .png files for SV gallery
 
-#' @name cgc.gtrack
+#' @name create_cgc_gtrack
+#' @title create_cgc_gtrack
 #'
 #' @param cgc.fname (character)
 #' @param gencode (character)
-#' @param outdir (character)
 #' @param verbose (logical)
 #'
 #' @return file name of gencode gTrack
-cgc.gtrack = function(cgc.fname = "./data/cgc.tsv",
-                      gencode.fname = NULL,
-                      outdir = "./") {
+create_cgc_gtrack = function(cgc.fname = "./data/cgc.tsv",
+                             gencode.fname = NULL) {
     
     if (!file.exists(cgc.fname)) {
         stop("cgc.fname does not exist")
@@ -23,10 +22,7 @@ cgc.gtrack = function(cgc.fname = "./data/cgc.tsv",
     cgc.gene.symbols = fread(cgc.fname)[["Gene Symbol"]]
     gff = skidb::read_gencode(fn = gencode.fname)
     cgc.gt = track.gencode(gencode = gff, genes = cgc.gene.symbols)
-
-    fn = file.path(outdir, "cgc.gtrack.rds")
-    saveRDS(cgc.gt, fn)
-    return(fn)
+    return(cgc.gt)
 }
 
 #' @name gallery.wrapper

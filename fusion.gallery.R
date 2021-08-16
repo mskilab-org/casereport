@@ -43,8 +43,9 @@ star2grl = function(fname, chrsub = TRUE, return.type = "Junction", mc.cores = 1
 #' Quick utility function for circos plot with read depth, junctions, and segments
 #' (copied from skitools)
 #' 
-#' @param junctions Junction object with optional metadata field  $col to specify color
-#' @param cov GRanges of scatter points with optional fields $col
+#' @param jabba_rds (character) path to jabba
+#' @param cov_fn (character) path to coverage
+#' @param transform (logical) rel2abs the coverage?
 #' @param segs GRanges of segments with optional fields $col and $border
 #' @param win GRanges window to limit plot to
 #' @param cytoband GRanges of cytoband
@@ -55,10 +56,9 @@ star2grl = function(fname, chrsub = TRUE, return.type = "Junction", mc.cores = 1
 #' @param cytoband.path path to UCSC style cytoband path
 #' @param y.quantile quantile normalization
 #' @param chr.sum whether to chr.sub everything 
-#' @author Marcin Imielinski
-#' @export
-wgs.circos = function(junctions = jJ(),
-                      cov = NULL,
+wgs.circos = function(jabba_rds,
+                      cov_fn,
+                      transform = TRUE,
                       segs = NULL,
                       win = NULL,
                       field = 'ratio',
@@ -109,6 +109,29 @@ wgs.circos = function(junctions = jJ(),
         axis.width = ceiling(axis.frac*total.width)
         cytoband = rbind(cytoband, data.table(seqnames = 'axis', start = 0, end = axis.width, band = '', stain = ''), fill = TRUE)
     }
+
+    ## read input
+    if (file.good(cov_fn)) {
+        cov = readRDS(cov_fn)
+    } else {
+        stop("invalid coverage file")
+    }
+
+
+    if (file.good(jabba_rds)) {
+        gg = gG(jabba = jabba_rds)
+        junctions = gg$junctions[type == "ALT"]
+    } else {
+        stop("invalid jabba file")
+    }
+
+    ## transform if necessary
+    if (transform) {
+        cov$cn = rel2abs(cov, field = y.field, purity = gg$meta$purity, ploidy = gg$meta$ploidy)
+        y.field = "cn"
+    }
+
+
 
     if (chr.sub)
     {

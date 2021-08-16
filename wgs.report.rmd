@@ -58,10 +58,6 @@ library(plotly)
 library(shiny)
 message("Loaded Packages")
 
-gg = readRDS(paste0(params$outdir, "/complex.rds"))
-jb = readRDS(params$jabba_rds)
-cvgt = readRDS(paste0(params$outdir, "/coverage.gtrack.rds"))
-jj = gg$junctions[type=="ALT"]
 summary.list = readRDS(normalizePath(file.path(params$outdir, "summary.rds")))
 message("Loaded gGraph")
 ```
@@ -71,9 +67,9 @@ message("Loaded gGraph")
 
 ## Purity/ploidy
 
-Estimated purity: **`r format(jb$purity, digits = 2)`** 
+Estimated purity: **`r format(summary.list$purity, digits = 2)`** 
 
-Estimated ploidy: **`r format(jb$ploidy, digits = 2)`**
+Estimated ploidy: **`r format(summary.list$ploidy, digits = 2)`**
 
 ## SCNA
 
@@ -89,7 +85,7 @@ Total CNA (Mbp): `r format(round(summary.list$cna_mbp, 2), nsmall = 2)`
 
 ## Junction burden
 
-The total **junction burden** is **`r length(jj)`**.
+The total **junction burden** is **`r summary.list$junction_burden`**.
 
 ## SNV
 
@@ -270,27 +266,18 @@ if (file.exists(waterfall.fn)) {
 ## Expression gallery {.tabset .tabset-fade .tabset-pills}
 
 ```{r expression, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
-if (file.exists(paste0(params$outdir, "/cool.expr.rds"))){
-    cool.exp = readRDS(paste0(params$outdir, "/cool.expr.rds"))
+if (file.good(paste0(params$outdir, "/", "rna.change.txt"))) {
+    expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
+    cool.exp = fread(paste0(params$outdir, "/", "rna.change.txt"))
     expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
     cat("\n")
-    valid.genes = intersect(cool.exp[, gene], expr.slickr.dt[, gene_name])
+    valid.genes = intersect(expr.hist.dt[, gene], expr.slickr.dt[, gene_name])
     for (g in valid.genes) {
-    	expr.png.fn = file.path(params$outdir, 
-		      	        paste(g, cool.exp[gene == g, direction], 
-				"expr", "png", sep = ".")
-				)				
-	gg.png.fn = expr.slickr.dt[gene_name == g, plot.fname]
-	## cat(gg.png.fn)
-	## cat(expr.png.fn)
+    	expr.png.fn = expr.hist.dt[gene == g, expr.hist.fname][1]
+	gg.png.fn = expr.slickr.dt[gene_name == g, plot.fname][1]
         cat("\n")
 	if (file.exists(expr.png.fn) & file.exists(gg.png.fn)) {
-        cat("###", cool.exp[g, paste0(gene, " (", direction, ")", "<br>", "\n")])
-        ## cat()
-        ## cat(paste0("![](", expr.png.fn, ")"), "\n")
-        ## cat("\n")
-        ## cat(paste0("![](", gg.png.fn ,")"), "\n")
-	## }
+        cat("###", cool.exp[gene == g, paste0(gene, " (", direction, ")", "<br>", "\n")])
         cat(
         	paste0(
         		'<p float="left">',
@@ -422,29 +409,27 @@ hijacking_. We identify such pairs of gene-enhancer where they are >5Mbp
 away in the reference genome while potentially <1Mbp in the rearranged genome.
 
 ```{r, enhancer hijacking, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
-prox.plots = dir(params$outdir, "proximity.png$", full.names = TRUE)
-if (length(prox.plots)>0){
-    for (prox.plot in prox.plots){
-        g = gsub(".proximity.png", "", basename(prox.plot))
+proximity.gallery.dt = fread(paste0(params$outdir, "/", "proximity.gallery.txt"))
+expr.histograms.dt = fread(paste0(params$outdir, "/", "expr.histograms.txt"))
+
+if (nrow(proximity.gallery.dt) & nrow(expr.histograms.dt)) {
+   gns = intersect(proximity.gallery.dt$gene, expr.histograms.dt$gene)
+   for (g in gns) {
         cat("## ", g, "\n<br>\n")
-        cat(
-            paste0(
-                '<p float="left">',
-                '<img src="',
-                prox.plot,
-                '" width="45%" />',
-                '<img src="',
-                cool.exp[g, gf],
-                '" width="45%" />',
-                '</p>'
+	    cat(
+	    paste0(
+	    	'<p float="left">',
+		'<img src="',
+		proximity.gallery.dt[gene == g, plot.fname],
+		'" width="45%" />',
+		'<img src="',
+		expr.histograms.dt[gene == g, expr.hist.fname],
+		'" width="45%" />',
+		'</p>')
             )
-        )
-        ## cat(
-        ##     paste0("![](", prox.plot,")"), "\n\n"
-        ## )
-        cat('\n', '<br>', '\n\n')
     }
 }
+cat('\n', '<br>', '\n\n')
 ```
 ***
 # Loose ends
