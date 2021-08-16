@@ -412,20 +412,22 @@ away in the reference genome while potentially <1Mbp in the rearranged genome.
 proximity.gallery.dt = fread(paste0(params$outdir, "/", "proximity.gallery.txt"))
 expr.histograms.dt = fread(paste0(params$outdir, "/", "expr.histograms.txt"))
 
-gns = intersect(proximity.gallery.dt$gene, expr.histograms.dt$gene)
-for (g in gns) {
-    cat("## ", g, "\n<br>\n")
-    cat(
-	paste0(
-	'<p float="left">',
-	'<img src="',
-	proximity.gallery.dt[gene == g, plot.fname],
-	'" width="45%" />',
-	'<img src="',
-	expr.histograms.dt[gene == g, expr.hist.fname],
-	'" width="45%" />',
-	'</p>')
-    )
+if (nrow(proximity.gallery.dt) & nrow(expr.histograms.dt)) {
+   gns = intersect(proximity.gallery.dt$gene, expr.histograms.dt$gene)
+   for (g in gns) {
+        cat("## ", g, "\n<br>\n")
+	    cat(
+	    paste0(
+	    	'<p float="left">',
+		'<img src="',
+		proximity.gallery.dt[gene == g, plot.fname],
+		'" width="45%" />',
+		'<img src="',
+		expr.histograms.dt[gene == g, expr.hist.fname],
+		'" width="45%" />',
+		'</p>')
+            )
+    }
 }
 cat('\n', '<br>', '\n\n')
 ```
