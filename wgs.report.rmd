@@ -58,10 +58,6 @@ library(plotly)
 library(shiny)
 message("Loaded Packages")
 
-gg = readRDS(paste0(params$outdir, "/complex.rds"))
-jb = readRDS(params$jabba_rds)
-cvgt = readRDS(paste0(params$outdir, "/coverage.gtrack.rds"))
-jj = gg$junctions[type=="ALT"]
 summary.list = readRDS(normalizePath(file.path(params$outdir, "summary.rds")))
 message("Loaded gGraph")
 ```
@@ -71,9 +67,9 @@ message("Loaded gGraph")
 
 ## Purity/ploidy
 
-Estimated purity: **`r format(jb$purity, digits = 2)`** 
+Estimated purity: **`r format(summary.list$purity, digits = 2)`** 
 
-Estimated ploidy: **`r format(jb$ploidy, digits = 2)`**
+Estimated ploidy: **`r format(summary.list$ploidy, digits = 2)`**
 
 ## SCNA
 
@@ -89,7 +85,7 @@ Total CNA (Mbp): `r format(round(summary.list$cna_mbp, 2), nsmall = 2)`
 
 ## Junction burden
 
-The total **junction burden** is **`r length(jj)`**.
+The total **junction burden** is **`r summary.list$junction_burden`**.
 
 ## SNV
 

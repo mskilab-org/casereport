@@ -453,7 +453,7 @@ js.range = function(gr){
 #'
 #' Quick utility function for circos plot with read depth, junctions, and segments
 #' 
-#' @param junctions Junction object with optional metadata field  $col to specify color
+#' @param jabba_rds Junction object with optional metadata field  $col to specify color
 #' @param cov GRanges of scatter points with optional fields $col
 #' @param segs GRanges of segments with optional fields $col and $border
 #' @param win GRanges window to limit plot to
@@ -1984,6 +1984,7 @@ filter.snpeff = function(vcf, gngt.fname, cgc.fname, ref.name = "hg19", verbose 
 #' @return list with names
 #' - purity
 #' - ploidy
+#' - junction_burden
 #' - del_mbp
 #' - amp_mbp
 #' - cna_mbp
@@ -1999,12 +2000,14 @@ create.summary = function(jabba_rds,
                           del.thresh = 0.5) {
 
     jab = readRDS(jabba_rds)
+    gg = gG(jabba = jab)
 
     ## segments as data table
-    segs.dt = gG(jabba = jabba_rds)$nodes$dt[as.character(seqnames) %in% chrs, ]
-    
+    segs.dt = gg$nodes$dt[as.character(seqnames) %in% chrs, ]
+
     out = list(purity = jab$purity,
-               ploidy = jab$ploidy)
+               ploidy = jab$ploidy,
+               junction_burden = length(gg$junctions[type == "ALT" & cn > 0]))
 
     if (verbose) {
         message("Computing total width of deleted and amplified segments...")
@@ -2348,7 +2351,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
             if (verbose) {
                 message("pulling RNA for ", x)
             }
-            rna.dt = readRDS(dat[x, rna])
+            rna.dt = fread(dat[x, rna])##readRDS(dat[x, rna])
             if (nrow(rna.dt)) {
                 rna = rna.dt[, .(gene, value, role, quantile = qt, id = x,
                                  type = ifelse(grepl("over", direction, ignore.case = TRUE), "overexpression",

@@ -140,9 +140,9 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
     ## RNA expression analyses
     report.config$tpm_quantiles = paste0(report.config$outdir, "/", "tmp.quantiles.txt")
     report.config$rna_change = paste0(report.config$outdir, "/", "rna.change.txt")
-    report.config$expression_histograms = paste0(report.config$outdir, "expr.histograms.txt")
-    report.config$expression_gtracks = paste0(report.config$outdir, "expr.gallery.txt")
-    report.config$waterfall_plot = paste0(report.config$outdir, "waterfall.png")
+    report.config$expression_histograms = paste0(report.config$outdir, "/", "expr.histograms.txt")
+    report.config$expression_gtracks = paste0(report.config$outdir, "/", "expr.gallery.txt")
+    report.config$waterfall_plot = paste0(report.config$outdir, "/", "waterfall.png")
     report.config$rna_change_with_cn = paste0(report.config$outdir, "/", "driver.genes.expr.txt")
 
     ## deconstructSigs
@@ -359,18 +359,21 @@ if (!opt$knit_only) {
             message ("Merging SCNAs with RNA expression")
             
             melted.expr = data.table::fread(report.config$tpm_quantiles, header = TRUE)
-            genes_cn_annotated = merge.data.table(genes_cn_annotated,
-                                                  melted.expr[pair == opt$pair,
-                                                              .(gene_name = gene,
-                                                                expr.quantile = qt,
-                                                                expr.value = value)],
-                                                  by = "gene_name",
-                                                  all.x = TRUE)
-            
-            genes_cn_annotated[expr.quantile < opt$quantile_thresh, expr := "under"]
-            genes_cn_annotated[expr.quantile > (1 - opt$quantile_thresh), expr := "over"]
 
-
+            if (nrow(melted.expr)) {
+                genes_cn_annotated = merge.data.table(genes_cn_annotated,
+                                                      melted.expr[pair == opt$pair,
+                                                                  .(gene_name = gene,
+                                                                    expr.quantile = qt,
+                                                                    expr.value = value)],
+                                                      by = "gene_name",
+                                                      all.x = TRUE)
+                
+                genes_cn_annotated[expr.quantile < opt$quantile_thresh, expr := "under"]
+                genes_cn_annotated[expr.quantile > (1 - opt$quantile_thresh), expr := "over"]
+            } else {
+                genes_cn_annotated[, ":="(expr.quantile = NA, expr.value = NA, expr = NA)]
+            }
         } else {
             genes_cn_annotated[, ":="(expr.quantile = NA, expr.value = NA, expr = NA)]
         }
@@ -469,15 +472,26 @@ if (!opt$knit_only) {
 
     if (!check_file(report.config$wgs_circos_plot, opt$overwrite, opt$verbose)) {
         message("Generating whole-genome circos plot")
-        ppng(wgs.circos(jabba_rds = report.config$jabba_rds,
-                        cov_fn = report.config$cbs_cov_rds,
-                        field = "cn",
-                        link.h.ratio = 0.1,
-                        cex.points = 0.1,
-                        cytoband.path = file.path(opt$libdir, "data", "hg19.cytoband.txt")),
-             filename = report.config$wgs_circos_plot,
-             height = 850,
-             width = 1000)
+
+        tryCatch( expr = {
+            ppng(wgs.circos(jabba_rds = report.config$jabba_rds,
+                            cov_fn = report.config$cbs_cov_rds,
+                            transform = TRUE,
+                            field = "ratio",
+                            link.h.ratio = 0.1,
+                            cex.points = 0.1,
+                            cytoband.path = file.path(opt$libdir, "data", "hg19.cytoband.txt")),
+                 filename = report.config$wgs_circos_plot,
+                 height = 850,
+                 width = 1000)
+        }, error = function(e) {
+            if (file.exists(report.config$wgs_circos_plot)) {
+                file.remove(report.config$wgs_circos_plot)
+            }
+            stop("An error was encountered during circos plot creation")
+            return(NA)
+        })
+        
     } else {
         message("Whole genome circos plot already exists")
     }
@@ -596,22 +610,24 @@ if (!opt$knit_only) {
             driver.mutations.dt = data.table()
         }
 
-        if (driver.mutations.dt[,.N] > 0){
+        if (driver.mutations.dt[,.N] > 0) {
             mutation.tier.driver.name = 'PMKB' # we can later switch to a different annotator or cycle through multiple annotators if we wish to
             mutation.tier.annotator = mutation.tier.annotators[['PMKB']]
             driver.mutations.dt = mutation.tier.annotator(driver.mutations.dt)
+
+            ## add ONC and TSG annotations
+            ## notice that if the mutation.tier.parser added "gene.type" annotations then this step could override some of these
+            cgc = fread(report.config$cgc)
+            tsg = readRDS(report.config$tsg)## cgc[get('Is Tumor Suppressor Gene') == 'Yes', get('Hugo Symbol')]
+            onc = readRDS(report.config$onc)## cgc[get('Is Oncogene') == 'Yes', get('Hugo Symbol')]
+
+            driver.mutations.dt[gene %in% tsg, gene.type := 'TSG']
+            driver.mutations.dt[gene %in% onc, gene.type := 'ONC']
+                                        # some genes are annotated in CGC as both
+            driver.mutations.dt[gene %in% onc & gene %in% tsg, gene.type := 'ONC|TSG']
         }
 
-        # add ONC and TSG annotations
-        # notice that if the mutation.tier.parser added "gene.type" annotations then this step could override some of these
-        cgc = fread(report.config$cgc)
-        tsg = cgc[get('Is Tumor Suppressor Gene') == 'Yes', get('Hugo Symbol')]
-        onc = cgc[get('Is Oncogene') == 'Yes', get('Hugo Symbol')]
-
-        driver.mutations.dt[gene %in% tsg, gene.type := 'TSG']
-        driver.mutations.dt[gene %in% onc, gene.type := 'ONC']
-        # some genes are annotated in CGC as both
-        driver.mutations.dt[gene %in% onc & gene %in% tsg, gene.type := 'ONC|TSG']
+        
 
         fwrite(driver.mutations.dt, report.config$driver_mutations)
     }
@@ -705,7 +721,7 @@ if (!opt$knit_only) {
         message("preparing CN gallery")
         ## grab ploidy
         pl = readRDS(opt$jabba_rds)$ploidy
-        cn.slickr.dt = cn.plot(drivers.fname = driver.genes.cnv.fn,
+        cn.slickr.dt = cn.plot(drivers.fname = report.config$driver_scna,
                                report.config$complex,
                                cvgt.fname = report.config$coverage_gtrack,
                                gngt.fname = report.config$gencode_gtrack,
@@ -779,7 +795,7 @@ if (!opt$knit_only) {
         if (file.good(opt$deconstruct_sigs)) {
             message("Creating signatures composition plot from deconstructSigs input")
             sig = readRDS(opt$deconstruct_sigs)
-            png(filename = paste0(report.config$sig_composition, width = 1000, height = 1000)
+            png(filename = report.config$sig_composition, width = 1000, height = 1000)
             deconstructSigs::plotSignatures(sig)
             dev.off()
         } else {
@@ -960,6 +976,12 @@ if (!opt$knit_only) {
     } else {
         if (!file.good(report.config$rna_change)) {
             message("No RNA analysis, skipping proximity")
+            proximity.gallery.dt = data.table(gene = as.character(),
+                                              plot.fname = as.character())
+        } else if (!file.good(opt$proximity)) {
+            message("No proximity.rds supplied - skipping!")
+                        proximity.gallery.dt = data.table(gene = as.character(),
+                                                          plot.fname = as.character())
         } else {
     
             prox = readRDS(opt$proximity)
@@ -1003,8 +1025,8 @@ if (!opt$knit_only) {
                 proximity.gallery.dt = data.table(gene = as.character(),
                                                   plot.fname = as.character())
             }
-            fwrite(proximity.gallery.dt, proximity.gallery.fname)
         }
+        fwrite(proximity.gallery.dt, proximity.gallery.fname)
     }
 
 
@@ -1038,7 +1060,7 @@ if (!opt$knit_only) {
                                      complex = report.config$complex,
                                      scna = report.config$gene_cn,
                                      annotated_bcf = opt$snpeff_indel_bcf,
-                                     rna = cool.exp.fn,
+                                     rna = report.config$rna_change,
                                      proximity = opt$proximity,
                                      deconstruct_sigs = opt$deconstruct_sigs,
                                      key = "pair")
@@ -1060,9 +1082,10 @@ rmarkdown::render(
                                        "/",
                                        opt$pair,".wgs.report.html")),
     knit_root_dir = normalizePath(opt$outdir),
+    ## params = report.config,
     params = list(set_title = paste0(opt$pair),
                   pair = opt$pair,
-p                  jabba_rds = normalizePath(opt$jabba_rds),
+                  jabba_rds = normalizePath(opt$jabba_rds),
                   outdir = normalizePath(opt$outdir),
                   tumor_type = opt$tumor_type,
                   server = opt$server),
