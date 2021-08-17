@@ -19,6 +19,7 @@ if (!exists("opt")){
         make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample (raw kallisto output acceptable)"),
         make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
         make_option(c("--hrd_results"), type = "character", default = NA_character_, help = "The comprehensive HRDetect module results"),
+        make_option(c("--ot_results"), type = "character", default = NA_character_, help = "Oneness/Twoness module results"),
         make_option(c("--snv_vcf"), type = "character", default = NA_character_, help = "SNV vcf file (e.g. strelka)"),
         make_option(c("--indel_vcf"), type = "character", default = NA_character_, help = "indel vcf file (e.g. strelka)"),
         make_option(c("--snpeff_snv_bcf"), type = "character", default = NA_character_, help = "snpeff snv results )bcf)"),
@@ -963,6 +964,204 @@ if (!opt$knit_only) {
 
             png(paste0(opt$outdir, "/hrdetect.prop.dat.png"), width = 800, height = 200)
             print(hrd.plot.2)
+            dev.off()
+        }
+    }
+
+    ## ##################
+    ## Oneness / Twoness
+    ## 
+    ## ##################
+    if (!file.good(paste0(opt$outdir, "/onenesstwoness_results.rds")) | opt$overwrite){
+        if (file.good(opt$ot_results)) {
+            ot.res = readRDS(opt$ot_results)
+            ot = merge(ot.res$expl_variables,
+                       ot.res$ot_scores)
+            ot$`.` = NULL
+            ## ot = data.table::melt(ot)
+            ot$pair = opt$pair
+            tx = paste0("ot[,c(", paste(!names(ot) %in% c("qrdup", "qrdel", "tib"), collapse = ","), "),drop=F]")
+            ot = eval(parse(text = tx)) ## this is just for robustness
+            ## ## melt the input data matrix
+            ## ot.dat = as.data.table(ot.res$data_matrix) %>% data.table::melt()
+            ## ot.dat[, pair := opt$pair]
+            ## ## melt the output results
+            ## ot.out = as.data.table(ot.res$expl_variables)
+            ## ot.out$`.` = NULL
+            ## ot.out = data.table::melt(ot.out)
+            ## ot.out[, pair := opt$pair]
+            ## ot.out = ot.out[!variable %in% c("qrdup", "qrdel", "tib")]
+            saveRDS(ot, paste0(opt$outdir, "/ot.rds"))
+
+            ## ot = merge(ot.out, ot.dat[, .(variable, data = value)], by = "variable")
+
+            ## original training data
+            ot_cohort = readRDS(paste0(opt$libdir, "/data/ot_scores_cohort.rds"))
+
+            ## if (opt$pair %in% hrd_cohort$pair){
+            ot_cohort = rbind(ot_cohort[!pair %in% opt$pair], ot, fill = T)
+            ## }
+
+            ## ot_cohort[, range(value), by = .(variable, is.hrd)]
+
+            ot_cohort[, ot.status := ifelse(BRCA1 > 0.5, "Oneness",
+                                     ifelse(BRCA2 > 0.5, "Twoness",
+                                     ifelse(SUM12 > 0.9, "OT+", "OT-")))]
+
+            ot.stat = ot_cohort[ot_cohort$pair %in% opt$pair]$ot.status
+
+            ot.stat = c(
+                "Oneness" = "#C93312",
+                "Twoness" = "#3B9AB2",
+                "OT+" = "#0B775E",
+                ## "OT-" = "#899DA4"
+                "OT-" = "#899DA480"
+            )
+
+            ot_dat = data.table::melt(ot_cohort, id.vars = c("pair", "ot.status",
+                                                             "fmut_bi"))
+
+            
+
+            ## these are the dimensions that need to be logged
+            ldat = ot_dat[!variable %in% c("del.mh.prop", "BRCA1", "BRCA2", "SUM12", "OTHER")]
+            ldat[, variable := factor(variable, levels = setdiff(levels(variable), "del.mh.prop"))]
+            ## plot the distribution of raw count
+            ot.plot = ggplot(ldat, aes(x = value, y = variable)) +
+                geom_density_ridges(aes(point_colour = ot.status,
+                                        fill = ot.status),
+                                    bandwidth = 0.1,
+                                    alpha = 0.5,
+                                    scale = 0.9,
+                                    rel_min_height = 0.01,
+                                    color = NA,
+                                    jittered_points = TRUE,
+                                    position = position_points_jitter(width = 0.01, height = 0),
+                                    point_shape = '|',
+                                    point_size = 3,
+                                    point_alpha = 0.3) +
+                scale_discrete_manual("point_colour", values = ot.stat) +
+                scale_fill_manual(values = ot.stat) +
+                geom_segment(data = ldat[pair==opt$pair],
+                             aes(x = value, xend = value,
+                                 y = as.numeric(variable), yend = as.numeric(variable) + 0.9, colour = ot.status),
+                             alpha = 1, lwd = 3) +
+                scale_colour_manual(values = ot.stat) + 
+                scale_x_continuous(trans = "log1p",
+                                   breaks = c(0, 1, 10, 100, 1000, 10000, 100000),
+                                   labels = c(0, 1, 10,
+                                              expression(10^2),
+                                              expression(10^3),
+                                              expression(10^4),
+                                              expression(10^5)),
+                                   limits = c(0, 100000),
+                                   expand = c(0, 0)) +
+                labs(title = paste0("HRDetect features compared to Davies et al. 2017"), x = "Burden") +
+                theme_minimal() +
+                theme(legend.position = "none",
+                      title = element_text(size = 20, family = "sans"),
+                      axis.title = element_text(size = 20, family = "sans"),
+                      axis.text.x = element_text(size = 15, family = "sans"),
+                      axis.text.y = element_text(size = 20, family = "sans"))
+
+            ## these are the dimensions that need to be logged
+            rdat = ot_dat[variable %in% "del.mh.prop"]
+            rdat[, variable := factor(variable, levels = "del.mh.prop")]
+            ## plot the distribution of raw count
+            ot.plot.2 = ggplot(rdat, aes(x = value, y = variable)) +
+                geom_density_ridges(aes(point_colour = ot.status,
+                                        fill = ot.status),
+                                    bandwidth = 0.1,
+                                    alpha = 0.5,
+                                    scale = 0.9,
+                                    rel_min_height = 0.01,
+                                    color = NA,
+                                    jittered_points = TRUE,
+                                    position = position_points_jitter(width = 0.01, height = 0),
+                                    point_shape = '|',
+                                    point_size = 3,
+                                    point_alpha = 0.3) +
+                scale_discrete_manual("point_colour", values = ot.stat, labels = NULL) +
+                scale_fill_manual(values = ot.stat,
+                                  labels = c("Non HR deficient", "HR deficient")) +
+                ## scale_y_discrete(labels = hrdetect.dims) +
+                labs(x = "Proportion") +
+                guides(point_colour = FALSE) +
+                geom_segment(data = rdat[pair==opt$pair],
+                             aes(x = value, xend = value,
+                                 y = as.numeric(variable), yend = as.numeric(variable) + 3, colour = ot.status),
+                             alpha = 1, lwd = 3) +
+                scale_colour_manual(values = ot.stat) + 
+                theme_minimal() +
+                theme(legend.position = "bottom",
+                      legend.text = element_text(size=20),
+                      title = element_text(size = 20, family = "sans"),
+                      axis.title = element_text(size = 20, family = "sans"),
+                      axis.text.x = element_text(size = 15, family = "sans"),
+                      axis.text.y = element_text(size = 20, family = "sans"))
+
+            ## finally draw the output probability in a waterfall plot
+
+            prob_dat1 = ot_dat[variable %in% c("BRCA1")]
+            prob_dat1$marked_pair = prob_dat1$pair %in% opt$pair
+            prob_dat1[, fpair := reorder(pair, value)]
+
+
+            prob.cols = binary.cols
+            prob.cols["TRUE"] = ifelse(prob_dat1[pair == opt$pair]$value > 0.5,
+                   binary.cols["TRUE"], "black")
+            
+            prob.brca1 = ggplot(prob_dat1, aes(x = fpair, y = value)) +
+                geom_bar(aes(color = marked_pair), stat = "identity") +
+                scale_colour_manual(values = prob.cols) +
+                xlab("Oneness") +
+                theme_minimal() +
+                theme(legend.position = "none",
+                      legend.text = element_text(size=20),
+                      title = element_text(size = 20, family = "sans"),
+                      axis.title = element_text(size = 20, family = "sans"),
+                      axis.text.x = element_blank(),
+                      axis.text.y = element_text(size = 20, family = "sans"))
+
+            
+            prob_dat2 = ot_dat[variable %in% c("BRCA2")]
+            prob_dat2$marked_pair = prob_dat2$pair %in% opt$pair
+            prob_dat2[, fpair := reorder(pair, value)]
+
+
+            prob.cols = binary.cols
+            prob.cols["TRUE"] = ifelse(prob_dat2[pair == opt$pair]$value > 0.5,
+                   binary.cols["TRUE"], "black")
+            
+            prob.brca2 = ggplot(prob_dat2, aes(x = fpair, y = value)) +
+                geom_bar(aes(color = marked_pair), stat = "identity") +
+                scale_colour_manual(values = prob.cols) +
+                xlab("Twoness") + 
+                theme_minimal() +
+                theme(legend.position = "none",
+                      legend.text = element_text(size=20),
+                      title = element_text(size = 20, family = "sans"),
+                      axis.title = element_text(size = 20, family = "sans"),
+                      axis.text.x = element_blank(),
+                      axis.text.y = element_text(size = 20, family = "sans"))
+
+            
+            
+            ## draw the plots
+            png(paste0(opt$outdir, "/onenesstwoness.log.dat.png"), width = 800, height = 800)
+            print(ot.plot)
+            dev.off()
+
+            png(paste0(opt$outdir, "/onenesstwoness.prop.dat.png"), width = 800, height = 200)
+            print(ot.plot.2)
+            dev.off()
+
+            png(paste0(opt$outdir, "/Oneness.png"), width = 800, height = 200)
+            print(prob.brca1)
+            dev.off()
+
+            png(paste0(opt$outdir, "/Twoness.png"), width = 800, height = 200)
+            print(prob.brca2)
             dev.off()
         }
     }
