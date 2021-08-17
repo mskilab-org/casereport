@@ -361,6 +361,26 @@ if (file.good(paste0(params$outdir, "/deconstruct_sigs.png"))){
 }
 ```
 
+```{r, Oneness_twoness, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
+ot.plot = paste0(params$outdir, "/onenesstwoness.log.dat.png")
+ot.plot.2 = paste0(params$outdir, "/onenesstwoness.prop.dat.png")
+oneness.plot = paste0(params$outdir, "/Oneness.png")
+twoness.plot = paste0(params$outdir, "/Twoness.png")
+
+all.good = file.good(ot.plot) & file.good(ot.plot.2) & file.good(oneness.plot) & file.good(twoness.plot)
+
+if (all.good) {
+   cat("# Oneness/Twoness\n")
+   cat("## Score distributions\n")
+   cat(paste0("![](", ot.plot,")"), "\n\n")
+   cat(paste0("![](", ot.plot.2,")"), "\n\n")
+   cat("## BRCA1\n")
+   cat(paste0("![](", oneness.plot,")"), "\n\n")
+   cat("## BRCA2\n")
+   cat(paste0("![](", twoness.plot,")"), "\n\n")
+}
+```
+
 ```{r, HRDetect, results = "asis", echo = FALSE, out.width="100%", fig.align = "center", max.height = 800}
 if (file.exists(paste0(params$outdir, "/hrdetect.rds"))){
     cat("# HRDetect prediction (homologous recombination deficiency)\n")

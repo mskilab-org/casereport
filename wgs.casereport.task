@@ -14,6 +14,7 @@ input	sigs_cohort	sigs_cohort	path	   /dev/null
 input	tpm	tpm	path	 /dev/null
 input	tpm_cohort	tpm_cohort	path	/dev/null
 input	hrd_results	hrd_results	path	/dev/null
+input	ot_results	oneness_twoness	path	/dev/null
 input	snpeff_snv_bcf	snpeff_snv_bcf	path	/dev/null
 input	snpeff_indel_bcf	snpeff_indel_bcf	path	/dev/null
 input	snv_vcf		snv_vcf		path	/dev/null
