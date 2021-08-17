@@ -146,6 +146,13 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
     report.config$waterfall_plot = paste0(report.config$outdir, "/", "waterfall.png")
     report.config$rna_change_with_cn = paste0(report.config$outdir, "/", "driver.genes.expr.txt")
 
+    ## HRD
+    report.config$ot = paste0(report.config$outdir, "/ot.rds")
+    report.config$ot_log = paste0(report.config$outdir, "/onenesstwoness.log.dat.png")
+    report.config$ot_prob = paste0(report.config$outdir, "/onenesstwoness.prop.dat.png")
+    report.config$oneness = paste0(report.config$outdir, "/Oneness.png")
+    report.config$twoness = paste0(report.config$outdir, "/Twoness.png")
+
     ## deconstructSigs
     report.config$sig_composition = paste0(report.config$outdir, "/deconstruct_sigs.png")
     report.config$sig_histogram = paste0(report.config$outdir, "/sig.composition.png")
@@ -972,7 +979,11 @@ if (!opt$knit_only) {
     ## Oneness / Twoness
     ## 
     ## ##################
-    if (!file.good(paste0(opt$outdir, "/onenesstwoness_results.rds")) | opt$overwrite){
+    all.ot = check_file(report.config$ot_log, opt$overwrite) &
+        check_file(report.config$ot_prob, opt$overwrite) &
+        check_file(report.config$oneness, opt$overwrite) &
+        check_file(report.config$twoness, opt$overwrite)
+    if (!all.ot){
         if (file.good(opt$ot_results)) {
             ot.res = readRDS(opt$ot_results)
             ot = merge(ot.res$expl_variables,
@@ -1150,22 +1161,26 @@ if (!opt$knit_only) {
             
             
             ## draw the plots
-            png(paste0(opt$outdir, "/onenesstwoness.log.dat.png"), width = 800, height = 800)
+            png(report.config$ot_log, width = 800, height = 800)
             print(ot.plot)
             dev.off()
 
-            png(paste0(opt$outdir, "/onenesstwoness.prop.dat.png"), width = 800, height = 200)
+            png(report.config$ot_prob, width = 800, height = 200)
             print(ot.plot.2)
             dev.off()
 
-            png(paste0(opt$outdir, "/Oneness.png"), width = 800, height = 200)
+            png(report.config$oneness, width = 800, height = 200)
             print(prob.brca1)
             dev.off()
 
-            png(paste0(opt$outdir, "/Twoness.png"), width = 800, height = 200)
+            png(report.config$twoness, width = 800, height = 200)
             print(prob.brca2)
             dev.off()
+        } else {
+            message("Oneness/twoness data not provided")
         }
+    } else {
+        message("Oneness/twoness analysis already exists.")
     }
 
     ## ##################
