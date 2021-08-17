@@ -1114,13 +1114,14 @@ if (!opt$knit_only) {
             prob.brca1 = ggplot(prob_dat1, aes(x = fpair, y = value)) +
                 geom_bar(aes(color = marked_pair), stat = "identity") +
                 scale_colour_manual(values = prob.cols) +
-                xlab("Oneness") +
+                ylab("Oneness") +
                 theme_minimal() +
                 theme(legend.position = "none",
                       legend.text = element_text(size=20),
                       title = element_text(size = 20, family = "sans"),
                       axis.title = element_text(size = 20, family = "sans"),
                       axis.text.x = element_blank(),
+                      axis.title.x = element_blank(),
                       axis.text.y = element_text(size = 20, family = "sans"))
 
             
@@ -1136,13 +1137,14 @@ if (!opt$knit_only) {
             prob.brca2 = ggplot(prob_dat2, aes(x = fpair, y = value)) +
                 geom_bar(aes(color = marked_pair), stat = "identity") +
                 scale_colour_manual(values = prob.cols) +
-                xlab("Twoness") + 
+                ylab("Twoness") + 
                 theme_minimal() +
                 theme(legend.position = "none",
                       legend.text = element_text(size=20),
                       title = element_text(size = 20, family = "sans"),
                       axis.title = element_text(size = 20, family = "sans"),
                       axis.text.x = element_blank(),
+                      axis.title.x = element_blank(),
                       axis.text.y = element_text(size = 20, family = "sans"))
 
             
