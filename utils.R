@@ -2601,9 +2601,9 @@ compute_rna_quantiles = function(tpm = NULL,
 
     melted.expr[, role := ""]
     melted.expr[(gene %in% onc) & (gene %in% tsg), role := "ONC|TSG"]
-    melted.expr[(gene %in% onc) & (gene %in% surf), role := "ONC|SURF"]
+    melted.expr[(gene %in% onc) & (gene %in% surface), role := "ONC|SURF"]
     melted.expr[(gene %in% onc) & !(gene %in% tsg), role := "ONC"]
-    melted.expr[!(gene %in% onc) & (gene %in% surf), role := "SURF"]
+    melted.expr[!(gene %in% onc) & (gene %in% surface), role := "SURF"]
     melted.expr[!(gene %in% onc) & (gene %in% tsg), role := "TSG"]
 
     if (verbose) {
