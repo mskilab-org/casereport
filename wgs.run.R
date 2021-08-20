@@ -41,7 +41,8 @@ if (!exists("opt")){
         make_option(c("--pmkb_interpretations"), type = "character", default = NA_character_, help = "Path to CVS with PMKB interpretations. If not provided, then a default table will be used (in data/pmkb-interpretations-06-11-2021.csv). See https://pmkb.weill.cornell.edu/about for details about PMKB."),
         make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir"),
         make_option(c("--verbose"), type = "logical", default = TRUE, action = "store_true", help = "Be verbose and write more messages during the process of producing the report."),
-        make_option(c("--quantile_thresh"), type = "numeric", default = 0.05, help = "threshold for quantile for RNA expression")
+        make_option(c("--quantile_thresh"), type = "numeric", default = 0.05, help = "threshold for quantile for RNA expression"),
+        make_option(c("--include_surface"), type = "logical", default = FALSE, action = "store_true", help = "include surface genes in CNA and RNA differential expression analysis")
     )
     parseobj = OptionParser(option_list = option_list)
     opt = parse_args(parseobj)
@@ -114,6 +115,7 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
     ## add oncogenes, etc. to report config
     report.config$onc = file.path(report.config$libdir, "data", "onc.rds")
     report.config$tsg = file.path(report.config$libdir, "data", "tsg.rds")
+    report.config$surface = file.path(report.config$libdir, "data", "surface.rds")
 
     ## purity/ploidy plots
     report.config$cn_plot = paste0(report.config$outdir, "/", "cn.pp.png")
@@ -141,6 +143,7 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
     ## RNA expression analyses
     report.config$tpm_quantiles = paste0(report.config$outdir, "/", "tmp.quantiles.txt")
     report.config$rna_change = paste0(report.config$outdir, "/", "rna.change.txt")
+    report.config$rna_change_all = paste0(report.config$outdir, "/", "rna.change.all.txt")
     report.config$expression_histograms = paste0(report.config$outdir, "/", "expr.histograms.txt")
     report.config$expression_gtracks = paste0(report.config$outdir, "/", "expr.gallery.txt")
     report.config$waterfall_plot = paste0(report.config$outdir, "/", "waterfall.png")
@@ -289,11 +292,18 @@ if (!opt$knit_only) {
         message("RNA quantiles analysis already exists")
     } else {
         if (file.good(opt$tpm_cohort) & file.good(opt$tpm)) {
-            
+
+            if (opt$include_surface) {
+                surface = readRDS(report.config$surface)
+            } else {
+                surface = c()
+            }
+
             melted.expr = compute_rna_quantiles(tpm = opt$tpm,
                                                 tpm.cohort = opt$tpm_cohort,
                                                 onc = readRDS(report.config$onc),
                                                 tsg = readRDS(report.config$tsg),
+                                                surface = surface,
                                                 id = opt$pair,
                                                 gencode.gtrack = report.config$gencode_gtrack,
                                                 quantile.thresh = opt$quantile_thresh,
@@ -316,11 +326,14 @@ if (!opt$knit_only) {
         melted.expr = data.table::fread(report.config$tpm_quantiles, header = TRUE)
         if (nrow(melted.expr)) {
             rna.change.dt = melted.expr[pair == opt$pair,][(role %like% "ONC" & qt > (1 - opt$quantile_thresh)) |
+                                                           (role %like% "SURF" & qt > (1 - opt$quantile_thresh)) |
                                                            (role %like% "TSG" & qt < opt$quantile_thresh)]
+            rna.change.all.dt = melted.expr[pair == opt$pair,]
         } else {
             rna.change.dt = melted.expr
         }
         fwrite(rna.change.dt, report.config$rna_change)
+        fwrite(rna.change.all.dt, report.config$rna_change_all)
     }
 
     message('Calling CNVs for oncogenes and tumor suppressor genes')
@@ -407,14 +420,24 @@ if (!opt$knit_only) {
             onc = readRDS(report.config$onc)
             tsg = readRDS(report.config$tsg)
 
-            driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
-                                                 (cnv == "del" & gene_name %in% tsg)]
+            if (!is.null(opt$include_surface) && opt$include_surface) {
+                surface = readRDS(report.config$surface)
+
+                driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
+                                                     (cnv == "del" & gene_name %in% tsg) |
+                                                     (cnv == "amp" & gene_name %in% surface)]
+                driver.genes_cn[gene_name %in% surface, surface := TRUE]
+            } else {
+                driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
+                                                     (cnv == "del" & gene_name %in% tsg)]
+            }
             
             #' add whether gene is TSG or ONCO
             driver.genes_cn[gene_name %in% onc, annot := "ONC"]
             driver.genes_cn[gene_name %in% tsg, annot := "TSG"]
 
-            fields = c("gene_name", "annot", "cnv", "expr", "min_cn",
+            fields = c("gene_name", "annot", "surface",
+                       "cnv", "expr", "min_cn",
                        "max_cn", "min_normalized_cn", "max_normalized_cn",
                        "expr.value", "expr.quantile",
                        "seqnames", "start", "end", "width", "ev.id", "ev.type")
@@ -440,22 +463,20 @@ if (!opt$knit_only) {
             stop("SCNA analysis failed")
         }
 
-        fields = c("gene_name", "annot", "min_cn",
+        fields = c("gene_name", "annot", "surface", "min_cn",
                    "max_cn", "min_normalized_cn", "max_normalized_cn",
                    "seqnames", "start", "end", "width", "ev.id", "ev.type")
         cn.fields = intersect(fields, colnames(genes_cn_annotated))
         
         driver.genes.expr.dt = merge.data.table(rna.change.dt[, .(gene, expr = direction,
                                                                   expr.value = value,
-                                                                  expr.quantile = qt,
-                                                                  role)],
+                                                                  expr.quantile = qt, role)],
                                                 genes_cn_annotated[, ..cn.fields],
                                                 by.x = "gene",
                                                 by.y = "gene_name",
                                                 all.x = TRUE)
         fwrite(driver.genes.expr.dt, report.config$rna_change_with_cn)
     }
-
 
 
     if (check_file(report.config$wgs_gtrack_plot, opt$overwrite, opt$verbose)) {
@@ -1276,7 +1297,7 @@ if (!opt$knit_only) {
                                      complex = report.config$complex,
                                      scna = report.config$gene_cn,
                                      annotated_bcf = opt$snpeff_indel_bcf,
-                                     rna = report.config$rna_change,
+                                     rna = report.config$rna_change_all,
                                      proximity = opt$proximity,
                                      deconstruct_sigs = opt$deconstruct_sigs,
                                      key = "pair")
