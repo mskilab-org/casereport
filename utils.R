@@ -2546,6 +2546,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
 #' @param tpm_cohort (character) path to file with cohort expression
 #' @param onc (character) character vector of oncogenes
 #' @param tsg (character) character vector of TSGs
+#' @param surface (character) character vector of surface genes
 #' @param id (character) id of current sample
 #' @param gencode.gtrack (character) path to gencode gTrack
 #' @param quantile.thresh (numeric) default 0.05
@@ -2556,6 +2557,7 @@ compute_rna_quantiles = function(tpm = NULL,
                                  tpm.cohort = NULL,
                                  onc = as.character(),
                                  tsg = as.character(),
+                                 surface = as.character(),
                                  id = NULL,
                                  gencode.gtrack = NULL,
                                  quantile.thresh = 0.05,                                 
@@ -2597,8 +2599,11 @@ compute_rna_quantiles = function(tpm = NULL,
         message("Annotating with supplied TSG and oncogenes")
     }
 
+    melted.expr[, role := ""]
     melted.expr[(gene %in% onc) & (gene %in% tsg), role := "ONC|TSG"]
+    melted.expr[(gene %in% onc) & (gene %in% surface), role := "ONC|SURF"]
     melted.expr[(gene %in% onc) & !(gene %in% tsg), role := "ONC"]
+    melted.expr[!(gene %in% onc) & (gene %in% surface), role := "SURF"]
     melted.expr[!(gene %in% onc) & (gene %in% tsg), role := "TSG"]
 
     if (verbose) {
@@ -2606,6 +2611,7 @@ compute_rna_quantiles = function(tpm = NULL,
     }
 
     melted.expr[role %like% "ONC" & qt >= (1 - quantile.thresh), direction := "over"]
+    melted.expr[role %like% "SURF" & qt >= (1 - quantile.thresh), direction := "over"]
     melted.expr[role %like% "TSG" & qt < quantile.thresh, direction := "under"]
 
     return(melted.expr)

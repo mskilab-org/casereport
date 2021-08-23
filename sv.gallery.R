@@ -173,7 +173,7 @@ grab.window = function(gr, complex.fname,
 
     ## grab amplicons as GRanges
     keep = (gg$nodes$dt$cn/ploidy) > amp.thresh
-    if (any(keep)){
+    if (any(keep, na.rm = TRUE)){
         gg$clusters(keep)
         ## grab nodes with non-NA cluster
         amp.gr = (gg$nodes$gr %Q% (!is.na(cluster))) %>% gr.stripstrand
