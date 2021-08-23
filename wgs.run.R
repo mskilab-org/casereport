@@ -320,7 +320,8 @@ if (!opt$knit_only) {
         fwrite(melted.expr, report.config$tpm_quantiles)
     }
 
-    if (check_file(report.config$rna_change, opt$overwrite, opt$verbose)) {
+    if (check_file(report.config$rna_change, opt$overwrite, opt$verbose) &
+        check_file(report.config$rna_change_all, opt$overwrite, opt$verbose)) {
         message("Over/underexpressed driver genes already identified")
     } else {
         melted.expr = data.table::fread(report.config$tpm_quantiles, header = TRUE)
@@ -331,6 +332,7 @@ if (!opt$knit_only) {
             rna.change.all.dt = melted.expr[pair == opt$pair,]
         } else {
             rna.change.dt = melted.expr
+            rna.change.all.dt = melted.expr
         }
         fwrite(rna.change.dt, report.config$rna_change)
         fwrite(rna.change.all.dt, report.config$rna_change_all)
@@ -706,7 +708,7 @@ if (!opt$knit_only) {
         if (nrow(fusions.slickr.dt) == 0) {
 
             ## write empty data table, rmd file will deal with this.
-            fwrite(fusions.slickr.dt, report.confgi$driver_fusions)
+            fwrite(fusions.slickr.dt, report.config$driver_fusions)
             fwrite(fusions.slickr.dt, report.config$other_fusions)
             
         } else {
@@ -1217,8 +1219,8 @@ if (!opt$knit_only) {
                                               plot.fname = as.character())
         } else if (!file.good(opt$proximity)) {
             message("No proximity.rds supplied - skipping!")
-                        proximity.gallery.dt = data.table(gene = as.character(),
-                                                          plot.fname = as.character())
+            proximity.gallery.dt = data.table(gene = as.character(),
+                                              plot.fname = as.character())
         } else {
     
             prox = readRDS(opt$proximity)
