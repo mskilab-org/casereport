@@ -79,6 +79,7 @@ suppressMessages(expr = {
         source(paste0(opt$libdir, "/pmkb-utils.R"))
         source(file.path(opt$libdir, "sv.gallery.R"))
         source(file.path(opt$libdir, "fusion.gallery.R"))
+        data.table::setDTthreads(1)
     })
 })
 
@@ -546,6 +547,8 @@ if (!opt$knit_only) {
             snv.dt = filter.snpeff(vcf = opt$snpeff_snv_bcf,
                                    gngt.fname = report.config$gencode_gtrack,
                                    cgc.fname = report.config$cgc,
+                                   onc = report.config$onc,
+                                   tsg = report.config$tsg,
                                    ref.name = opt$ref,
                                    verbose = TRUE)
 
@@ -576,6 +579,8 @@ if (!opt$knit_only) {
                 snv.dt = filter.snpeff(vcf = report.config$snpeff_snv_bcf,
                                        gngt.fname = report.config$gencode_gtrack,
                                        cgc.fname = report.config$cgc,
+                                       onc = report.config$onc,
+                                       tsg = report.config$tsg,
                                        ref.name = opt$ref,
                                        verbose = TRUE)
                 
@@ -594,6 +599,8 @@ if (!opt$knit_only) {
             indel.dt = filter.snpeff(vcf = report.config$snpeff_indel_bcf,
                                    gngt.fname = report.config$gencode_gtrack,
                                    cgc.fname = report.config$cgc,
+                                   onc = report.config$onc,
+                                   tsg = report.config$tsg,
                                    ref.name = opt$ref,
                                    verbose = TRUE)
         } else {
@@ -624,6 +631,8 @@ if (!opt$knit_only) {
                 indel.dt = filter.snpeff(vcf = report.config$snpeff_indel_bcf,
                                        gngt.fname = report.config$gencode_gtrack,
                                        cgc.fname = report.config$cgc,
+                                       onc = report.config$onc,
+                                       tsg = report.config$tsg,
                                        ref.name = opt$ref,
                                        verbose = TRUE)
                 
@@ -632,9 +641,10 @@ if (!opt$knit_only) {
                 indel.dt = NULL
             }
         }
-        
+
+        ## browser()
         if (!is.null(snv.dt) & !is.null(indel.dt)) {
-            driver.mutations.dt = rbind(snv.dt, indel.dt, use.names =  TRUE, fill = TRUE)
+            driver.mutations.dt = rbind(snv.dt, indel.dt, use.names =  TRUE, fill = TRUE) %>% unique
         } else if (!is.null(snv.dt)) {
             driver.mutations.dt = snv.dt
         } else {
@@ -809,12 +819,16 @@ if (!opt$knit_only) {
     if (check_file(report.config$waterfall_plot, overwrite = opt$overwrite, verbose = opt$verbose)) {
         message("Waterfall plot already exists")
     } else {
-        message("Generating waterfall plot")
-        pt = rna.waterfall.plot(melted.expr.fn = report.config$tpm_quantiles,
-                           rna.change.fn = report.config$rna_change,
-                           pair = opt$pair)
-        ppng(print(pt), filename = report.config$waterfall_plot,
-             width = 1600, height = 1200, res = 150)
+        if (file.good(opt$tpm) & file.good(opt$tpm_cohort)) {
+            message("Generating waterfall plot")
+            pt = rna.waterfall.plot(melted.expr.fn = report.config$tpm_quantiles,
+                                    rna.change.fn = report.config$rna_change,
+                                    pair = opt$pair)
+            ppng(print(pt), filename = report.config$waterfall_plot,
+                 width = 1600, height = 1200, res = 150)
+        } else {
+            message("Skipping waterfall plot - RNA expression not supplied")
+        }
     } 
 
     ## ##################
@@ -896,7 +910,7 @@ if (!opt$knit_only) {
             hrd.out[, pair := opt$pair]
             saveRDS(hrd.out, paste0(opt$outdir, "/hrdetect.rds"))
 
-            hrd = merge(hrd.out, hrd.dat[, .(variable, data = value)], by = "variable")
+            hrd = merge.data.table(hrd.out, hrd.dat[, .(variable, data = value)], by = "variable")
 
             ## original training data
             hrd_cohort = fread(paste0(opt$libdir, "/data/hrdetect.og.txt"))
@@ -1310,7 +1324,12 @@ if (!opt$knit_only) {
     } 
 }
 
-
+message("Optimizing PNGs")
+cm = paste("python",
+           paste0(opt$libdir, "/", "optimize_png.py"),
+           "--dirname",
+           opt$outdir)
+system(cm)
 
 
 message("Start knitting")
@@ -1331,3 +1350,4 @@ rmarkdown::render(
     quiet = FALSE)
 
 message("yes")
+

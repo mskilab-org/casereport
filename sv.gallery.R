@@ -21,7 +21,11 @@ create_cgc_gtrack = function(cgc.fname = "./data/cgc.tsv",
 
     cgc.gene.symbols = fread(cgc.fname)[["Gene Symbol"]]
     gff = skidb::read_gencode(fn = gencode.fname)
-    cgc.gt = track.gencode(gencode = gff, genes = cgc.gene.symbols)
+    cgc.gt = gTrack(gff, col = NA, 
+                    grl.labelfield = "id", gr.labelfield = "exon_number",
+                    labels.suppress.gr = TRUE, labels.suppress = TRUE)
+                    ## gr.srt.label = gr.srt.label, cex.label = cex.label, gr.cex.label = gr.cex.label,                     ## labels.suppress.gr = labels.suppress.gr, stack.gap = stack.gap, 
+                    ## colormaps = cmap, ...)
     return(cgc.gt)
 }
 
