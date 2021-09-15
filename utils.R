@@ -1858,11 +1858,17 @@ grab.gene.ranges = function(gngt.fname, genes = as.character()) {
 #' @param vcf (character) vcf file name
 #' @param gngt.fname (character) gencode gTrack file name
 #' @param cgc.fname (character) cgc.tsv with columns "Gene Symbol" and "Tier"
+#' @param onc (character) path to .rds file with character vector of oncogenes
+#' @param tsg (character) path to .rds file with character vector of TSGs
 #' @param ref.name (character) one of hg19 or hg38
 #' @param verbose (logical) default FALSE
 #'
 #' @return data.table with columns gene, seqnames, pos, REF, ALT, variant.p, vartype, annotation
-filter.snpeff = function(vcf, gngt.fname, cgc.fname, ref.name = "hg19", verbose = FALSE) {
+filter.snpeff = function(vcf,
+                         gngt.fname,
+                         cgc.fname, onc, tsg,
+                         ref.name = "hg19",
+                         verbose = FALSE) {
 
     dummy.out = data.table(
         gene = character(),
@@ -1926,7 +1932,7 @@ filter.snpeff = function(vcf, gngt.fname, cgc.fname, ref.name = "hg19", verbose 
     ## vcf.gr = vcf.gr %Q% (feature_id %in% isoforms)
     ## deduplicate variants, preferably keeping documented isoforms
     vcf.gr = vcf.gr %Q%
-        (order(!feature_id %in% isoforms, decreasing = FALSE)) %Q%
+        ## (order(!feature_id %in% isoforms, decreasing = FALSE)) %Q%
         (!duplicated(paste(CHROM, POS)))
 
     ## if (length(vcf.gr) == 0) {
@@ -1940,7 +1946,8 @@ filter.snpeff = function(vcf, gngt.fname, cgc.fname, ref.name = "hg19", verbose 
         message("Found ", length(vcf.gr), " variants, overlapping with genes")
     }
 
-    genes = fread(cgc.fname)[["Hugo Symbol"]]
+    ## genes = fread(cgc.fname)[["Hugo Symbol"]]
+    genes = c(readRDS(onc), readRDS(tsg))
 
     if (length(genes) == 0) {
         if (verbose) {
