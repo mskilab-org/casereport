@@ -495,6 +495,13 @@ if (!opt$knit_only) {
         if (length(plot.chrs) == 0){
             stop('None of the sequences in your genome graph matches the default set of sequences.')
         }
+        
+        plot.chrs[plot.chrs=="X"] = "1000"
+        plot.chrs[plot.chrs=="Y"] = "2000"
+        plot.chrs = as.character(sort(as.numeric(plot.chrs)))
+        plot.chrs[plot.chrs=="1000"] = "X"
+        plot.chrs[plot.chrs=="2000"] = "Y"
+        
         ppng(plot(gt, plot.chrs),
              filename = report.config$wgs_gtrack_plot,
              height = 1000,
