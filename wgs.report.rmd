@@ -17,6 +17,12 @@ params:
 ---
 
 <style>
+.aligncenter{
+	text-align:  center;
+}
+</style>
+
+<style>
   .superbigimage{
   overflow-x:scroll;
   white-space: nowrap;
@@ -24,8 +30,58 @@ params:
   
   .superbigimage img{
   max-width: none;
+  margin: 0 -250px -250px 0;
   }
 </style>
+
+<input type="button" style="height: 25px; width: 100px" value="Expand All" id="primaryButton" />
+<input type="button" style="height: 25px; width: 100px" value="Collapse All" id="2Button"  />
+
+<script>
+// Get the button, and when the user clicks on it, execute myFunction
+document.getElementById("primaryButton").onclick = function() {expandAll()};
+
+function expandAll() {
+  var buttons= document.getElementsByClassName("btn btn-primary collapsed");
+  for(var i = 0; i < buttons.length; i++) { 
+  	console.log(buttons[i].getAttribute('aria-expanded'))
+  	console.log(i)
+ 	if((buttons[i].getAttribute('aria-expanded')=="false") || (buttons[i].getAttribute('aria-expanded')==null)){
+     buttons[i].click();
+  		}
+	}
+
+	var buttons= document.getElementsByClassName("btn btn-primary");
+  for(var i = 0; i < buttons.length; i++) { 
+  	console.log(buttons[i].getAttribute('aria-expanded'))
+  	console.log(i)
+ 	if((buttons[i].getAttribute('aria-expanded')=="false") || (buttons[i].getAttribute('aria-expanded')==null)){
+     buttons[i].click();
+  		}
+	}
+}
+</script>
+
+<script>
+// Get the button, and when the user clicks on it, execute myFunction
+document.getElementById("2Button").onclick = function() {collapseAll()};
+
+function collapseAll() {
+  var buttons= document.getElementsByClassName("btn btn-primary collapsed");
+  for(var i = 0; i < buttons.length; i++) { 
+ 	if(buttons[i].getAttribute('aria-expanded')=="true"){
+     buttons[i].click();
+  		}
+	}
+
+	var buttons= document.getElementsByClassName("btn btn-primary");
+  for(var i = 0; i < buttons.length; i++) { 
+ 	if(buttons[i].getAttribute('aria-expanded')=="true"){
+     buttons[i].click();
+  		}
+	}
+}
+</script>
 
 ---
 title: Whole genome/transcriptome sequencing of `r params$pair`, `r
@@ -62,8 +118,61 @@ summary.list = readRDS(normalizePath(file.path(params$outdir, "summary.rds")))
 message("Loaded gGraph")
 ```
 
+```{css,echo=FALSE}
+button.btn.collapsed:before
+{
+    content:'+' ;
+    display:block;
+    width:15px;
+}
+button.btn:before
+{
+    content:'-' ;
+    display:block;
+    width:15px;
+}
+```
+
+```{r,echo=FALSE,results='hide'}
+#This is the first function for the buttons, which opens the section that will expand/collapse for each button. This function should be run in a chunk immediately after the section header (title with a single #). IF THERE IS A SECTION WITHOUT A CHUNK BEFORE THE FIRST SUBSECTION (title with two or more #) THEN ADD AN EMPTY CHUNK AFTER THE SECTION TITLE AND CALL THIS HOOK (see Whole Genome View for an example).
+
+#The function has two variants. For section which will be collapsed by default, use this one.
+knitr::knit_hooks$set(dropAboveCol=function(before, options, envir) {
+    if (before) {
+        paste(
+            '<p>',
+paste('<button class="btn btn-primary collapsed" data-toggle="collapse" data-target="#',options$label,'">',sep=""),
+'</button>',
+'</p>',
+paste('<div class="collapse" id="',options$label,'">',sep=""), sep = "\n")
+    }
+})
+
+#For sections to be expanded by default, use this one. 
+knitr::knit_hooks$set(dropAboveExp=function(before, options, envir) {
+    if (before) {
+        paste(
+            '<p>',
+paste('<button class="btn btn-primary" data-toggle="collapse" data-target="#',options$label,'"aria-expanded="true">',sep=""),
+'</button>',
+'</p>',
+paste('<div class="collapse in" id="',options$label,'">',sep=""), sep = "\n")
+    }
+})
+
+#This is the second function for the buttons, which closes the section that will expand/collapse for each button. It should be called in the last chunk of the section.  FOR SECTIONS (whole sections, i.e: single # before name) WITH TABSET ADD AN ADDITIONAL </div> AFTER THE LAST CHUNK.
+knitr::knit_hooks$set(dropBelow=function(before, options, envir) {
+    if (!before) {
+      cat("/n", "</div>", "/n")
+    }
+})
+```
+
 ***
 # `r paste(params$pair, params$tumor_type, sep = ", ")`
+
+```{r, param-lead, dropAboveExp=TRUE, results = "hide", echo = FALSE}
+```
 
 ## Purity/ploidy
 
@@ -93,9 +202,17 @@ Total number of somatic SNV/INDELs: `r format(round(summary.list$mut_count, 0), 
 
 Tumor Mutation Burden (TMB): `r format(round(summary.list$mut_per_mbp, 2), 2)` per Mbp 
 
+```{r, param-close, dropBelow=TRUE, results = "hide", echo = FALSE}
+```
+
 ***
 # Whole genome view {.tabset .tabset-fade .tabset-pills}
-## gTrack 
+
+```{r, wgs-lead, dropAboveExp=TRUE, results = "hide", echo = FALSE}
+```
+
+## gTrack
+
 <div class="superbigimage">
 ```{r, wgs-gtrack, max.width = "95%", results = "asis", echo = FALSE, fig.align = "center"}
 knitr::include_graphics(file.path(params$outdir, "wgs.gtrack.png"))
@@ -103,20 +220,20 @@ knitr::include_graphics(file.path(params$outdir, "wgs.gtrack.png"))
 </div>
 
 ## circos
-
-```{r, wgs-circos, out.width = "95%", results = "asis", echo = FALSE, fig.align = "center"}
+```{r, wgs-circos, dropBelow=TRUE, out.width = "95%", results = "asis", echo = FALSE, fig.align = "center"}
 knitr::include_graphics(file.path(params$outdir, "wgs.circos.png"))
 ```
+</div>
 
 <br>
-
 
 ***
 
 # Copy number variants
 Copy number variations (CNVs) in oncogenes and tumor suppressor genes.
 
-```{r, driver-cnv-table, results = "asis", max.width= "100%"}
+
+```{r, driver-cnv-table, dropAboveCol=TRUE, results = "asis", max.width= "100%"}
 driver.genes.cnv = fread(file.path(params$outdir, "driver.genes.cnv.txt"))
 ## driver.genes.cnv[cnv != ''] %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
 DT::datatable(driver.genes.cnv, options = list(scrollX = TRUE))
@@ -125,7 +242,7 @@ DT::datatable(driver.genes.cnv, options = list(scrollX = TRUE))
 
 ## Driver CNV gallery {.tabset .tabset-fade .tabset-pills}
 
-```{r cn-tabset, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
+```{r cn-tabset, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
 cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
 if (nrow(cn.gallery.dt) > 0) {
     cat("\n")
@@ -153,8 +270,10 @@ if (nrow(cn.gallery.dt) > 0) {
 
 # Fusions
 
-## Known fusions
+```{r, fus-lead, dropAboveCol=TRUE, results = "hide", echo = FALSE}
+```
 
+## Known fusions
 
 ```{r, driver-fusions-table, results = "asis", out.width= "100%", max.height = 800}
 driver.fusions.fname = file.path(params$outdir, "fusions.driver.txt")
@@ -233,15 +352,19 @@ slick_up
 }
 ```
 
-
 ## Altered transcripts
 
-Under construction
+```{r, altered-transcripts, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+  cat("Under construction")
+  cat("\n")
+```
+
 
 ***
 
 # Over/under-expression of oncogenes/TSGs 
-```{r, driver-expr-table, results = "asis", max.width= "100%"}
+
+```{r, driver-expr-table,  dropAboveCol=TRUE, results = "asis", max.width= "100%"}
 driver.genes.expr = fread(file.path(params$outdir, "driver.genes.expr.txt"))
 if (nrow(driver.genes.expr)) {
     DT::datatable(driver.genes.expr, options = list(scrollX = TRUE))
@@ -265,42 +388,48 @@ if (file.exists(waterfall.fn)) {
 
 ## Expression gallery {.tabset .tabset-fade .tabset-pills}
 
-```{r expression, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
-if (file.good(paste0(params$outdir, "/", "rna.change.txt"))) {
-    expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
-    cool.exp = fread(paste0(params$outdir, "/", "rna.change.txt"))
-    expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
-    cat("\n")
-    valid.genes = intersect(expr.hist.dt[, gene], expr.slickr.dt[, gene_name])
-    for (g in valid.genes) {
-    	expr.png.fn = expr.hist.dt[gene == g, expr.hist.fname][1]
+```{r expression, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
+ if (file.good(paste0(params$outdir, "/", "rna.change.txt"))) {
+     expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
+     cool.exp = fread(paste0(params$outdir, "/", "rna.change.txt"))
+     expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
+     cat("\n")
+     valid.genes = intersect(expr.hist.dt[, gene], expr.slickr.dt[, gene_name])
+     for (g in valid.genes) {
+        expr.png.fn = expr.hist.dt[gene == g, expr.hist.fname][1]
 	gg.png.fn = expr.slickr.dt[gene_name == g, plot.fname][1]
         cat("\n")
+
 	if (file.exists(expr.png.fn) & file.exists(gg.png.fn)) {
-        cat("###", cool.exp[gene == g, paste0(gene, " (", direction, ")", "<br>", "\n")])
-        cat(
-        	paste0(
-        		'<p float="left">',
-        		'<img src="',
+         cat("###", cool.exp[gene == g, paste0(gene, " (", direction, ")", "<br>", "\n")])
+       	 cat("Z-Score:",cool.exp[cool.exp$gene==g,]$zscore)
+
+         cat(
+       		paste0(
+       			'<p float="left">',
+       			'<img src="',
 			expr.png.fn,
+       			'" width="45%" />',
+       			'<img src="',
+       			gg.png.fn,
         		'" width="45%" />',
-        		'<img src="',
-        		gg.png.fn,
-        		'" width="45%" />',
-        		'</p>'
+       			'</p>'
         	)
         )
 	}
-        cat('\n', '<br>', '\n\n')
-    }
-} else {
+       	cat('\n', '<br>', '\n\n')
+    } 
+	} else {
     cat("\n", "Gene expression not available", "\n")
-}
+	}
 ```
 
 ***
-
 # SV event classifications
+
+```{r, SV-lead, dropAboveCol=TRUE, results = "hide", echo = FALSE}
+```
+
 ## Burdens of event types
 Count of complex events against background distribution from Cell cohort.
 
@@ -310,7 +439,7 @@ knitr::include_graphics(file.path(params$outdir, "ridgeplot.png"))
 
 ## Complex SV gallery
 
-```{r, SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+```{r, SV, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 ## read data table with plot png/URL
 if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
     sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
@@ -323,19 +452,22 @@ if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
    cat("\n", "Complex SVs not available", "\n")
 }
 ```
+</div>
 
 # Driver SNVs/indels
 
-```{r, driver-snv-indel, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
+```{r, driver-snv-indel, dropAboveCol=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
 driver.mutations.dt = fread(file.path(params$outdir, "driver.mutations.txt"))
 DT::datatable(driver.mutations.dt, options = list(scrollX = TRUE))
 ```
+
 
 # SNV signatures {.tabset .tabset-fade .tabset-pills}
 Fitting COSMIC signatures to the whole genome mutation profiles of
 this sample we obtain the following active SNV mutation signatures:
 
-```{r, SNV-signature, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+
+```{r, SNV-signature,  dropAboveCol=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
 if (file.good(paste0(params$outdir, "/deconstruct_sigs.png"))){
     cat("\n")
     cat("## deconstructSigs: input profile, fitted, error")
@@ -361,7 +493,11 @@ if (file.good(paste0(params$outdir, "/deconstruct_sigs.png"))){
 }
 ```
 
-```{r, Oneness_twoness, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
+</div>
+
+# Oneness/Twoness
+
+```{r, Oneness_twoness, dropAboveCol=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
 ot.plot = paste0(params$outdir, "/onenesstwoness.log.dat.png")
 ot.plot.2 = paste0(params$outdir, "/onenesstwoness.prop.dat.png")
 oneness.plot = paste0(params$outdir, "/Oneness.png")
@@ -370,7 +506,7 @@ twoness.plot = paste0(params$outdir, "/Twoness.png")
 all.good = file.good(ot.plot) & file.good(ot.plot.2) & file.good(oneness.plot) & file.good(twoness.plot)
 
 if (all.good) {
-   cat("# Oneness/Twoness\n")
+   #cat("# Oneness/Twoness\n")
    cat("## Score distributions\n")
    cat(paste0("![](", ot.plot,")"), "\n\n")
    cat(paste0("![](", ot.plot.2,")"), "\n\n")
@@ -381,9 +517,11 @@ if (all.good) {
 }
 ```
 
-```{r, HRDetect, results = "asis", echo = FALSE, out.width="100%", fig.align = "center", max.height = 800}
+# HRDetect prediction (homologous recombination deficiency)
+
+```{r, HRDetect, dropAboveCol=TRUE,  dropBelow=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center", max.height = 800}
 if (file.exists(paste0(params$outdir, "/hrdetect.rds"))){
-    cat("# HRDetect prediction (homologous recombination deficiency)\n")
+    #cat("# HRDetect prediction (homologous recombination deficiency)\n")
     cat("Applying the [HRDetect](https://doi.org/10.1038/nm.4292) model, we
 predict homologous recombination deficiency status of this sample
 based on its SNV/INDEL/SV signatures.\n\n")
@@ -420,6 +558,7 @@ based on its SNV/INDEL/SV signatures.\n\n")
 ```
 
 ***
+
 # Enhancer hijacking candidates {.tabset .tabset-fade .tabset-pills}
 The shortest path on a genome graph provides a lower bound on the
 actual genomic distance between two locations in a rearranged
@@ -428,7 +567,8 @@ target gene and activate its expression, thus named _enhancer
 hijacking_. We identify such pairs of gene-enhancer where they are >5Mbp
 away in the reference genome while potentially <1Mbp in the rearranged genome.
 
-```{r, enhancer hijacking, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+
+```{r, enhancer-hijacking, dropAboveCol=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
 proximity.gallery.dt = fread(paste0(params$outdir, "/", "proximity.gallery.txt"))
 expr.histograms.dt = fread(paste0(params$outdir, "/", "expr.histograms.txt"))
 
@@ -436,21 +576,25 @@ if (nrow(proximity.gallery.dt) & nrow(expr.histograms.dt)) {
    gns = intersect(proximity.gallery.dt$gene, expr.histograms.dt$gene)
    for (g in gns) {
         cat("## ", g, "\n<br>\n")
-	    cat(
+	    cat('<div class="superbigimage">',"\n",
 	    paste0(
-	    	'<p float="left">',
+	    	'<p float="center">',
 		'<img src="',
 		proximity.gallery.dt[gene == g, plot.fname],
-		'" width="45%" />',
-		'<img src="',
+		'" width="125%" />','</p>'),
+		"\n",'</div>',"<br>","<br>","<br>","<br>","<br>","<br>",
+		paste0('<p class="aligncenter">','<img src="',
 		expr.histograms.dt[gene == g, expr.hist.fname],
-		'" width="45%" />',
+		'" width="60%" alt="centered image"/>',
 		'</p>')
             )
     }
 }
 cat('\n', '<br>', '\n\n')
 ```
+
+</div>
+
 ***
 # Loose ends
 There are xx high quality loose ends in this sample.
@@ -464,7 +608,7 @@ grid) align well with the peaks in the raw intensity distribution
 (black histogram).
 
 
-```{r ppfit, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+```{r ppfit, dropAboveCol=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
 ## if (file.exists(paste0(params$outdir, "/ppfit.hist.png"))){
 ##     cat(
 ##         paste0("![](", paste0(params$outdir, "/ppfit.hist.png"),")"), "\n\n"
@@ -480,12 +624,13 @@ knitr::include_graphics(file.path(params$outdir, "cn.pp.png"))
 
 ## Allelic CN
 
-```{r, allelic-cn, echo = FALSE, out.width = "45%", out.height = "45%", fig.show = "hold", fig.align = "center"}
+```{r, allelic-cn, dropBelow=TRUE, echo = FALSE, out.width = "45%", out.height = "45%", fig.show = "hold", fig.align = "center"}
 if (file.good(file.path(params$outdir, "allele.scatter.png"))){
     knitr::include_graphics(file.path(params$outdir, "allele.scatter.png"))
 }
 ```
 
+</div>
 ***
 # Junction read support
 Below we show the junction supporting reads.

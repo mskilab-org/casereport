@@ -1352,9 +1352,9 @@ rna.waterfall.plot = function(melted.expr.fn,
 
     ## compute zscores
     melted.expr[, value := as.double(value)]
-    melted.expr[, m := mean(value, na.rm = TRUE), by = "gene"]
-    melted.expr[, v := var(value, na.rm = TRUE), by = "gene"]
-    melted.expr[, zs := (value - m)/sqrt(v), by = "gene"]
+    melted.expr[, m := mean(log10(value+1), na.rm = TRUE), by = "gene"]
+    melted.expr[, v := var(log10(value+1), na.rm = TRUE), by = "gene"]
+    melted.expr[, zs := (log10(value+1) - m)/sqrt(v), by = "gene"]
 
     sel = melted.expr$pair == pair
     ds = melted.expr[sel, .(gene, zs)]
@@ -2613,7 +2613,7 @@ compute_rna_quantiles = function(tpm = NULL,
     melted.expr[role %like% "ONC" & qt >= (1 - quantile.thresh), direction := "over"]
     melted.expr[role %like% "SURF" & qt >= (1 - quantile.thresh), direction := "over"]
     melted.expr[role %like% "TSG" & qt < quantile.thresh, direction := "under"]
-
+	
     return(melted.expr)
 }
 
