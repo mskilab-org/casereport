@@ -1,0 +1,30 @@
+Signature	Mutational.process
+1	Spontaneous deamination of 5-methylcytosine
+2	APOBEC activity
+3	HR deficiency
+4	Tobacco smoking
+5	Aging / Tobacco smoking / NER deficiency
+6	MMR deficiency
+7	UV light exposure
+8	HR deficiency / NER deficiency
+9	Polymerase eta somatic hypermutation
+10	POLE exonuclease domain mutation/Defective POLD1 proofreading
+11	Temozolomide chemotherapy / MMR deficiency + temozolomide
+12	Unknown
+13	APOBEC activity
+14	MMR deficiency + POLE mutation
+15	MMR deficiency
+16	Unknown
+17	Damage by ROS/ 5FU chemotherapy
+18	Damage by ROS
+19	Unknown
+20	MMR deficiency + POLD1 mutation
+21	MMR deficiency
+22	Aristolochic acid exposure
+23	Unknown
+24	Aflatoxin exposure
+25	Unknown chemotherapy
+26	MMR deficiency
+28	POLE exonuclease domain mutation
+29	Tobacco chewing
+30	BER deficiency
