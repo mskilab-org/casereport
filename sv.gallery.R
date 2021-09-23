@@ -151,14 +151,14 @@ grab.window = function(gr, complex.fname,
     gg = readRDS(complex.fname)
 
     ## grab events as GRanges
-    if (!is.null(gg$meta$events)){
+    if (!is.null(gg$meta$events) && gg$meta$events[, .N]){
         evs = gg$meta$events[type %in% ev.types]
         if (nrow(evs) > 0) {
             ev.grl = parse.grl(evs$footprint)
             values(ev.grl) = evs
             ev.gr = stack(ev.grl)
 
-            ## warning: for genes overlapping multiple events, will pull ALL footprints (potentially huge :()
+            ## warning: for genes overlapping multiple events, will pull ALL footprints (potentially huge :
             ev.ov = gr.findoverlaps(gr, ev.gr, scol = c("footprint"), return.type = "data.table")
             if (nrow(ev.ov) > 0) {
                 tmp = ev.ov[, .(footprint = paste(unique(footprint), collapse = ",")),
