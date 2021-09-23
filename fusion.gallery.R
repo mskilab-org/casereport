@@ -457,8 +457,23 @@ fusion.table = function(fusions.fname = NULL,
         return(filtered.fusions)
     }
 
+    ## remove hyphenated genes
+    sel = grepl('[A-Za-z]+-[A-Za-z]+', filtered.fusions$dt$gene.pc)
+    filtered.fusions = filtered.fusions[!(sel)]
+    
+    if (length(filtered.fusions)==0) {
+        return(filtered.fusions)
+    }
+
     ## compute total number of amino acids and mark
-    grls = lapply(filtered.fusions$dt$gene.pc, parse.grl)
+    grls = lapply(filtered.fusions$dt$gene.pc, function(x) {
+        out = NULL
+        tryCatch({
+            out = parse.grl(x)
+        },
+        error = function(cond) {return(NULL)})
+        return(out)
+    })
     n.aa = sapply(grls, function(grl) {
         wd = ifelse(!is.null(grl), sum(width(grl)), NA)
         return(wd)

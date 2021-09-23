@@ -1355,9 +1355,10 @@ rna.waterfall.plot = function(melted.expr.fn,
 
     ## compute zscores
     melted.expr[, value := as.double(value)]
-    melted.expr[, m := mean(log10(value+1), na.rm = TRUE), by = "gene"]
-    melted.expr[, v := var(log10(value+1), na.rm = TRUE), by = "gene"]
-    melted.expr[, zs := (log10(value+1) - m)/sqrt(v), by = "gene"]
+    melted.expr[, logvalue := log1p(value)]
+    melted.expr[, m := mean(logvalue, na.rm = TRUE), by = "gene"]
+    melted.expr[, v := var(logvalue, na.rm = TRUE), by = "gene"]
+    melted.expr[, zs := (logvalue - m)/sqrt(v), by = "gene"]
 
     sel = melted.expr$pair == pair
     ds = melted.expr[sel, .(gene, zs)]
@@ -1741,7 +1742,7 @@ ggplot_ppfit = function(seg, purity, ploidy, beta = NULL, gamma = NULL, ploidy_n
 #'
 #' preprocess kallisto/salmon raw tsv files for downstream analysis
 #' 
-#' @param kallisto.fname (character) path to kallisto output
+#' @param kallisto.fname (character) path to kallisto/salmon output
 #' @param pair (character) id
 #' @param gngt.fname (character) gencode gTrack file name
 #'
@@ -1765,7 +1766,7 @@ rna_reformat = function(kallisto.fname,
     } else if (inherits(gngt.fname, "GRanges")){
         ge.data = gngt.fname
     } else {
-        stop("Invalid gene model. Please check your --gencode argument.")
+        stop("Invalid genocde gTrack prov. Please check your --gencode argument.")
     }
 
     kallisto.dt = fread(kallisto.fname, header = TRUE)
@@ -1861,11 +1862,15 @@ grab.gene.ranges = function(gngt.fname, genes = as.character()) {
 #' @param vcf (character) vcf file name
 #' @param gngt.fname (character) gencode gTrack file name
 #' @param cgc.fname (character) cgc.tsv with columns "Gene Symbol" and "Tier"
+#' @param onc (character) path to .rds file with character vector of oncogenes
+#' @param tsg (character) path to .rds file with character vector of TSGs
 #' @param ref.name (character) one of hg19 or hg38
 #' @param verbose (logical) default FALSE
 #'
 #' @return data.table with columns gene, seqnames, pos, REF, ALT, variant.p, vartype, annotation
-filter.snpeff = function(vcf, gngt.fname, cgc.fname, ref.name = "hg19", verbose = FALSE) {
+filter.snpeff = function(vcf,
+                         gngt.fname,
+                         cgc.fname, onc, tsg, ref.name = "hg19", verbose = FALSE) {
 
     dummy.out = data.table(
         gene = character(),
@@ -1929,7 +1934,7 @@ filter.snpeff = function(vcf, gngt.fname, cgc.fname, ref.name = "hg19", verbose 
     ## vcf.gr = vcf.gr %Q% (feature_id %in% isoforms)
     ## deduplicate variants, preferably keeping documented isoforms
     vcf.gr = vcf.gr %Q%
-        (order(!feature_id %in% isoforms, decreasing = FALSE)) %Q%
+        ## (order(!feature_id %in% isoforms, decreasing = FALSE)) %Q%
         (!duplicated(paste(CHROM, POS)))
 
     ## if (length(vcf.gr) == 0) {
@@ -1943,7 +1948,8 @@ filter.snpeff = function(vcf, gngt.fname, cgc.fname, ref.name = "hg19", verbose 
         message("Found ", length(vcf.gr), " variants, overlapping with genes")
     }
 
-    genes = fread(cgc.fname)[["Hugo Symbol"]]
+    ## genes = fread(cgc.fname)[["Hugo Symbol"]]
+    genes = c(readRDS(onc), readRDS(tsg))
 
     if (length(genes) == 0) {
         if (verbose) {
@@ -2343,7 +2349,13 @@ pp_plot = function(jabba_rds = NULL,
 #' @param verbose logical flag 
 #' @author Marcin Imielinski
 
-oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, filter = 'PASS', del.thresh = 0.5, max.reldist = 0.25, min.refdist = 5e6, mc.cores = 1) {
+oncotable = function(tumors, gencode = NULL, verbose = TRUE,
+                     amp.thresh = 4,
+                     filter = 'PASS',
+                     del.thresh = 0.5,
+                     max.reldist = 0.25,
+                     min.refdist = 5e6,
+                     mc.cores = 1) {
     require(skitools)
     .oncotable = function(dat, x = dat[[key(dat)]][1], pge = NULL, verbose = TRUE, amp.thresh = 4, del.thresh = 0.5, filter = 'PASS', max.reldist = 0.25, min.refdist = 5e6)
     {
@@ -2397,14 +2409,14 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
             if (nrow(sv))
             {
                 ## modified to keep individual complex SV's separate
-                ## sv = sv[, .(value = .N), by = type][, id := x][, track := ifelse(type %in% c('del', 'dup', 'invdup', 'tra', 'inv'), 'simple sv', 'complex sv')][, source := 'complex']
-                sel.cols = intersect(c("type", "ev.id", "footprint"), colnames(sv))
-                sv = sv[, ..sel.cols][, ev.type := type][, id := x][, track := ifelse(type %in% c('del', 'dup', 'invdup', 'tra', 'inv'), 'simple sv', 'complex sv')][, source := 'complex']
+                sv = sv[, .(value = .N), by = type][, id := x][, track := ifelse(type %in% c('del', 'dup', 'invdup', 'tra', 'inv'), 'simple sv', 'complex sv')][, source := 'complex']
+                ## sel.cols = intersect(c("type", "ev.id", "footprint"), colnames(sv))
+                ## sv = sv[, ..sel.cols][, ev.type := type][, id := x][, track := ifelse(type %in% c('del', 'dup', 'invdup', 'tra', 'inv'), 'simple sv', 'complex sv')][, source := 'complex']
                 out = rbind(out, sv, fill = TRUE, use.names = TRUE)
             }
         }
         else
-            out = rbind(out, data.table(id = x, type = NA, source = 'complex'), fill = TRUE, use.names = TRUE)
+            out = rbind(out, data.table(id = x, type = NA, source = 'complex', track = ""), fill = TRUE, use.names = TRUE)
 
         ## collect copy number / jabba
         if (!is.null(dat$jabba_rds) && file.exists(dat[x, jabba_rds]))
@@ -2427,22 +2439,37 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
 
                 ## if there are any CN variants, rbind them to existing output
                 if (nrow(scna.dt)) {
-                    scna = scna.dt
-                    sel.cols = intersect(c("min_cn", "min_normalized_cn", "max_cn", "max_normalized_cn",
-                                           "expr.quantile", "expr.value", "ev.id", "ev.type",
-                                           "seqnames", "start", "end"),
-                                         colnames(scna))
-                    out = rbind(out, scna[, ..sel.cols][, ":="(id = x,
-                                                               type = "cnv",
-                                                               track = "variants",
-                                                               vartype = "scna",
-                                                               source = "jabba_rds")],
+                    sel.cols = intersect(c("gene_name", "gene", "cnv",
+                                           "min_cn", "min_normalized_cn", "max_cn", "max_normalized_cn",
+                                           "seqnames", "start", "end", "ncn"),
+                                         colnames(scna.dt))
+                    scna = scna.dt[, ..sel.cols]
+
+                    ## make sure that gene is named as gene instead of gene_name
+                    if ("gene_name" %in% colnames(scna)) {
+                        setnames(scna, "gene_name", "gene")
+                    }
+
+                    ## make sure ncn copy number is present
+                    if (!("ncn" %in% colnames(scna))) {
+                        scna[, ncn := 2]
+                    }
+
+                    ## set 'type' to cnv annotation if present
+                    if ("cnv" %in% colnames(scna)) {
+                        setnames(scna, "cnv", "type")
+                    } else {
+                        scna[min_normalized_cn >= amp.thresh, type := 'amp']
+                        scna[min_cn > 1 & min_normalized_cn <= del.thresh, type := 'del']
+                        scna[min_cn == 1 & min_cn < ncn, type := 'hetdel']
+                        scna[min_cn == 0, type := 'homdel']
+                    }
+                    
+                    out = rbind(out, scna[, ":="(id = x,
+                                                 track = "variants",
+                                                 vartype = "scna",
+                                                 source = "jabba_rds")],
                                 fill = TRUE, use.names = TRUE)
-                    ## out = rbind(out,
-                    ##             scna[, .(id = x, min_cn, min_normalized_cn, max_cn, max_normalized_cn,
-                    ##                      expr.quantile, expr.value, ev.id, ev.type, seqnames, start, end,
-                    ##                      type = cnv, track = "variants", vartype = "scna", source = "jabba_rds")],
-                    ##             fill = TRUE)
                 } else {
                     if (verbose) {
                         message("No SCNAs found")
@@ -2450,7 +2477,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
                 }
             }
         } else {
-            out = rbind(out, data.table(id = x, type = NA, source = 'jabba_rds'), fill = TRUE, use.names = TRUE)
+            out = rbind(out, data.table(id = x, type = NA, source = 'jabba_rds', track = "variants"), fill = TRUE, use.names = TRUE)
         }
 
         if (file.good(dat[x, proximity]) && nrow(readRDS(dat[x, proximity])$dt)) {
@@ -2470,50 +2497,57 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
                     message('No proximity hits found')
             }
         } else {
-            out = rbind(out, data.table(id = x, type = NA, source = "proximity"), fill = TRUE, use.names = TRUE)
+            out = rbind(out, data.table(id = x, type = NA, source = "proximity", track = "proximity"), fill = TRUE, use.names = TRUE)
         }
 
 
-        if (file.good(dat[x, deconstruct_sigs])) {
+        if (file.good(dat[x, deconstruct_variants])) {
             if (verbose)
-                message('pulling $deconstruct_sigs for ', x)
-            sig = readRDS(dat[x, deconstruct_sigs])
-            sig.dt = data.table(id = x,
-                                value = sig$weights,
-                                type = names(sig$weights),
-                                track = "signature",
-                                source = "deconstruct_sigs")
+                message('pulling $deconstruct_variants for ', x)
+            sig = fread(dat[x, deconstruct_variants])
+            sig.dt = sig[, .(value = .N), by = max.post][max.post %like% "Signature"]
+            setnames(sig.dt, "max.post", "type")
+            sig.dt[, ":="(id = x,
+                          etiology = NA,
+                          frac = value / sum(value, na.rm = T),
+                          track = "signature",
+                          source = "deconstruct_variants")]
             out = rbind(out, sig.dt, fill = TRUE, use.names = TRUE)
         } else {
-            out = rbind(out, data.table(id = x, type = NA, source = 'deconstruct_sigs'), fill = TRUE, use.names = TRUE)
+            out = rbind(out, data.table(id = x, type = NA, source = 'deconstruct_sigs', track = "signature"), fill = TRUE, use.names = TRUE)
         }
 
-        ## collect gene mutations
-        if (file.good(dat$annotated_bcf))
-        {
+        ## collect gene mutations for SNVs and optionally indels
+        if (file.good(dat$annotated_snv_bcf)) {
             if (verbose)
                 message('pulling $annotated_bcf for ', x, ' using FILTER=', filter)
-            bcf = grok_bcf(dat[x, annotated_bcf], label = x, long = TRUE, filter = filter)
-            if (verbose)
-                message(length(bcf), ' variants pass filter')
-            genome.size = sum(seqlengths(bcf))/1e6
-            nmut = data.table(as.character(seqnames(bcf)), start(bcf), end(bcf), bcf$REF, bcf$ALT) %>% unique %>% nrow
-            mut.density = data.table(id = x, value = c(nmut, nmut/genome.size), type = c('count', 'density'),  track = 'tmb', source = 'annotated_bcf')
-            out = rbind(out, mut.density, fill = TRUE, use.names = TRUE)
-            keepeff = c('trunc', 'cnadel', 'cnadup', 'complexsv', 'splice', 'inframe_indel', 'fusion', 'missense', 'promoter', 'regulatory','mir')
-            bcf = bcf[bcf$short %in% keepeff]
-            if (verbose)
-                message(length(bcf), ' variants pass keepeff')
-            vars = NULL
-            if (length(bcf))
-            {
-                bcf$variant.g = paste0(seqnames(bcf), ':', start(bcf), '-', end(bcf), ' ', bcf$ALT, '>', bcf$REF)
-                vars = gr2dt(bcf)[, .(id = x, gene, vartype, variant.g, variant.p, distance, annotation, type = short, track = 'variants', source = 'annotated_bcf')] %>% unique
-            }
+            vars = annotated_bcf_to_oncotable(dat$annotated_snv_bcf,
+                                              filter = filter,
+                                              id = x,
+                                              verbose = verbose)
             out = rbind(out, vars, fill = TRUE, use.names = TRUE)
+        } else {
+            out = rbind(out,
+                        data.table(id = x, type = NA, source = 'annotated_bcf', track = "variants"),
+                        fill = TRUE, use.names = TRUE)
         }
-        else
-            out = rbind(out, data.table(id = x, type = NA, source = 'annotated_bcf'), fill = TRUE, use.names = TRUE)
+        
+        if (file.good(dat$annotated_indel_bcf)) {
+            if (verbose)
+                message('pulling $annotated_indel_bcf for ', x, ' using FILTER=', filter)
+            vars = annotated_bcf_to_oncotable(dat$annotated_indel_bcf,
+                                              filter = filter,
+                                              id = x,
+                                              verbose = verbose)
+            out = rbind(out, vars, fill = TRUE, use.names = TRUE)
+        } else {
+            if (verbose) {
+                message("$annotated_indel_bcf not supplied")
+            }
+            out = rbind(out,
+                        data.table(id = x, type = NA, source = 'annotated_bcf', track = "variants"),
+                        fill = TRUE, use.names = TRUE)
+        }
 
         if (verbose)
             message('done ', x)
@@ -2534,8 +2568,56 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE, amp.thresh = 4, fil
     out = rbindlist(out, fill = TRUE, use.names = TRUE)
 
     setnames(out, 'id', key(tumors))
+
+    ## make sure no NA tracks or source
+    out[is.na(source), source := ""]
+    out[is.na(track), track := ""]
+    
     return(out)
 }
+
+#' @name annotated_bcf_to_oncotable
+#' @title annotated_bcf_to_oncotable
+#'
+#' @description
+#'
+#' Collect results from annotated BCF for oncotable
+#'
+#' @param annotated_bcf (character) path to file
+#' @param filter (character) default PASS
+#' @param keepeff (character) variants to keep
+#' @param id (character) ID of sample
+#' @param verbose (logical) default FALSE
+annotated_bcf_to_oncotable = function(annotated_bcf,
+                                      filter = 'PASS',
+                                      keepeff = c('trunc', 'cnadel', 'cnadup', 'complexsv', 'splice', 'inframe_indel', 'fusion', 'missense', 'promoter', 'regulatory','mir'),
+                                      id = "",
+                                      verbose = FALSE) {
+    bcf = grok_bcf(annotated_bcf, label = id, long = TRUE, filter = filter)
+    if (verbose) {
+        message(length(bcf), ' variants pass filter')
+    }
+    
+    bcf = bcf[bcf$short %in% keepeff]
+    if (verbose) {
+        message(length(bcf), ' variants pass keepeff')
+    }
+    if (length(bcf)) {
+        bcf$variant.g = paste0(seqnames(bcf), ':', start(bcf), '-', end(bcf), ' ', bcf$ALT, '>', bcf$REF)
+        vars = gr2dt(bcf)[, .(id = id,
+                              gene, vartype,
+                              variant.g,
+                              variant.p, distance,
+                              annotation,
+                              type = short,
+                              track = 'variants',
+                              source = 'annotated_bcf')] %>% unique
+    } else {
+        vars = data.table(id = id, type = NA, source = 'annotated_bcf', track = "variants")
+    }
+    return(vars)
+}
+    
 
 #' @name compute_rna_quantiles
 #' @title compute_rna_quantiles

@@ -25,7 +25,8 @@ if (!exists("opt")){
         make_option(c("--snpeff_snv_bcf"), type = "character", default = NA_character_, help = "snpeff snv results )bcf)"),
         make_option(c("--snpeff_indel_bcf"), type = "character", default = NA_character_, help = "snpeff indel results (bcf)"),
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
-        make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
+        make_option(c("--genes"), type = "character", default = '~/DB/GENCODE/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
+        ## make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
         make_option(c("--chrom_sizes"), type = "character", default = "~/DB/UCSC/hg19.broad.chrom.sizes", help = "chrom.sizes file of the reference genome"),
         make_option(c("--knit_only"), type = "logical", default = FALSE, action = "store_true", help = "if true, skip module and just knit"),
@@ -79,6 +80,7 @@ suppressMessages(expr = {
         source(paste0(opt$libdir, "/pmkb-utils.R"))
         source(file.path(opt$libdir, "sv.gallery.R"))
         source(file.path(opt$libdir, "fusion.gallery.R"))
+        data.table::setDTthreads(1)
     })
 })
 
@@ -162,7 +164,7 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
 
     ## summary
     report.config$summary_stats = paste0(report.config$outdir, "/summary.rds")
-    report.config$oncotable = paste0(report.config$outdir, "/oncotable.txt")
+    report.config$oncotable = paste0(report.config$outdir, "/oncotable.rds")
 
     saveRDS(report.config, paste0(report.config$outdir, "/", "report.config.rds"))
 }
@@ -558,6 +560,8 @@ if (!opt$knit_only) {
             snv.dt = filter.snpeff(vcf = opt$snpeff_snv_bcf,
                                    gngt.fname = report.config$gencode_gtrack,
                                    cgc.fname = report.config$cgc,
+                                   onc = report.config$onc,
+                                   tsg = report.config$tsg,
                                    ref.name = opt$ref,
                                    verbose = TRUE)
 
@@ -588,6 +592,8 @@ if (!opt$knit_only) {
                 snv.dt = filter.snpeff(vcf = report.config$snpeff_snv_bcf,
                                        gngt.fname = report.config$gencode_gtrack,
                                        cgc.fname = report.config$cgc,
+                                       onc = report.config$onc,
+                                       tsg = report.config$tsg,
                                        ref.name = opt$ref,
                                        verbose = TRUE)
                 
@@ -606,6 +612,8 @@ if (!opt$knit_only) {
             indel.dt = filter.snpeff(vcf = report.config$snpeff_indel_bcf,
                                    gngt.fname = report.config$gencode_gtrack,
                                    cgc.fname = report.config$cgc,
+                                   onc = report.config$onc,
+                                   tsg = report.config$tsg,
                                    ref.name = opt$ref,
                                    verbose = TRUE)
         } else {
@@ -636,6 +644,8 @@ if (!opt$knit_only) {
                 indel.dt = filter.snpeff(vcf = report.config$snpeff_indel_bcf,
                                        gngt.fname = report.config$gencode_gtrack,
                                        cgc.fname = report.config$cgc,
+                                       onc = report.config$onc,
+                                       tsg = report.config$tsg,
                                        ref.name = opt$ref,
                                        verbose = TRUE)
                 
@@ -644,9 +654,10 @@ if (!opt$knit_only) {
                 indel.dt = NULL
             }
         }
-        
+
+        ## browser()
         if (!is.null(snv.dt) & !is.null(indel.dt)) {
-            driver.mutations.dt = rbind(snv.dt, indel.dt, use.names =  TRUE, fill = TRUE)
+            driver.mutations.dt = rbind(snv.dt, indel.dt, use.names =  TRUE, fill = TRUE) %>% unique
         } else if (!is.null(snv.dt)) {
             driver.mutations.dt = snv.dt
         } else {
@@ -821,13 +832,16 @@ if (!opt$knit_only) {
     if (check_file(report.config$waterfall_plot, overwrite = opt$overwrite, verbose = opt$verbose)) {
         message("Waterfall plot already exists")
     } else {
-        message("Generating waterfall plot")
-
-        pt = rna.waterfall.plot(melted.expr.fn = report.config$tpm_quantiles,
-                           rna.change.fn = report.config$rna_change,
-                           pair = opt$pair)
-        ppng(print(pt), filename = report.config$waterfall_plot,
-             width = 1600, height = 1200, res = 150)
+        if (file.good(opt$tpm) & file.good(opt$tpm_cohort)) {
+            message("Generating waterfall plot")
+            pt = rna.waterfall.plot(melted.expr.fn = report.config$tpm_quantiles,
+                                    rna.change.fn = report.config$rna_change,
+                                    pair = opt$pair)
+            ppng(print(pt), filename = report.config$waterfall_plot,
+                 width = 1600, height = 1200, res = 150)
+        } else {
+            message("Skipping waterfall plot - RNA expression not supplied")
+        }
     } 
 
 
@@ -919,7 +933,7 @@ if (!opt$knit_only) {
             hrd.out[, pair := opt$pair]
             saveRDS(hrd.out, paste0(opt$outdir, "/hrdetect.rds"))
 
-            hrd = merge(hrd.out, hrd.dat[, .(variable, data = value)], by = "variable")
+            hrd = merge.data.table(hrd.out, hrd.dat[, .(variable, data = value)], by = "variable")
 
             ## original training data
             hrd_cohort = fread(paste0(opt$libdir, "/data/hrdetect.og.txt"))
@@ -1247,8 +1261,13 @@ if (!opt$knit_only) {
         } else {
     
             prox = readRDS(opt$proximity)
-            pdt = prox$dt
-            pdt = pdt[reldist<0.25 & refdist>5e6]
+
+            if (length(prox)) {
+                pdt = prox$dt
+                pdt = pdt[reldist<0.25 & refdist>5e6]
+            } else {
+                pdt = data.table(gene_name = c())
+            }
             cool.exp = fread(report.config$rna_change) %>% setkey("gene")
 
             if (any(cool.exp[direction=="over", gene] %in% pdt$gene_name)) {
@@ -1325,28 +1344,32 @@ if (!opt$knit_only) {
                                      fusions = opt$fusions,
                                      complex = report.config$complex,
                                      scna = report.config$gene_cn,
-                                     annotated_bcf = opt$snpeff_indel_bcf,
+                                     annotated_snv_bcf = opt$snpeff_snv_bcf,
+                                     annotated_indel_bcf = opt$snpeff_indel_bcf,
                                      rna = report.config$rna_change_all,
                                      proximity = opt$proximity,
-                                     deconstruct_sigs = opt$deconstruct_sigs,
+                                     deconstruct_variants = opt$deconstruct_variants,
                                      key = "pair")
         oncotable = oncotable(oncotable.input,
-                              gencode = opt$gencode,
+                              gencode = opt$genes,
                               verbose = TRUE)
-        fwrite(oncotable, report.config$oncotable)
+        saveRDS(oncotable, report.config$oncotable)
     } 
 }
 
-
+message("Optimizing PNGs")
+cm = paste("python",
+           paste0(opt$libdir, "/", "optimize_png.py"),
+           "--dirname",
+           opt$outdir)
+system(cm)
 
 
 message("Start knitting")
 rmarkdown::render(
     input = normalizePath(paste0(opt$libdir, "/wgs.report.rmd")),
     output_format = "html_document",
-    output_file = normalizePath(paste0(opt$outdir,
-                                       "/",
-                                       opt$pair,".wgs.report.html")),
+    output_file = normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html")),
     knit_root_dir = normalizePath(opt$outdir),
     ## params = report.config,
     params = list(set_title = paste0(opt$pair),
@@ -1358,3 +1381,4 @@ rmarkdown::render(
     quiet = FALSE)
 
 message("yes")
+
