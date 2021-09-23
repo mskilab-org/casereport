@@ -580,7 +580,7 @@ sv.plot = function(complex.fname = NULL,
 
             gt = c(agt, gt)
         }
-
+	
         ## save plots
         pts = lapply(1:nrow(complex.ev),
                      function(ix) {
@@ -598,8 +598,7 @@ sv.plot = function(complex.fname = NULL,
                               height = height,
                               width = width)
                      })
-
-        return(complex.ev[, .(plot.fname, plot.link)])
+        return(complex.ev[, .(type, plot.fname, plot.link)])
     } else {
         return(data.table(plot.fname = character(0), plot.link = character(0)))
     }

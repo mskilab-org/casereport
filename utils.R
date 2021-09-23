@@ -1244,6 +1244,7 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
                                      sigs.cohort.fn = NULL,
                                      id = "",
                                      cohort.type = "",
+				     outdir = "~",
                                      ...) {
 
     allsig = data.table::fread(sigs.cohort.fn)
@@ -1279,6 +1280,8 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
     ## reorder seqlevels by count
     new.slevels = allsig[pair == id,][order(sig_count), Signature]
     allsig[, Signature := factor(Signature, levels = new.slevels)]
+	
+    fwrite(allsig[pair== id,],file.path(outdir,"Sig.csv"))
 
     sigbar = ggplot(allsig, aes(y = Signature, x = sig_count, fill = Signature)) +
         geom_density_ridges(bandwidth = 0.1,

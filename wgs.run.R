@@ -898,10 +898,19 @@ if (!opt$knit_only) {
             sigbar = deconstructsigs_histogram(sigs.fn = opt$deconstruct_variants,
                                                sigs.cohort.fn = sig.fn,
                                                id = opt$pair,
-                                               cohort.type = background.type)
+                                               cohort.type = background.type,
+						outdir=opt$outdir)
             ppng(print(sigbar),
                  filename = report.config$sig_histogram,
                  height = 800, width = 800, res = 150)
+
+            presentSigs=fread(file.path(opt$outdir,"Sig.csv"))
+	    sigMet=fread(file.path(opt$libdir,"data","sig.metadata.txt"),sep="\t")
+	    print(sigMet)
+	    thisMet=sigMet[sigMet$Signature %in% presentSigs$Signature,]
+	    thisMet$sig_count=presentSigs$sig_count
+	    thisMet$quantile=presentSigs$perc
+	    fwrite(thisMet, file.path(opt$outdir,"signatureMetadata.csv"))
             
         } else {
             message("deconstructSigs output not supplied.")
@@ -1269,7 +1278,8 @@ if (!opt$knit_only) {
                 gt.cgc = readRDS(report.config$cgc_gtrack)
                 gt.cgc$name = "CGC"
 		gt.cgc$height=15
-                enh = readRDS(opt$enhancer)
+                gt.cgc$cex.label=1.2
+		enh = readRDS(opt$enhancer)
 
                 ## read some gTracks
                 cvgt = readRDS(report.config$coverage_gtrack)
