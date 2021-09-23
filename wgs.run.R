@@ -309,7 +309,11 @@ if (!opt$knit_only) {
                                                 id = opt$pair,
                                                 gencode.gtrack = report.config$gencode_gtrack,
                                                 quantile.thresh = opt$quantile_thresh,
-                                                verbose = opt$verbose)
+                                                verbose = TRUE)
+	    library(matrixStats)
+	    cohort=fread(opt$tpm_cohort,sep="\t")
+	    W=data.table(gene=cohort$"gene",Avg=rowMeans(log10(cohort[,!("gene")]+1)),SD=rowSds(log10(as.matrix(cohort[,!("gene")]+1))))
+	    melted.expr$zscore=(log10(melted.expr$value+1)-W$Avg)/W$SD
         } else {
             message("RNA input not supplied.")
             melted.expr = data.table(gene = as.character(),
@@ -317,11 +321,12 @@ if (!opt$knit_only) {
                                      value = as.numeric(),
                                      qt = as.numeric(),
                                      role = as.character(),
-                                     direction = as.character())
+                                     direction = as.character(),
+				     zscore = as.numeric())
+					
         }
         fwrite(melted.expr, report.config$tpm_quantiles)
     }
-
     if (check_file(report.config$rna_change, opt$overwrite, opt$verbose) &
         check_file(report.config$rna_change_all, opt$overwrite, opt$verbose)) {
         message("Over/underexpressed driver genes already identified")
@@ -474,7 +479,7 @@ if (!opt$knit_only) {
         
         driver.genes.expr.dt = merge.data.table(rna.change.dt[, .(gene, expr = direction,
                                                                   expr.value = value,
-                                                                  expr.quantile = qt, role)],
+                                                                  expr.quantile = qt, role, zscore)],
                                                 genes_cn_annotated[, ..cn.fields],
                                                 by.x = "gene",
                                                 by.y = "gene_name",
@@ -491,18 +496,18 @@ if (!opt$knit_only) {
         gt = wgs_gtrack(report.config$jabba_rds,
                         report.config$coverage_gtrack,
                         report.config$allele_gtrack)
-        
         plot.chrs = grep("(^(chr)*[0-9XY]+$)", seqlevels(gt@data[[1]]), value = TRUE)
-        if (length(plot.chrs) == 0){
+        
+	if (length(plot.chrs) == 0){
             stop('None of the sequences in your genome graph matches the default set of sequences.')
         }
-        
+
         plot.chrs[plot.chrs=="X"] = "1000"
         plot.chrs[plot.chrs=="Y"] = "2000"
         plot.chrs = as.character(sort(as.numeric(plot.chrs)))
         plot.chrs[plot.chrs=="1000"] = "X"
         plot.chrs[plot.chrs=="2000"] = "Y"
-        
+
         ppng(plot(gt, plot.chrs),
              filename = report.config$wgs_gtrack_plot,
              height = 1000,
@@ -838,6 +843,7 @@ if (!opt$knit_only) {
             message("Skipping waterfall plot - RNA expression not supplied")
         }
     } 
+
 
     ## ##################
     ## deconstructSigs composition plot
@@ -1262,6 +1268,7 @@ if (!opt$knit_only) {
                 pgs = pdt[(direction=="over"), unique(gene_name)]
                 gt.cgc = readRDS(report.config$cgc_gtrack)
                 gt.cgc$name = "CGC"
+		gt.cgc$height=15
                 enh = readRDS(opt$enhancer)
 
                 ## read some gTracks
@@ -1276,11 +1283,13 @@ if (!opt$knit_only) {
                                            w = prox[pdt[gene_name==g, walk.id]]
                                            this.enh = copy(enh)
                                            this.enh$col = binary.cols[as.character(seq_along(enh) %in% w$dt$qid)]
-                                           gt.enh = gTrack(this.enh, name = "enhancer", height = 5)
+                                           gt.enh = gTrack(this.enh, name = "enhancer")
+					   cvgt$xaxis.cex.label=2.0
+				 	   cvgt$xaxis.cex.tick=2.0
                                            pgt = c(cvgt, gg$gtrack(height = 30),
-                                                   w$gtrack(name = "shortest walk"), gt.cgc, gt.enh)
-                                           png(this.png, height = 1200, width = 1600, pointsize = 18)
-                                           plot(pgt, w$footprint + 1e6, legend.params = list(plot = FALSE), y0 = 0)
+                                                   w$gtrack(name = "shortest walk", height=15), gt.cgc, gt.enh)
+                                           png(this.png, height = 1200, width = 1800, pointsize = 20)
+                                           plot(pgt, w$footprint + 1e6, legend.params = list(plot = FALSE), y0 = 0, mai=c(0,0,0,0))
                                            dev.off()
                                            return(this.png)
                                        }) %>% unlist
