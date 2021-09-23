@@ -25,7 +25,8 @@ if (!exists("opt")){
         make_option(c("--snpeff_snv_bcf"), type = "character", default = NA_character_, help = "snpeff snv results )bcf)"),
         make_option(c("--snpeff_indel_bcf"), type = "character", default = NA_character_, help = "snpeff indel results (bcf)"),
         make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
-        make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
+        make_option(c("--genes"), type = "character", default = '~/DB/GENCODE/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
+        ## make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
         make_option(c("--chrom_sizes"), type = "character", default = "~/DB/UCSC/hg19.broad.chrom.sizes", help = "chrom.sizes file of the reference genome"),
         make_option(c("--knit_only"), type = "logical", default = FALSE, action = "store_true", help = "if true, skip module and just knit"),
@@ -163,7 +164,7 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
 
     ## summary
     report.config$summary_stats = paste0(report.config$outdir, "/summary.rds")
-    report.config$oncotable = paste0(report.config$outdir, "/oncotable.txt")
+    report.config$oncotable = paste0(report.config$outdir, "/oncotable.rds")
 
     saveRDS(report.config, paste0(report.config$outdir, "/", "report.config.rds"))
 }
@@ -1245,8 +1246,13 @@ if (!opt$knit_only) {
         } else {
     
             prox = readRDS(opt$proximity)
-            pdt = prox$dt
-            pdt = pdt[reldist<0.25 & refdist>5e6]
+
+            if (length(prox)) {
+                pdt = prox$dt
+                pdt = pdt[reldist<0.25 & refdist>5e6]
+            } else {
+                pdt = data.table(gene_name = c())
+            }
             cool.exp = fread(report.config$rna_change) %>% setkey("gene")
 
             if (any(cool.exp[direction=="over", gene] %in% pdt$gene_name)) {
@@ -1319,15 +1325,16 @@ if (!opt$knit_only) {
                                      fusions = opt$fusions,
                                      complex = report.config$complex,
                                      scna = report.config$gene_cn,
-                                     annotated_bcf = opt$snpeff_indel_bcf,
+                                     annotated_snv_bcf = opt$snpeff_snv_bcf,
+                                     annotated_indel_bcf = opt$snpeff_indel_bcf,
                                      rna = report.config$rna_change_all,
                                      proximity = opt$proximity,
-                                     deconstruct_sigs = opt$deconstruct_sigs,
+                                     deconstruct_variants = opt$deconstruct_variants,
                                      key = "pair")
         oncotable = oncotable(oncotable.input,
-                              gencode = opt$gencode,
+                              gencode = opt$genes,
                               verbose = TRUE)
-        fwrite(oncotable, report.config$oncotable)
+        saveRDS(oncotable, report.config$oncotable)
     } 
 }
 
@@ -1343,9 +1350,7 @@ message("Start knitting")
 rmarkdown::render(
     input = normalizePath(paste0(opt$libdir, "/wgs.report.rmd")),
     output_format = "html_document",
-    output_file = normalizePath(paste0(opt$outdir,
-                                       "/",
-                                       opt$pair,".wgs.report.html")),
+    output_file = normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html")),
     knit_root_dir = normalizePath(opt$outdir),
     ## params = report.config,
     params = list(set_title = paste0(opt$pair),

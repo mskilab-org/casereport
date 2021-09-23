@@ -362,10 +362,10 @@ if (file.good(paste0(params$outdir, "/deconstruct_sigs.png"))){
 ```
 
 ```{r, Oneness_twoness, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
-ot.plot = paste0(params$outdir, "/onenesstwoness.log.dat.png")
-ot.plot.2 = paste0(params$outdir, "/onenesstwoness.prop.dat.png")
-oneness.plot = paste0(params$outdir, "/Oneness.png")
-twoness.plot = paste0(params$outdir, "/Twoness.png")
+ot.plot = file.path(params$outdir, "onenesstwoness.log.dat.png")
+ot.plot.2 = file.path(params$outdir, "onenesstwoness.prop.dat.png")
+oneness.plot = file.path(params$outdir, "Oneness.png")
+twoness.plot = file.path(params$outdir, "Twoness.png")
 
 all.good = file.good(ot.plot) & file.good(ot.plot.2) & file.good(oneness.plot) & file.good(twoness.plot)
 
@@ -382,13 +382,13 @@ if (all.good) {
 ```
 
 ```{r, HRDetect, results = "asis", echo = FALSE, out.width="100%", fig.align = "center", max.height = 800}
-if (file.exists(paste0(params$outdir, "/hrdetect.rds"))){
+if (file.exists(file.path(params$outdir, "hrdetect.rds"))){
     cat("# HRDetect prediction (homologous recombination deficiency)\n")
     cat("Applying the [HRDetect](https://doi.org/10.1038/nm.4292) model, we
 predict homologous recombination deficiency status of this sample
 based on its SNV/INDEL/SV signatures.\n\n")
 
-    hrd = readRDS(paste0(params$outdir, "/hrdetect.rds"))
+    hrd = readRDS(file.path(params$outdir, "hrdetect.rds"))
     hrd.yes = hrd[variable=="Probability", value>0.7]
     cat("This sample is classified as", ifelse(hrd.yes, "**HR deficient**", "**NOT** HR deficient"), ".\n")
     
@@ -411,10 +411,10 @@ based on its SNV/INDEL/SV signatures.\n\n")
     cat("\n<br>\n")
     ## insert the plots of input data
     cat(
-        paste0("![](", paste0(params$outdir, "/hrdetect.log.dat.png"),")"), "\n\n"
+        paste0("![](", file.path(params$outdir, "hrdetect.log.dat.png"),")"), "\n\n"
     )
     cat(
-        paste0("![](", paste0(params$outdir, "/hrdetect.prop.dat.png"),")"), "\n\n"
+        paste0("![](", file.path(params$outdir, "hrdetect.prop.dat.png"),")"), "\n\n"
     )
 }
 ```
@@ -457,9 +457,9 @@ grid) align well with the peaks in the raw intensity distribution
 
 
 ```{r ppfit, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
-## if (file.exists(paste0(params$outdir, "/ppfit.hist.png"))){
+## if (file.exists(file.path(params$outdir, "ppfit.hist.png"))){
 ##     cat(
-##         paste0("![](", paste0(params$outdir, "/ppfit.hist.png"),")"), "\n\n"
+##         paste0("![](", file.path(params$outdir, "ppfit.hist.png"),")"), "\n\n"
 ##     )
 ## }
 ```
