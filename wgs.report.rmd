@@ -178,13 +178,6 @@ knitr::knit_hooks$set(dropBelow=function(before, options, envir) {
     }
 })
 ```
-
-```{r, include=FALSE}
-wol=slickR(obj = nba_player_logo$uri[1:2], height = 100, width = "95%") %synch%
-( slickR(nba_player_logo$name[1:2], slideType = 'p') + settings(arrows = FALSE) )
-wol
-```
-
 ***
 # `r paste(params$pair, params$tumor_type, sep = ", ")`
 
