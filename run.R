@@ -713,7 +713,7 @@ if(opt$knit_only == FALSE){
 message("now we will try to knit")
 rmarkdown::render(
     ## input = "~/git/CaseReport/report.rmd",
-    input = paste0(opt$libdir, "/report.rmd"),
+    input = htmltools::HTML(paste0(opt$libdir, "/report.rmd")),
     ## TODO: temporary sandbox!!!!!!!!!
     ## input = "/gpfs/commons/groups/imielinski_lab/projects/IPM/Flow.test/casereport/PM1087-Z1/report.rmd",
     output_format = "html_document",
