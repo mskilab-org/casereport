@@ -24,7 +24,7 @@ if (!exists("opt")){
         make_option(c("--indel_vcf"), type = "character", default = NA_character_, help = "indel vcf file (e.g. strelka)"),
         make_option(c("--snpeff_snv_bcf"), type = "character", default = NA_character_, help = "snpeff snv results )bcf)"),
         make_option(c("--snpeff_indel_bcf"), type = "character", default = NA_character_, help = "snpeff indel results (bcf)"),
-        make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/hg19/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
+        make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
         make_option(c("--genes"), type = "character", default = '~/DB/GENCODE/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
         ## make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
@@ -49,6 +49,20 @@ if (!exists("opt")){
     opt = parse_args(parseobj)
     opt$outdir = normalizePath(opt$outdir)
     opt$libdir = normalizePath(opt$libdir)
+
+    ## make sure $genes and $gencode are correct given genome version
+    if (opt$ref == "hg38") {
+        message("Using reference: ", opt$ref)
+        opt$gencode = "~/DB/GENCODE/gencode.v24.annotation.gtf"
+        opt$genes = "~/DB/GENCODE/gencode.v24.genes.gtf"
+    } else(opt$ref == "hg19") {
+        message("Using reference: ", opt$ref)
+        opt$gencode = "~/DB/GENCODE/gencode.v19.annotation.gtf"
+        opt$genes = "~/DB/GENCODE/gencode.v19.genes.gtf"
+    } else {
+        stop("Invalid entry for $ref provided: ", opt$ref)
+    }
+        
     saveRDS(opt, paste0(opt$outdir, '/cmd.args.rds'))
 }
 
