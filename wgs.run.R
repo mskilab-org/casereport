@@ -62,7 +62,6 @@ if (!exists("opt")){
     } else {
         stop("Invalid entry for $ref provided: ", opt$ref)
     }
-        
     saveRDS(opt, paste0(opt$outdir, '/cmd.args.rds'))
 }
 
@@ -516,11 +515,21 @@ if (!opt$knit_only) {
             stop('None of the sequences in your genome graph matches the default set of sequences.')
         }
 
-        plot.chrs[plot.chrs=="X"] = "1000"
-        plot.chrs[plot.chrs=="Y"] = "2000"
-        plot.chrs = as.character(sort(as.numeric(plot.chrs)))
-        plot.chrs[plot.chrs=="1000"] = "X"
-        plot.chrs[plot.chrs=="2000"] = "Y"
+        if (opt$ref == "hg19") {
+
+            plot.chrs[plot.chrs=="X"] = "1000"
+            plot.chrs[plot.chrs=="Y"] = "2000"
+            plot.chrs = as.character(sort(as.numeric(plot.chrs)))
+            plot.chrs[plot.chrs=="1000"] = "X"
+            plot.chrs[plot.chrs=="2000"] = "Y"
+        } else {
+            plot.chrs[plot.chrs=="chrX"] = "1000"
+            plot.chrs[plot.chrs=="chrY"] = "2000"
+            plot.chrs = as.character(sort(as.numeric(plot.chrs)))
+            plot.chrs[plot.chrs=="1000"] = "chrX"
+            plot.chrs[plot.chrs=="2000"] = "chrY"
+        }
+            
 
         ppng(plot(gt, plot.chrs),
              filename = report.config$wgs_gtrack_plot,
