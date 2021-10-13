@@ -2329,6 +2329,8 @@ pp_plot = function(jabba_rds = NULL,
 #' $signature_counts Path to signature_counts.txt that is the primary output of Signatures module from which SNV signature
 #' counts are computed
 #' 
+#' $hrd_results Path to the output of HRDetect (hrdetect.rds), from which the basic parameters of the HRDetect model are taken from.
+#'
 #' The function then outputs a melted data.table of "interesting" features that can be saved and/or immediately output
 #' into oncoprint.  This data.table will at the very least have fields $id $type (event type), $track, and  $source
 #' populated in addition to a few other data type specific columns.
