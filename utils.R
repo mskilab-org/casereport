@@ -2549,6 +2549,26 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
                         fill = TRUE, use.names = TRUE)
         }
 
+	    ## adding hrd results
+    	if ( !is.null(dat$hrd_results) && file.good(dat[x, hrd_results])){
+	    if(verbose){
+	    	message('adding HRDetect results for ',x)
+		}
+	hrd.res = readRDS(dat[x, hrd_results])
+        hrd.out = as.data.table(hrd.res$hrdetect_output) %>% data.table::melt()
+   	colnames(hrd.out)[1]="vartype"
+	hrd.out$source=rep("HRDetect",nrow(hrd.out))
+	hrd.out$vartype=as.character(hrd.out$vartype)
+	hrd.out$vartype[6]="hrd_index"
+	hrd.out$vartype[8]="hrd_probability"
+	hrd.out$type=c('HRD_Intercept','microdel_prop','SNV3_sig','SV3_sig','SV5_sig','hrd_indx','SNV8_sig','hrdprob_BRCA')
+	hrd.out$track=rep("hrd_res",nrow(hrd.out))
+	out=rbind(out, hrd.out, fill = TRUE, use.names = TRUE)
+    }
+	else{
+		out=rbind(out, data.table(id = x, type = NA, source = 'HRDetect'), fill = TRUE, use.names = TRUE)
+	}
+
         if (verbose)
             message('done ', x)
 
