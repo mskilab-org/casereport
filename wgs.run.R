@@ -1386,6 +1386,7 @@ if (!opt$knit_only) {
                                      rna = report.config$rna_change_all,
                                      proximity = opt$proximity,
                                      deconstruct_variants = opt$deconstruct_variants,
+				     hrd_results = opt$hrd_results,
                                      key = "pair")
         oncotable = oncotable(oncotable.input,
                               gencode = opt$genes,
