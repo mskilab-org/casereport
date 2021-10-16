@@ -25,7 +25,7 @@ dlrs <- function(x) {
 #' @param strip.chr (logical) strip chromosome prefix of coverage file
 covcbs = function(x, field = "ratio", name = "sample", max.ranges = 1e4,
                   lwd.border = 0.2, purity = NULL, ploidy = NULL, rebin = NULL,
-                  strip.chr = TRUE,
+                  strip.chr = FALSE,
                   ...){
     x = readRDS(x)
     if (!is.null(purity) & !is.null(ploidy)){
@@ -2031,6 +2031,9 @@ create.summary = function(jabba_rds,
 
     jab = readRDS(jabba_rds)
     gg = gG(jabba = jab)
+
+    ## get standard chromosomes
+    chrs = grep("(^(chr)*[0-9XY]+$)", unique(gg$nodes$dt$seqnames), value = TRUE)
 
     ## segments as data table
     segs.dt = gg$nodes$dt[as.character(seqnames) %in% chrs, ]
