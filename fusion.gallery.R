@@ -132,6 +132,10 @@ wgs.circos = function(jabba_rds,
         y.field = "cn"
     }
 
+    ## only keep standard chromosomes
+    sn = grep("(^(chr)*[0-9XY]+$)", unique(cytoband$seqnames), value = TRUE)
+    cytoband = cytoband[seqnames %in% sn,]
+
     if (chr.sub)
     {
         ix = ((junctions$left %>% gr.sub('chr', ''))  %^% dt2gr(cytoband)) &
@@ -166,9 +170,6 @@ wgs.circos = function(jabba_rds,
     circlize::circos.clear()
     circlize::circos.par(start.degree = 90, gap.after = gap.after*1)
 
-    ## only keep standard chromosomes
-    sn = grep("(^(chr)*[0-9XY]+$)", unique(cytoband$seqnames), value = TRUE)
-    cytoband = cytoband[seqnames %in% sn,]
 
     circlize::circos.genomicInitialize(cytoband,
                                        sector.names = sn,##unique(cytoband$seqnames),
