@@ -55,10 +55,14 @@ if (!exists("opt")){
         message("Using reference: ", opt$ref)
         opt$gencode = "~/DB/GENCODE/gencode.v24.annotation.gtf"
         opt$genes = "~/DB/GENCODE/gencode.v24.genes.gtf"
-    } else(opt$ref == "hg19") {
+        opt$cytoband = file.path(opt$libdir, "data", "hg38.cytoband.txt")
+        Sys.setenv(DEFAULT_GENOME = "BSgenome.Hsapiens.UCSC.hg19::Hsapiens")
+    } else if (opt$ref == "hg19") {
         message("Using reference: ", opt$ref)
         opt$gencode = "~/DB/GENCODE/gencode.v19.annotation.gtf"
         opt$genes = "~/DB/GENCODE/gencode.v19.genes.gtf"
+        Sys.setenv(DEFAULT_GENOME = "BSgenome.Hsapiens.UCSC.hg38::Hsapiens")
+        opt$cytoband = file.path(opt$libdir, "data", "hg38.cytoband.txt")
     } else {
         stop("Invalid entry for $ref provided: ", opt$ref)
     }
@@ -390,7 +394,7 @@ if (!opt$knit_only) {
                                          gene_ranges = opt$genes,
                                          nseg = nseg,
                                          ploidy = kag$ploidy,
-                                         simplify_seqnames = TRUE,
+                                         simplify_seqnames = (opt$ref == "hg19"),
                                          complex.fname = report.config$complex)
         
         genes_cn_annotated = get_gene_ampdel_annotations(genes_cn,
@@ -509,7 +513,10 @@ if (!opt$knit_only) {
         gt = wgs_gtrack(report.config$jabba_rds,
                         report.config$coverage_gtrack,
                         report.config$allele_gtrack)
-        plot.chrs = grep("(^(chr)*[0-9XY]+$)", seqlevels(gt@data[[1]]), value = TRUE)
+        sl = intersect(intersect(seqlevels(gt@data[[1]]),
+                                 seqlevels(gt@data[[2]])),
+                       seqlevels(gt@data[[3]]))
+        plot.chrs = grep("(^(chr)*[0-9XY]+$)", sl, value = TRUE)
         
 	if (length(plot.chrs) == 0){
             stop('None of the sequences in your genome graph matches the default set of sequences.')
@@ -517,21 +524,27 @@ if (!opt$knit_only) {
 
         if (opt$ref == "hg19") {
 
-            plot.chrs[plot.chrs=="X"] = "1000"
-            plot.chrs[plot.chrs=="Y"] = "2000"
-            plot.chrs = as.character(sort(as.numeric(plot.chrs)))
-            plot.chrs[plot.chrs=="1000"] = "X"
-            plot.chrs[plot.chrs=="2000"] = "Y"
+            std.chrs = c(as.character(1:22), "X", "Y")
+            std.chrs = std.chrs[which(std.chrs %in% plot.chrs)]
+            ## plot.chrs[plot.chrs=="X"] = "1000"
+            ## plot.chrs[plot.chrs=="Y"] = "2000"
+            ## plot.chrs = as.character(sort(as.numeric(plot.chrs)))
+            ## plot.chrs[plot.chrs=="1000"] = "X"
+            ## plot.chrs[plot.chrs=="2000"] = "Y"
+            
         } else {
-            plot.chrs[plot.chrs=="chrX"] = "1000"
-            plot.chrs[plot.chrs=="chrY"] = "2000"
-            plot.chrs = as.character(sort(as.numeric(plot.chrs)))
-            plot.chrs[plot.chrs=="1000"] = "chrX"
-            plot.chrs[plot.chrs=="2000"] = "chrY"
+
+            std.chrs = paste0("chr", c(as.character(1:22), "X", "Y"))
+            std.chrs = std.chrs[which(std.chrs %in% plot.chrs)]
+
         }
+
+        ## temporary fix??
+        ## why is there an error here?
+        std.chrs = gsub("chr", "", std.chrs)
             
 
-        ppng(plot(gt, plot.chrs),
+        ppng(plot(gt, std.chrs),
              filename = report.config$wgs_gtrack_plot,
              height = 1000,
              width = 5000)
@@ -548,7 +561,8 @@ if (!opt$knit_only) {
                             field = "ratio",
                             link.h.ratio = 0.1,
                             cex.points = 0.1,
-                            cytoband.path = file.path(opt$libdir, "data", "hg19.cytoband.txt")),
+                            cytoband.path = opt$cytoband,
+                            chr.sub = (opt$ref == "hg19")),
                  filename = report.config$wgs_circos_plot,
                  height = 850,
                  width = 1000)
