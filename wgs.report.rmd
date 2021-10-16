@@ -481,6 +481,9 @@ knitr::include_graphics(file.path(params$outdir, "ridgeplot.png"))
 
 ```{r, qrp-SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
 ## read data table with plot png/URL
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+}
 events=unique(sv.slickr.dt$type)
 if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
     sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
