@@ -513,9 +513,11 @@ if (!opt$knit_only) {
         gt = wgs_gtrack(report.config$jabba_rds,
                         report.config$coverage_gtrack,
                         report.config$allele_gtrack)
-        sl = intersect(intersect(seqlevels(gt@data[[1]]),
-                                 seqlevels(gt@data[[2]])),
-                       seqlevels(gt@data[[3]]))
+        sl = intersect(names(seqlengths(gt@data[[1]])),
+                       names(seqlengths(gt@data[[2]])))
+        if (length(gt@data) > 2) {
+            sl = intersect(sl, names(seqlengths(gt@data[[3]])))
+        }
         plot.chrs = grep("(^(chr)*[0-9XY]+$)", sl, value = TRUE)
         
 	if (length(plot.chrs) == 0){
