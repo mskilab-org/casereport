@@ -22,8 +22,8 @@ input	indel_vcf	indel_vcf	path	/dev/null	## strelka2 indels vcf
 input	snpeff_config	snpeff_config	path	~/modules/SnpEff/snpEff.config
 input	server	server	value		"https://mskilab.com/gGraph/"
 input	tumor_type	tumor_type	value	"unknown"
-input	cohort_metadata	cohort_metadata	path  /dev/null
-input	ref		ref		value hg19	## must be one of hg19, hg38
+input	cohort_metadata	cohort_metadata	path	/dev/null
+input	ref		ref		value	"hg19"	## one of hg19, hg38
 input	flags	flags	value		""
 output	wgs_casereport	*wgs.report.html$
 output	oncotable	oncotable.rds$

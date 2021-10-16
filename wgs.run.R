@@ -53,16 +53,16 @@ if (!exists("opt")){
     ## make sure $genes and $gencode are correct given genome version
     if (opt$ref == "hg38") {
         message("Using reference: ", opt$ref)
-        opt$gencode = "~/DB/GENCODE/gencode.v24.annotation.gtf"
-        opt$genes = "~/DB/GENCODE/gencode.v24.genes.gtf"
+        opt$gencode = "~/DB/GENCODE/hg38/v38/gencode.v38.annotation.gtf"
+        opt$genes = "~/DB/GENCODE/hg38/v38/gencode.v38.genes.gtf"
+        Sys.setenv(DEFAULT_GENOME = "BSgenome.Hsapiens.UCSC.hg38::Hsapiens")
         opt$cytoband = file.path(opt$libdir, "data", "hg38.cytoband.txt")
-        Sys.setenv(DEFAULT_GENOME = "BSgenome.Hsapiens.UCSC.hg19::Hsapiens")
     } else if (opt$ref == "hg19") {
         message("Using reference: ", opt$ref)
         opt$gencode = "~/DB/GENCODE/gencode.v19.annotation.gtf"
         opt$genes = "~/DB/GENCODE/gencode.v19.genes.gtf"
-        Sys.setenv(DEFAULT_GENOME = "BSgenome.Hsapiens.UCSC.hg38::Hsapiens")
-        opt$cytoband = file.path(opt$libdir, "data", "hg38.cytoband.txt")
+        Sys.setenv(DEFAULT_GENOME = "BSgenome.Hsapiens.UCSC.hg19::Hsapiens")
+        opt$cytoband = file.path(opt$libdir, "data", "hg19.cytoband.txt")
     } else {
         stop("Invalid entry for $ref provided: ", opt$ref)
     }
@@ -526,12 +526,6 @@ if (!opt$knit_only) {
 
             std.chrs = c(as.character(1:22), "X", "Y")
             std.chrs = std.chrs[which(std.chrs %in% plot.chrs)]
-            ## plot.chrs[plot.chrs=="X"] = "1000"
-            ## plot.chrs[plot.chrs=="Y"] = "2000"
-            ## plot.chrs = as.character(sort(as.numeric(plot.chrs)))
-            ## plot.chrs[plot.chrs=="1000"] = "X"
-            ## plot.chrs[plot.chrs=="2000"] = "Y"
-            
         } else {
 
             std.chrs = paste0("chr", c(as.character(1:22), "X", "Y"))
@@ -570,6 +564,7 @@ if (!opt$knit_only) {
             if (file.exists(report.config$wgs_circos_plot)) {
                 file.remove(report.config$wgs_circos_plot)
             }
+            message(e)
             stop("An error was encountered during circos plot creation")
             return(NA)
         })
