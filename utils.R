@@ -11,8 +11,21 @@ dlrs <- function(x) {
     return(dlrs)
 }
 
+#' @name covcbs
+#' @title covcbs
+#'
+#' @param x (character) path to coverage GRanges
+#' @param field (character) field containing t/n ratio
+#' @param name (character) name of gTrack
+#' @param max.ranges (numeric) maximum ranges to plot, default 1e4
+#' @param lwd.border (numeric) lwd of circles in gTrack, default 0.2
+#' @param purity (numeric) sample purity estimate
+#' @param ploidy (numeric) sample ploidy estimate
+#' @param rebin (numeric) bin size (bp) if rebinning coverage
+#' @param strip.chr (logical) strip chromosome prefix of coverage file
 covcbs = function(x, field = "ratio", name = "sample", max.ranges = 1e4,
                   lwd.border = 0.2, purity = NULL, ploidy = NULL, rebin = NULL,
+                  strip.chr = FALSE,
                   ...){
     x = readRDS(x)
     if (!is.null(purity) & !is.null(ploidy)){
@@ -22,6 +35,14 @@ covcbs = function(x, field = "ratio", name = "sample", max.ranges = 1e4,
     if (!is.null(rebin)){
         x = rebin(x, binwidth = rebin, field = field,
                   FUN = median, na.rm = TRUE)
+    }
+    if (strip.chr) {
+        sl = seqlengths(x)
+        names(sl) = gsub(pattern = "chr", replacement = "", names(sl))
+        sn = gsub(pattern = "chr", replacement = "", as.character(seqnames(x)))
+        tmp = GRanges(seqnames = sn, ranges = IRanges(start = start(x), end = end(x)))
+        values(tmp)[[field]] = values(x)[[field]]
+        x = tmp
     }
     gTrack(x,
            y.field = field,
@@ -2010,6 +2031,9 @@ create.summary = function(jabba_rds,
 
     jab = readRDS(jabba_rds)
     gg = gG(jabba = jab)
+
+    ## get standard chromosomes
+    chrs = grep("(^(chr)*[0-9XY]+$)", unique(gg$nodes$dt$seqnames), value = TRUE)
 
     ## segments as data table
     segs.dt = gg$nodes$dt[as.character(seqnames) %in% chrs, ]

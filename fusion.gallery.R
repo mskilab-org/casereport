@@ -79,6 +79,7 @@ wgs.circos = function(jabba_rds,
                       axis.frac = 0.02,
                       palette = 'BrBg', ...)
 {
+    ## browser()
 
     if (!file.exists(cytoband.path))
         stop('cytoband not file, must be UCSC style tsv')
@@ -131,7 +132,9 @@ wgs.circos = function(jabba_rds,
         y.field = "cn"
     }
 
-
+    ## only keep standard chromosomes
+    sn = grep("(^(chr)*[0-9XY]+$)", unique(cytoband$seqnames), value = TRUE)
+    cytoband = cytoband[seqnames %in% sn,]
 
     if (chr.sub)
     {
@@ -161,12 +164,16 @@ wgs.circos = function(jabba_rds,
                                 alpha("blue", 0.5)))
     bpdt = junctions$dt
     bpdt[, col := col.dt$col[match(bpdt$class, col.dt$class)]]
-    
     bp1 = junctions$left %>% gr2dt
     bp2 = junctions$right%>% gr2dt
+
     circlize::circos.clear()
     circlize::circos.par(start.degree = 90, gap.after = gap.after*1)
-    circlize::circos.genomicInitialize(cytoband, sector.names = unique(cytoband$seqnames), plotType = NULL, 
+
+
+    circlize::circos.genomicInitialize(cytoband,
+                                       sector.names = sn,##unique(cytoband$seqnames),
+                                       plotType = NULL, 
                                        track.height = bands.height,
                                        labels.cex = labels.cex)
 
