@@ -325,7 +325,7 @@ cn.plot = function(drivers.fname = NULL,
 
         ## make gGnome.js url query parameters
         drivers.dt[, ev.js.range := gr.string(drivers.gr)]
-        drivers.dt[, plot.link := paste0(server, "index.html?file=", pair, ".json&location=", ev.js.range, "&view=")]
+        drivers.dt[, plot.link := paste0('//', server, "index.html?file=", pair, ".json&location=", ev.js.range, "&view=")]
 
         ## read CGC gTrack if provided
         if (!is.null(cgcgt.fname)) {
@@ -516,7 +516,7 @@ sv.plot = function(complex.fname = NULL,
             gr = gr.reduce(gr.stripstrand(parse.gr(footprint)) + 1e4)
             paste(gr.string(gr), collapse = "%20|%20")
         }, by = ev.id]
-        complex.ev[, plot.link := paste0(server, "index.html?file=", pair, ".json&location=", ev.js.range, "&view=")]
+        complex.ev[, plot.link := paste0('//', server, "index.html?file=", pair, ".json&location=", ev.js.range, "&view=")]
 
         ## read CGC gTrack if provided
         if (!is.null(cgcgt.fname)) {
