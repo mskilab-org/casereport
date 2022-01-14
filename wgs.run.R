@@ -328,7 +328,7 @@ if (!opt$knit_only) {
                                                 quantile.thresh = opt$quantile_thresh,
                                                 verbose = TRUE)
 	    library(matrixStats)
-	    cohort=fread(opt$tpm_cohort,sep="\t")
+	    cohort=fread(opt$tpm_cohort)
 	    W=data.table(gene=cohort$"gene",Avg=rowMeans(log10(cohort[,!("gene")]+1)),SD=rowSds(log10(as.matrix(cohort[,!("gene")]+1))))
 	    melted.expr$zscore=(log10(melted.expr$value+1)-W$Avg)/W$SD
         } else {
