@@ -199,7 +199,7 @@ Estimated ploidy: **`r format(summary.list$ploidy, digits = 2)`**
 
 ## SCNA
 
-Copy number alterations (CNA) are defined as CN at most `r readRDS(file.path(params$outdir, "cmd.args.rds"))del_thresh` times ploidy (deletions) or at least `r readRDS(file.path(params$outdir, "cmd.args.rds"))$amp_thresh` times ploidy (amplifications). 
+Copy number alterations (CNA) are defined as CN at most `r readRDS(file.path(params$outdir, "cmd.args.rds"))$del_thresh` times ploidy (deletions) or at least `r readRDS(file.path(params$outdir, "cmd.args.rds"))$amp_thresh` times ploidy (amplifications). 
 
 Percent of genome with CNA: `r format(round(summary.list$cna_frac * 100, 2), nsmall = 2)`%
 
