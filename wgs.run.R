@@ -775,7 +775,9 @@ if (!opt$knit_only) {
             driver.mutations.dt[gene %in% onc, gene.type := 'ONC']
                                         # some genes are annotated in CGC as both
             driver.mutations.dt[gene %in% onc & gene %in% tsg, gene.type := 'ONC|TSG']
-            
+            cols = c("gene", "gene.type", "driver.type", "Tier", "seqnames", "pos", "impact", "REF", "ALT", "variant.p", "vartype", "annotation")
+            driver.mutations.dt = driver.mutations.dt[,cols[cols %in% colnames(driver.mutations.dt)],
+                                with = FALSE]
         }
 
         

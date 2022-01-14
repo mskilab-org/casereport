@@ -29,7 +29,7 @@ get_pmkb_dt = function(pmkb_tsv){
 #' @param driver.mutations.dt (data.table) must contain column "gene"
 annotate_with_pmkb = function(driver.mutations.dt, pmkb_tsv = NA){
     pmkb.dt = get_pmkb_dt(pmkb_tsv)
-    driver.mutations.dt.annotated.with.tier = merge.data.table(pmkb.dt[, .(gene.type = unique(gene.type), Tier = min(Tier)), by = gene], driver.mutations.dt, by = 'gene')
+    driver.mutations.dt.annotated.with.tier = merge.data.table(pmkb.dt[, .(gene.type = unique(gene.type), Tier = min(Tier)), by = gene], driver.mutations.dt, by = 'gene', all.y = TRUE)
     return(driver.mutations.dt.annotated.with.tier[order(Tier)])
 }
 
