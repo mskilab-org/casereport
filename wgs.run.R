@@ -456,12 +456,12 @@ if (!opt$knit_only) {
                 surface = readRDS(report.config$surface)
 
                 driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
-                                                     (cnv == "del" & gene_name %in% tsg) |
+                                                     (cnv %in% c("hetdel", "homdel") & gene_name %in% tsg) |
                                                      (cnv == "amp" & gene_name %in% surface)]
                 driver.genes_cn[gene_name %in% surface, surface := TRUE]
             } else {
                 driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
-                                                     (cnv == "del" & gene_name %in% tsg)]
+                                                     (cnv %in% c("hetdel", "homdel") & gene_name %in% tsg)]
             }
             
             #' add whether gene is TSG or ONCO

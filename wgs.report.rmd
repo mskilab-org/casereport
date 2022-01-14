@@ -256,7 +256,7 @@ knitr::include_graphics(file.path(params$outdir, "wgs.circos.png"))
 Copy number variations (CNVs) in oncogenes and tumor suppressor genes.
 
 
-```{r, driver-cnv-table, dropAboveCol=TRUE, results = "asis", max.width= "100%"}
+```{r, driver-cnv-table, dropAboveExp=TRUE, results = "asis", max.width= "100%"}
 driver.genes.cnv = fread(file.path(params$outdir, "driver.genes.cnv.txt"))
 ## driver.genes.cnv[cnv != ''] %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
 DT::datatable(driver.genes.cnv, options = list(scrollX = TRUE))
@@ -298,7 +298,7 @@ if (nrow(cn.gallery.dt) > 0) {
 
 # Fusions
 
-```{r, fus-lead, dropAboveCol=TRUE, results = "hide", echo = FALSE}
+```{r, fus-lead, dropAboveExp=TRUE, results = "hide", echo = FALSE}
 ```
 
 ## Known fusions
@@ -397,7 +397,7 @@ slick_up
 
 # Over/under-expression of oncogenes/TSGs 
 
-```{r, driver-expr-table,  dropAboveCol=TRUE, results = "asis", max.width= "100%"}
+```{r, driver-expr-table,  dropAboveExp=TRUE, results = "asis", max.width= "100%"}
 driver.genes.expr = fread(file.path(params$outdir, "driver.genes.expr.txt"))
 if (nrow(driver.genes.expr)) {
     DT::datatable(driver.genes.expr, options = list(scrollX = TRUE))
@@ -466,7 +466,7 @@ if (file.exists(waterfall.fn)) {
 ***
 # SV event classifications
 
-```{r, SV-lead, dropAboveCol=TRUE, results = "hide", echo = FALSE}
+```{r, SV-lead, dropAboveExp=TRUE, results = "hide", echo = FALSE}
 ```
 
 ## Burdens of event types
@@ -692,7 +692,7 @@ if(file.good(file.path(params$outdir, "sv.gallery.txt")) && nrow(sv.slickr.dt) &
 
 # Driver SNVs/indels
 
-```{r, driver-snv-indel, dropAboveCol=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
+```{r, driver-snv-indel, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
 driver.mutations.dt = fread(file.path(params$outdir, "driver.mutations.txt"))
 DT::datatable(driver.mutations.dt, options = list(scrollX = TRUE))
 ```
@@ -702,7 +702,7 @@ Fitting <a href="https://cancer.sanger.ac.uk/signatures/sbs/">COSMIC signatures<
 this sample we obtain the following active SNV mutation signatures:
 
 
-```{r, SNV-signature,  dropAboveCol=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+```{r, SNV-signature,  dropAboveExp=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
 if (file.good(paste0(params$outdir, "/deconstruct_sigs.png"))){
     cat("\n")
     cat('<div id="deconstructsigs-first" class="section level2">')
@@ -754,7 +754,7 @@ if (file.exists(file.path(params$outdir,"signatureMetadata.csv")) && file.good(p
 
 # Oneness/Twoness
 
-```{r, Oneness_twoness, dropAboveCol=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
+```{r, Oneness_twoness, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
 ot.plot = paste0(params$outdir, "/onenesstwoness.log.dat.png")
 ot.plot.2 = paste0(params$outdir, "/onenesstwoness.prop.dat.png")
 oneness.plot = paste0(params$outdir, "/Oneness.png")
@@ -776,7 +776,7 @@ if (all.good) {
 
 # HRDetect prediction (homologous recombination deficiency)
 
-```{r, HRDetect, dropAboveCol=TRUE,  dropBelow=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center", max.height = 800}
+```{r, HRDetect, dropAboveExp=TRUE,  dropBelow=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center", max.height = 800}
 if (file.exists(paste0(params$outdir, "/hrdetect.rds"))){
     cat("Applying the [HRDetect](https://doi.org/10.1038/nm.4292) model, we
 predict homologous recombination deficiency status of this sample
@@ -817,7 +817,7 @@ based on its SNV/INDEL/SV signatures.\n\n")
 
 # Enhancer hijacking candidates {.tabset .tabset-fade .tabset-pills}
 
-```{r, enhancer-hijacking, dropAboveCol=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+```{r, enhancer-hijacking, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
 proximity.gallery.dt = fread(paste0(params$outdir, "/", "proximity.gallery.txt"))
 expr.histograms.dt = fread(paste0(params$outdir, "/", "expr.histograms.txt"))
 
@@ -861,7 +861,7 @@ replacement. A good fit should have the red vertical lines (integer CN
 grid) align well with the peaks in the raw intensity distribution
 (black histogram).
 
-```{r, purploidy-lead, dropAboveCol=TRUE, results = "hide", echo = FALSE}
+```{r, purploidy-lead, dropAboveExp=TRUE, results = "hide", echo = FALSE}
 ```
 
 ## Total CN

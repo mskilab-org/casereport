@@ -19,6 +19,8 @@ input	snpeff_snv_bcf	snpeff_snv_bcf	path	/dev/null	## snpeff annotated bcf
 input	snpeff_indel_bcf	snpeff_indel_bcf	path	/dev/null	## snpEff annotated_bcf
 input	snv_vcf		snv_vcf		path	/dev/null	## strelka2 SNVs vcf
 input	indel_vcf	indel_vcf	path	/dev/null	## strelka2 indels vcf
+input	amp_thresh	amp_thresh	value	4
+input	del_thresh	del_thresh	value	0.5
 input	snpeff_config	snpeff_config	path	~/modules/SnpEff/snpEff.config
 input	server	server	value		"https://mskilab.com/gGraph/"
 input	tumor_type	tumor_type	value	"unknown"
