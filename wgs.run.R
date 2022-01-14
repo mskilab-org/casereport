@@ -1,5 +1,4 @@
 library(optparse)
-
 if (!exists("opt")){
     option_list = list(
         make_option(c("--libdir"), type = "character", help = "dir that contains this file and other source codes"),
@@ -30,7 +29,7 @@ if (!exists("opt")){
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
         make_option(c("--chrom_sizes"), type = "character", default = "~/DB/UCSC/hg19.broad.chrom.sizes", help = "chrom.sizes file of the reference genome"),
         make_option(c("--knit_only"), type = "logical", default = FALSE, action = "store_true", help = "if true, skip module and just knit"),
-        make_option(c("--amp_thresh"), type = "numeric", default = 4,
+        make_option(c("--amp_thresh"), type = "numeric", default = 2,
                     help = "Threshold over ploidy to call amplification"),
         make_option(c("--del_thresh"), type = "numeric", default = 0.5,
                     help = "Threshold over ploidy to call deletion"),
@@ -40,7 +39,7 @@ if (!exists("opt")){
         make_option(c("--snpeff_config"), type = "character", default = "~/modules/SnpEff/snpEff.config", help = "snpeff.config file path"),
         make_option(c("--cohort_metadata"), type = "character", default = NA_character_, help = "Metadata of the background cohort"),
         make_option(c("--pmkb_interpretations"), type = "character", default = NA_character_, help = "Path to CVS with PMKB interpretations. If not provided, then a default table will be used (in data/pmkb-interpretations-06-11-2021.csv). See https://pmkb.weill.cornell.edu/about for details about PMKB."),
-        make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir"),
+        make_option(c("--overwrite"), type = "logical", default = TRUE, action = "store_true", help = "overwrite existing data in the output dir"),
         make_option(c("--verbose"), type = "logical", default = TRUE, action = "store_true", help = "Be verbose and write more messages during the process of producing the report."),
         make_option(c("--quantile_thresh"), type = "numeric", default = 0.05, help = "threshold for quantile for RNA expression"),
         make_option(c("--include_surface"), type = "logical", default = FALSE, action = "store_true", help = "include surface genes in CNA and RNA differential expression analysis")
@@ -125,10 +124,17 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
     report.config$cgc_gtrack = paste0(report.config$outdir, "/", "cgc.gtrack.rds")
     report.config$gencode_gtrack = file.path(opt$libdir, "data", "gt.ge.hg19.rds") ## this is provided
 
+    if (check_file(opt$drivers))
+        report.config$drivers = opt$drivers
+    else
+        report.config$drivers = NA_character_
+    
+
     ## add CGC genes file
-    report.config$cgc = cgc.fname = ifelse(file.good(opt$drivers),
-                                           opt$drivers,
-                                           file.path(opt$libdir, "data", "cgc.tsv"))
+    ## report.config$cgc = cgc.fname = ifelse(file.good(opt$drivers),
+    ##                                        opt$drivers,
+    ##                                        file.path(opt$libdir, "data", "cgc.tsv"))
+    report.config$cgc = cgc.fname = file.path(opt$libdir, "data", "cgc.tsv")
     
     
     ## add oncogenes, etc. to report config
@@ -399,7 +405,7 @@ if (!opt$knit_only) {
         
         genes_cn_annotated = get_gene_ampdel_annotations(genes_cn,
                                                          amp.thresh = opt$amp_thresh,
-                                                         del.thresh = opt$del_thresh)
+                                                         del.thresh = pmax(opt$del_thresh, 1))
 
         if (file.good(report.config$tpm_quantiles)) {
 
@@ -596,7 +602,9 @@ if (!opt$knit_only) {
                                    cgc.fname = report.config$cgc,
                                    onc = report.config$onc,
                                    tsg = report.config$tsg,
+                                   drivers.fname = report.config$drivers,
                                    ref.name = opt$ref,
+                                   type = "snv",
                                    verbose = TRUE)
 
         } else {
@@ -628,7 +636,9 @@ if (!opt$knit_only) {
                                        cgc.fname = report.config$cgc,
                                        onc = report.config$onc,
                                        tsg = report.config$tsg,
+                                       drivers.fname = report.config$drivers,
                                        ref.name = opt$ref,
+                                       type = "snv",
                                        verbose = TRUE)
                 
             } else {
@@ -648,7 +658,9 @@ if (!opt$knit_only) {
                                    cgc.fname = report.config$cgc,
                                    onc = report.config$onc,
                                    tsg = report.config$tsg,
+                                   drivers.fname = report.config$drivers,
                                    ref.name = opt$ref,
+                                   type = "indel",
                                    verbose = TRUE)
         } else {
 
@@ -680,7 +692,9 @@ if (!opt$knit_only) {
                                        cgc.fname = report.config$cgc,
                                        onc = report.config$onc,
                                        tsg = report.config$tsg,
+                                       drivers.fname = report.config$drivers,
                                        ref.name = opt$ref,
+                                       type = "indel",
                                        verbose = TRUE)
                 
             } else {
@@ -708,11 +722,60 @@ if (!opt$knit_only) {
             cgc = fread(report.config$cgc)
             tsg = readRDS(report.config$tsg)## cgc[get('Is Tumor Suppressor Gene') == 'Yes', get('Hugo Symbol')]
             onc = readRDS(report.config$onc)## cgc[get('Is Oncogene') == 'Yes', get('Hugo Symbol')]
+            
+            ## parsing drivers
+            ## this can be a text file that contains
+            ## either a 1-d vector of gene names
+            ## in this case, the gene.type later on is basename(opt$drivers)
+            ## or it can be a 2-column table
+            ## 1st column is gene name,
+            ## and 2nd col is annotation for gene.type
+            ## header can be commented out via "#"
+            txt.ptrn = "(.tsv|.txt|.csv|.tab)(.xz|.bz2|.gz){0,}$"
+            no_ext <- function (x, compression = FALSE) 
+            {
+                if (compression) 
+                    x <- sub("[.](gz|bz2|xz)$", "", x)
+                sub("([^.]+)\\.[[:alnum:]]+$", "\\1", x)
+            }
+            if (check_file(opt$drivers)) {
+                if (grepl(".rds$", opt$drivers, ignore.case = TRUE)) {
+                    drivers = readRDS(opt$drivers)
+                    if (!(is.character(drivers) ||
+                          inherits(drivers, c("matrix", "data.frame"))))
+                        drivers = NULL
+                        
+                } else if (grepl(txt.ptrn, opt$drivers)) {
+                    drivers = fread(opt$driver)
+                }
+
+                if (!is.null(drivers)) {
+
+                    if (NCOL(drivers) == 1) {
+                        ## annotating drivers by file name
+                        drivers = as.data.frame(drivers)
+                        drivers[[2]] = no_ext(basename(opt$drivers))  
+                    } 
+                    ## presuming the formatting above
+                    drivers = drivers[,c(1,2), drop = F]
+                    colnames(drivers) = c("gene", "driver.type")
+                    driver.mutations.dt$ord345987234 = 1:NROW(driver.mutations.dt)
+                    driver.mutations.dt = merge(driver.mutations.dt,
+                                                drivers,
+                                                by = "gene",
+                                                all.x = TRUE)
+                    driver.mutations.dt = driver.mutations.dt[order(ord345987234)]
+                    driver.mutations.dt$ord345987234 = NULL
+                }
+
+            }
+
 
             driver.mutations.dt[gene %in% tsg, gene.type := 'TSG']
             driver.mutations.dt[gene %in% onc, gene.type := 'ONC']
                                         # some genes are annotated in CGC as both
             driver.mutations.dt[gene %in% onc & gene %in% tsg, gene.type := 'ONC|TSG']
+            
         }
 
         

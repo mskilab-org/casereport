@@ -25,7 +25,8 @@ input	snpeff_config	snpeff_config	path	~/modules/SnpEff/snpEff.config
 input	server	server	value		"https://mskilab.com/gGraph/"
 input	tumor_type	tumor_type	value	"unknown"
 input	cohort_metadata	cohort_metadata	path	/dev/null
-input	ref		ref		value	"hg19"	## one of hg19, hg38
-input	flags	flags	value		""
+input	ref		ref	value	"hg19"	## one of hg19, hg38
+input	flags	flags	value	""
+input	condaenv	path_to_condaenv	path	"/gpfs/commons/groups/imielinski_lab/Software/anaconda3/envs/casereport"
 output	wgs_casereport	*wgs.report.html$
 output	oncotable	oncotable.rds$

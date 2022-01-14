@@ -1891,7 +1891,56 @@ grab.gene.ranges = function(gngt.fname, genes = as.character()) {
 #' @return data.table with columns gene, seqnames, pos, REF, ALT, variant.p, vartype, annotation
 filter.snpeff = function(vcf,
                          gngt.fname,
-                         cgc.fname, onc, tsg, ref.name = "hg19", verbose = FALSE) {
+                         cgc.fname, onc, tsg, drivers.fname, ref.name = "hg19", verbose = FALSE,
+                         type = NULL) {
+
+    if (NROW(type) == 0) {
+        grab_snv = FALSE
+        grab_indel = FALSE
+    } else {
+        type = type[type %in% c("snv", "indel")]
+        if (length(type) > 1) {
+            message("multiple types provided: ", paste(type, collapse = ", "))
+            message("using: ", type[1])
+            type = type[1]
+        }
+        grab_snv = "snv" == type
+        grab_indel = "indel" == type
+    }
+
+
+    ## parsing drivers
+    txt.ptrn = "(.tsv|.txt|.csv|.tab)(.xz|.bz2|.gz){0,}$"
+    no_ext <- function (x, compression = FALSE) 
+    {
+        if (compression) 
+            x <- sub("[.](gz|bz2|xz)$", "", x)
+        sub("([^.]+)\\.[[:alnum:]]+$", "\\1", x)
+    }
+    if (check_file(drivers.fname)) {
+        if (grepl(".rds$", drivers.fname, ignore.case = TRUE)) {
+            drivers = readRDS(drivers.fname)
+            if (!(is.character(drivers) ||
+                  inherits(drivers, c("matrix", "data.frame"))))
+                drivers = NULL
+            
+        } else if (grepl(txt.ptrn, drivers.fname)) {
+            drivers = fread(drivers.fname)
+        }
+
+        if (!is.null(drivers)) {
+
+            if (NCOL(drivers) == 1) {
+                ## annotating drivers by file name
+                drivers = as.data.frame(drivers)
+            }
+        }
+        drivers = drivers[[1]]
+    } else {
+        drivers = NULL
+    }
+    
+    if (verbose) message("Querying for ", type)
 
     dummy.out = data.table(
         gene = character(),
@@ -1922,9 +1971,14 @@ filter.snpeff = function(vcf,
     }
 
     if (grepl("bcf", vcf)) {
-        vcf.gr = grok_bcf(vcf, long = TRUE)
+        vcf.gr = grok_bcf(vcf, long = TRUE, indel = grab_indel, snv = grab_snv)
     } else if (grepl("vcf", vcf)) {
         vcf.gr = grok_vcf(vcf, long = TRUE)
+        if (grab_snv) {
+            vcf.gr = vcf.gr[vcf.gr$vartype %in% "SNV"]
+        } else if (grab_indel) {
+            vcf.gr = vcf.gr[vcf.gr$vartype %in% c("INS", "DEL")]
+        }
     } else {
         stop("Invalid file type")
     }
@@ -1970,7 +2024,7 @@ filter.snpeff = function(vcf,
     }
 
     ## genes = fread(cgc.fname)[["Hugo Symbol"]]
-    genes = c(readRDS(onc), readRDS(tsg))
+    genes = c(readRDS(onc), readRDS(tsg), drivers)
 
     if (length(genes) == 0) {
         if (verbose) {
