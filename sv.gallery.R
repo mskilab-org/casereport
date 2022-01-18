@@ -11,7 +11,7 @@
 #' @return file name of gencode gTrack
 create_cgc_gtrack = function(cgc.fname = "./data/cgc.tsv",
                              gencode.fname = NULL) {
-    
+
     if (!file.exists(cgc.fname)) {
         stop("cgc.fname does not exist")
     }
@@ -21,10 +21,10 @@ create_cgc_gtrack = function(cgc.fname = "./data/cgc.tsv",
 
     cgc.gene.symbols = fread(cgc.fname)[["Gene Symbol"]]
     gff = skidb::read_gencode(fn = gencode.fname)
-    cgc.gt = gTrack(gff, col = NA, 
+    cgc.gt = gTrack(gff, col = NA,
                     grl.labelfield = "id", gr.labelfield = "exon_number",
                     labels.suppress.gr = TRUE, labels.suppress = TRUE)
-                    ## gr.srt.label = gr.srt.label, cex.label = cex.label, gr.cex.label = gr.cex.label,                     ## labels.suppress.gr = labels.suppress.gr, stack.gap = stack.gap, 
+                    ## gr.srt.label = gr.srt.label, cex.label = cex.label, gr.cex.label = gr.cex.label,                     ## labels.suppress.gr = labels.suppress.gr, stack.gap = stack.gap,
                     ## colormaps = cmap, ...)
     return(cgc.gt)
 }
@@ -48,7 +48,7 @@ create_cgc_gtrack = function(cgc.fname = "./data/cgc.tsv",
 #' @param height
 #' @param width
 #' @param outdir
-#' 
+#'
 #' @return data.table with columns from complex and additionally plot.fname and plot.link
 gallery.wrapper = function(complex.fname = NULL,
                            background.fname = "/data/sv.burden.txt",
@@ -91,7 +91,7 @@ gallery.wrapper = function(complex.fname = NULL,
     ##             svplot.dt,
     ##             fill = TRUE,
     ##             use.names = TRUE)
-    
+
     ## return (out)
     return(svplot.dt)
 }
@@ -115,7 +115,7 @@ gallery.wrapper = function(complex.fname = NULL,
 #' @param amp.thresh (numeric)
 #' @param ev.types (character) list of acceptable event types (try to exclude simple events)
 #' @param return.type (character) one of "data.table" or "GRanges"
-#' 
+#'
 #' @return data.table with node.fp, amp.fp, and ev.fp for node, event, and amplicon footprints
 grab.window = function(gr, complex.fname,
                        amp.thresh = 4,
@@ -147,7 +147,7 @@ grab.window = function(gr, complex.fname,
     }
 
     ## read complex
-    
+
     gg = readRDS(complex.fname)
 
     ## grab events as GRanges
@@ -173,7 +173,7 @@ grab.window = function(gr, complex.fname,
     } else {
         gr$ev.fp = NA_character_
     }
-    
+
 
     ## grab amplicons as GRanges
     keep = (gg$nodes$dt$cn/ploidy) > amp.thresh
@@ -203,7 +203,7 @@ grab.window = function(gr, complex.fname,
     } else {
         gr$amp.fp = NA_character_
     }
-    
+
     ## grab node footprint
     node.gr = gg$nodes$gr[, c()]
     node.gr$footprint = gr.string(node.gr)
@@ -317,7 +317,7 @@ cn.plot = function(drivers.fname = NULL,
             drivers.ge.dt[, gene_name := name]
             drivers.gr = dt2gr(drivers.ge.dt)
             drivers.dt = gr2dt(drivers.gr)
-            
+
         }
 
         ## grab plot titles and file names
@@ -381,7 +381,7 @@ cn.plot = function(drivers.fname = NULL,
                             ywid = 0.1,
                             stack.gap = 1e6,
                             yaxis.cex = 0.8)
-        
+
 
         if (!is.null(cgc.gt)) {
             cgc.gt$cex.label = 0.5
@@ -505,9 +505,9 @@ sv.plot = function(complex.fname = NULL,
 
 
     if (nrow(complex.ev)>0) {
-        
+
         ## grab plot titles and file names
-        
+
         complex.ev[, plot.fname := file.path(outdir, paste("event", ev.id, "png", sep = "."))]
         complex.ev[, plot.title := paste(type, "|", "event id:", ev.id)]
 
@@ -602,10 +602,10 @@ sv.plot = function(complex.fname = NULL,
     } else {
         return(data.table(plot.fname = character(0), plot.link = character(0)))
     }
-    
-    
+
+
 }
-                   
+
 
 #' @name ridge.plot
 #' @title ridge.plot
@@ -621,7 +621,7 @@ sv.plot = function(complex.fname = NULL,
 #' @param width (numeric) width of png default 1e3
 #' @param color (character) color of sample burden line default red
 #' @param lwd (numeric) size (width) of sample burden line default 2
-#' @param outdir (character) ridge plot output directory 
+#' @param outdir (character) ridge plot output directory
 ridge.plot = function(complex.fname = NULL,
                       background.fname = "/data/sv.burden.txt",
                       ev.types = c("qrp", "tic", "qpdup", "qrdel",
@@ -663,7 +663,7 @@ ridge.plot = function(complex.fname = NULL,
     nt = sapply(1:nrow(this.burden.dt), function(x) {
         percentile.fn[[this.burden.dt$type[x]]](this.burden.dt$burden[x])
     })
-    
+
     this.burden.dt[, ntile := nt]
     this.burden.dt[, ntile.label := paste("Percentile:", format(ntile * 100, digits = 4), "%")]
     this.burden.dt[, count.label := paste("Count:", burden)]
@@ -691,7 +691,7 @@ ridge.plot = function(complex.fname = NULL,
                    hjust = "left",
                    color = "black",
                    label.size = 0,
-                   alpha = 0.5) + 
+                   alpha = 0.5) +
         scale_x_continuous(trans = "log1p", breaks = c(0, 1, 10, 100)) +
         labs(x = "Event Burden", y = "") +
         theme_ridges(center = TRUE) +
