@@ -129,8 +129,8 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
     report.config$cgc = cgc.fname = ifelse(file.good(opt$drivers),
                                            opt$drivers,
                                            file.path(opt$libdir, "data", "cgc.tsv"))
-    
-    
+
+
     ## add oncogenes, etc. to report config
     report.config$onc = file.path(report.config$libdir, "data", "onc.rds")
     report.config$tsg = file.path(report.config$libdir, "data", "tsg.rds")
@@ -203,8 +203,8 @@ if (!opt$knit_only) {
         report.config$ploidy = jabba$ploidy
         saveRDS(report.config, paste0(opt$outdir, "/", "report.config.rds"))
     }
-    
-    
+
+
     message("Preparing gTracks")
     message("Preparing coverage gTrack")
     if (check_file(report.config$coverage_gtrack, overwrite = opt$overwrite, verbose = opt$verbose)){
@@ -231,7 +231,7 @@ if (!opt$knit_only) {
         }
     }
 
-    
+
     if (check_file(report.config$cgc_gtrack, opt$overwrite, opt$verbose)) {
         message("CGC gTrack exists")
     } else {
@@ -257,7 +257,7 @@ if (!opt$knit_only) {
 
     ## gg$set(purity = jabba$purity)
     ## gg$set(ploidy = jabba$ploidy)
-    
+
 
     ###################
     ## purity/ploidy QC plots
@@ -305,7 +305,7 @@ if (!opt$knit_only) {
     ##     message("TPM cohort metadata not supplied.")
     ##     meta = data.table() ## empty data table to avoid existence errors
     ## }
-    
+
     message("Checking for RNA expression input")
     if (check_file(report.config$tpm_quantiles, opt$overwrite, opt$verbose)) {
         message("RNA quantiles analysis already exists")
@@ -396,7 +396,7 @@ if (!opt$knit_only) {
                                          ploidy = kag$ploidy,
                                          simplify_seqnames = (opt$ref == "hg19"),
                                          complex.fname = report.config$complex)
-        
+
         genes_cn_annotated = get_gene_ampdel_annotations(genes_cn,
                                                          amp.thresh = opt$amp_thresh,
                                                          del.thresh = opt$del_thresh)
@@ -404,7 +404,7 @@ if (!opt$knit_only) {
         if (file.good(report.config$tpm_quantiles)) {
 
             message ("Merging SCNAs with RNA expression")
-            
+
             melted.expr = data.table::fread(report.config$tpm_quantiles, header = TRUE)
 
             if (nrow(melted.expr)) {
@@ -415,7 +415,7 @@ if (!opt$knit_only) {
                                                                     expr.value = value)],
                                                       by = "gene_name",
                                                       all.x = TRUE)
-                
+
                 genes_cn_annotated[expr.quantile < opt$quantile_thresh, expr := "under"]
                 genes_cn_annotated[expr.quantile > (1 - opt$quantile_thresh), expr := "over"]
             } else {
@@ -424,7 +424,7 @@ if (!opt$knit_only) {
         } else {
             genes_cn_annotated[, ":="(expr.quantile = NA, expr.value = NA, expr = NA)]
         }
-        
+
         ## save annotated genes
         saveRDS(genes_cn_annotated, report.config$gene_cn)
     }
@@ -439,7 +439,7 @@ if (!opt$knit_only) {
         } else {
             stop("SCNA analysis failed.")
         }
-            
+
         if (genes_cn_annotated[, .N] > 0){
 
             ## read oncogenes and TSGs from config
@@ -457,7 +457,7 @@ if (!opt$knit_only) {
                 driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
                                                      (cnv %in% c("hetdel", "homdel") & gene_name %in% tsg)]
             }
-            
+
             #' add whether gene is TSG or ONCO
             driver.genes_cn[gene_name %in% onc, annot := "ONC"]
             driver.genes_cn[gene_name %in% tsg, annot := "TSG"]
@@ -467,7 +467,7 @@ if (!opt$knit_only) {
                        "max_cn", "min_normalized_cn", "max_normalized_cn",
                        "expr.value", "expr.quantile",
                        "seqnames", "start", "end", "width", "ev.id", "ev.type")
-            
+
             cn.fields = intersect(fields, names(driver.genes_cn))
             fwrite(driver.genes_cn[, ..cn.fields], report.config$driver_scna)
         }
@@ -482,7 +482,7 @@ if (!opt$knit_only) {
         } else {
             stop("RNA expression analysis failed")
         }
-        
+
         if (file.good(report.config$gene_cn)) {
             genes_cn_annotated = readRDS(report.config$gene_cn)
         } else {
@@ -493,7 +493,7 @@ if (!opt$knit_only) {
                    "max_cn", "min_normalized_cn", "max_normalized_cn",
                    "seqnames", "start", "end", "width", "ev.id", "ev.type")
         cn.fields = intersect(fields, colnames(genes_cn_annotated))
-        
+
         driver.genes.expr.dt = merge.data.table(rna.change.dt[, .(gene, expr = direction,
                                                                   expr.value = value,
                                                                   expr.quantile = qt, role, zscore)],
@@ -519,7 +519,7 @@ if (!opt$knit_only) {
             sl = intersect(sl, names(seqlengths(gt@data[[3]])))
         }
         plot.chrs = grep("(^(chr)*[0-9XY]+$)", sl, value = TRUE)
-        
+
 	if (length(plot.chrs) == 0){
             stop('None of the sequences in your genome graph matches the default set of sequences.')
         }
@@ -538,13 +538,13 @@ if (!opt$knit_only) {
         ## temporary fix??
         ## why is there an error here?
         std.chrs = gsub("chr", "", std.chrs)
-            
+
 
         ppng(plot(gt, std.chrs),
              filename = report.config$wgs_gtrack_plot,
              height = 1000,
              width = 5000)
-        
+
     } 
 
     if (!check_file(report.config$wgs_circos_plot, opt$overwrite, opt$verbose)) {
@@ -570,7 +570,7 @@ if (!opt$knit_only) {
             stop("An error was encountered during circos plot creation")
             return(NA)
         })
-        
+
     } else {
         message("Whole genome circos plot already exists")
     }
@@ -600,7 +600,7 @@ if (!opt$knit_only) {
                                    verbose = TRUE)
 
         } else {
-        
+
             if (file.good(opt$snv_vcf)) {
 
                 message("Running SNV SnpEff")
@@ -630,7 +630,7 @@ if (!opt$knit_only) {
                                        tsg = report.config$tsg,
                                        ref.name = opt$ref,
                                        verbose = TRUE)
-                
+
             } else {
                 message("SNV vcf does not exist or is empty")
                 snv.dt = NULL
@@ -652,7 +652,7 @@ if (!opt$knit_only) {
                                    verbose = TRUE)
         } else {
 
-        
+
             if (file.good(opt$indel_vcf)) {
 
                 message("Running SNV SnpEff")
@@ -682,7 +682,7 @@ if (!opt$knit_only) {
                                        tsg = report.config$tsg,
                                        ref.name = opt$ref,
                                        verbose = TRUE)
-                
+
             } else {
                 message("Indel vcf does not exist or is empty")
                 indel.dt = NULL
@@ -715,7 +715,7 @@ if (!opt$knit_only) {
             driver.mutations.dt[gene %in% onc & gene %in% tsg, gene.type := 'ONC|TSG']
         }
 
-        
+
 
         fwrite(driver.mutations.dt, report.config$driver_mutations)
     }
@@ -727,26 +727,26 @@ if (!opt$knit_only) {
         check_file(report.config$other_fusions, opt$overwrite, opt$verbose)) {
         message("Fusions analysis already exists!")
     } else {
-        
+
         ## ## if opt$fusions not available, run it
         ## if (check_file(report.config$fusions, overwrite = FALSE, verbose = opt$verbose)) {
         ##     fu = readRDS(opt$fusions)
         ## } else {
-            
+
         ##     warning('Fusions were not supplied! Computing fusions can be time/memory intensive')
 
         ##     if (!exists("gff")){
-                
+
         ##         gff = skidb::read_gencode(fn = opt$gencode)
         ##     }
-            
+
         ##     fu = fusions(gg, gff)
         ##     saveRDS(fu, paste0(opt$outdir, "/fusions.rds"))
         ##     opt$fusions = paste0(opt$outdir, "/fusions.rds")
         ##     saveRDS(opt, "cmd.args.rds")
 
         ## }
-            
+
         message("Preparing fusion genes report")
         fusions.slickr.dt = fusion.wrapper(fusions.fname = opt$fusions,
                                            complex.fname = report.config$complex,
@@ -767,7 +767,7 @@ if (!opt$knit_only) {
             ## write empty data table, rmd file will deal with this.
             fwrite(fusions.slickr.dt, report.config$driver_fusions)
             fwrite(fusions.slickr.dt, report.config$other_fusions)
-            
+
         } else {
 
             ## save data table for drivers and non-drivers separately
@@ -776,8 +776,8 @@ if (!opt$knit_only) {
 
         }
     }
-    
-    
+
+
     ## ##################
     ## SV gallery code
     ## ##################
@@ -798,7 +798,7 @@ if (!opt$knit_only) {
                                        height = 900, ## png image height
                                        width = 1000, ## png image width
                                        outdir = opt$outdir)
-        
+
         fwrite(sv.slickr.dt, report.config$sv_gtracks)
     } 
 
@@ -839,7 +839,7 @@ if (!opt$knit_only) {
                                                         res = 150)
         fwrite(expr.histograms.dt, report.config$expression_histograms)
     }
-    
+
     ## gTrack of over and under-expressed genes
     if (check_file(report.config$expression_gtracks, overwrite = opt$overwrite, verbose = opt$verbose)) {
         message("gTracks of over/underexpressed genes already exist")
@@ -945,12 +945,12 @@ if (!opt$knit_only) {
 	    thisMet$sig_count=presentSigs$sig_count
 	    thisMet$quantile=presentSigs$perc
 	    fwrite(thisMet, file.path(opt$outdir,"signatureMetadata.csv"))
-            
+
         } else {
             message("deconstructSigs output not supplied.")
         }
     }
-            
+
 
     ## ##################
     ## HRDetect results
@@ -1126,7 +1126,7 @@ if (!opt$knit_only) {
             ot_dat = data.table::melt(ot_cohort, id.vars = c("pair", "ot.status",
                                                              "fmut_bi"))
 
-            
+
 
             ## these are the dimensions that need to be logged
             ldat = ot_dat[!variable %in% c("del.mh.prop", "BRCA1", "BRCA2", "SUM12", "OTHER")]
@@ -1215,7 +1215,7 @@ if (!opt$knit_only) {
             prob.cols = binary.cols
             prob.cols["TRUE"] = ifelse(prob_dat1[pair == opt$pair]$value > 0.5,
                    binary.cols["TRUE"], "black")
-            
+
             prob.brca1 = ggplot(prob_dat1, aes(x = fpair, y = value)) +
                 geom_bar(aes(color = marked_pair), stat = "identity") +
                 scale_colour_manual(values = prob.cols) +
@@ -1229,7 +1229,7 @@ if (!opt$knit_only) {
                       axis.title.x = element_blank(),
                       axis.text.y = element_text(size = 20, family = "sans"))
 
-            
+
             prob_dat2 = ot_dat[variable %in% c("BRCA2")]
             prob_dat2$marked_pair = prob_dat2$pair %in% opt$pair
             prob_dat2[, fpair := reorder(pair, value)]
@@ -1238,7 +1238,7 @@ if (!opt$knit_only) {
             prob.cols = binary.cols
             prob.cols["TRUE"] = ifelse(prob_dat2[pair == opt$pair]$value > 0.5,
                    binary.cols["TRUE"], "black")
-            
+
             prob.brca2 = ggplot(prob_dat2, aes(x = fpair, y = value)) +
                 geom_bar(aes(color = marked_pair), stat = "identity") +
                 scale_colour_manual(values = prob.cols) +
@@ -1252,8 +1252,8 @@ if (!opt$knit_only) {
                       axis.title.x = element_blank(),
                       axis.text.y = element_text(size = 20, family = "sans"))
 
-            
-            
+
+
             ## draw the plots
             png(report.config$ot_log, width = 800, height = 800)
             print(ot.plot)
@@ -1293,7 +1293,7 @@ if (!opt$knit_only) {
             proximity.gallery.dt = data.table(gene = as.character(),
                                               plot.fname = as.character())
         } else {
-    
+
             prox = readRDS(opt$proximity)
 
             if (length(prox)) {
@@ -1305,7 +1305,7 @@ if (!opt$knit_only) {
             cool.exp = fread(report.config$rna_change) %>% setkey("gene")
 
             if (any(cool.exp[direction=="over", gene] %in% pdt$gene_name)) {
-                
+
                 ## filter by overexpressed genes
                 pdt = merge.data.table(pdt, cool.exp[direction=="over"], by.x = "gene_name", by.y = "gene", all.x = TRUE)
                 pgs = pdt[(direction=="over"), unique(gene_name)]
