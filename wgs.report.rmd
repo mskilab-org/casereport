@@ -256,6 +256,10 @@ Copy number variations (CNVs) in oncogenes and tumor suppressor genes.
 
 ```{r, driver-cnv-table, dropAboveExp=TRUE, results = "asis", max.width= "100%"}
 driver.genes.cnv = fread(file.path(params$outdir, "driver.genes.cnv.txt"))
+driver.genes.cnv$min_normalized_cn=unlist(lapply(driver.genes.cnv$min_normalized_cn,FUN=signif,digits=4))
+driver.genes.cnv$max_normalized_cn=unlist(lapply(driver.genes.cnv$max_normalized_cn,FUN=signif,digits=4))
+driver.genes.cnv$expr.quantile=unlist(lapply(driver.genes.cnv$expr.quantile,FUN=signif,digits=4))
+
 ## driver.genes.cnv[cnv != ''] %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
 DT::datatable(driver.genes.cnv, options = list(scrollX = TRUE))
 ```
