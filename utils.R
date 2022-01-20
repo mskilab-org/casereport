@@ -1258,13 +1258,15 @@ rna_quantile = function(tpm.cohort, pair, tpm.pair = NULL) {
 #' @param sigs.cohort.fn (character) path to cohort
 #' @param pair (character)
 #' @param cohort.type (character) e.g. supplied, Cell, tumor type ( actually optional )
-#' @param ... additional params passed ppng
-#'
+#' @param cohort.type (character) e.g. supplied, Cell, tumor type ( actually optional )
+#' @param sigMet (data.table) data table with description of mutaitonal signatures (sig.metadata.txt in the casereport data folder)
+#' @param ... additional params passed ppng 
 #' @return histogram which you can then ppng etc.
 deconstructsigs_histogram = function(sigs.fn = NULL,
                                      sigs.cohort.fn = NULL,
                                      id = "",
                                      cohort.type = "",
+				     sigMet = NULL,
 				     outdir = "~",
                                      ...) {
 
@@ -1304,7 +1306,14 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
 	
     fwrite(allsig[pair== id,],file.path(outdir,"Sig.csv"))
 
-    sigbar = ggplot(allsig, aes(y = Signature, x = sig_count, fill = Signature)) +
+    thisMet=sigMet[sigMet$Signature %in% allsig$Signature,]
+    thisMet=thisMet[, Signature := factor(Signature, levels = new.slevels)]
+   
+    allsig=merge(allsig,thisMet,by='Signature')
+    allsig$Signature_Description=paste(allsig$Mutational.process," (",allsig$Signature,")")
+    
+
+    sigbar = ggplot(allsig, aes(y = Signature_Description, x = sig_count, fill = Signature)) +
         geom_density_ridges(bandwidth = 0.1,
                             alpha = 0.5,
                             scale = 0.9,
@@ -1339,10 +1348,10 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
         labs(title = paste0("Signatures vs. ", cohort.type, " background"), x = "Burden") +
         theme_minimal() +
         theme(legend.position = "none",
-              title = element_text(size = 20, family = "sans"),
-              axis.title = element_text(size = 20, family = "sans"),
-              axis.text.x = element_text(size = 15, family = "sans"),
-              axis.text.y = element_text(size = 20, family = "sans"))
+              title = element_text(size = 9, family = "sans"),
+              axis.title = element_text(size = 10, family = "sans"),
+              axis.text.x = element_text(size = 10, family = "sans"),
+              axis.text.y = element_text(size = 7, family = "sans"))
     
     return(sigbar)
 }
@@ -2100,8 +2109,10 @@ create.summary = function(jabba_rds,
         message("Computing total width of deleted and amplified segments...")
     }
     
-    out$del_mbp = sum(segs.dt[cn <= (del.thresh * jab$ploidy), width], na.rm = TRUE) / 1e6
-    out$amp_mbp = sum(segs.dt[cn >= (amp.thresh * jab$ploidy), width], na.rm = TRUE) / 1e6
+    #out$del_mbp = sum(segs.dt[cn <= (del.thresh * jab$ploidy), width], na.rm = TRUE) / 1e6
+    out$del_mbp = sum(segs.dt[cn <= (0.5 * jab$ploidy), width], na.rm = TRUE) / 1e6
+    #out$amp_mbp = sum(segs.dt[cn >= (amp.thresh * jab$ploidy), width], na.rm = TRUE) / 1e6
+    out$amp_mbp = sum(segs.dt[cn >= (1.5 * jab$ploidy), width], na.rm = TRUE) / 1e6
     out$cna_mbp = out$del_mbp + out$amp_mbp
 
     if (verbose) {
