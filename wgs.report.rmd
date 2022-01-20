@@ -199,7 +199,7 @@ Estimated ploidy: **`r format(summary.list$ploidy, digits = 2)`**
 
 ## SCNA
 
-Copy number alterations (CNA) are defined as CN at most `r readRDS(file.path(params$outdir, "cmd.args.rds"))$del_thresh` times ploidy (deletions) or at least `r readRDS(file.path(params$outdir, "cmd.args.rds"))$amp_thresh` times ploidy (amplifications). 
+Copy number alterations (CNA) are defined as CN at most 0.5 times ploidy (deletions) or at least 1.5 times ploidy (amplifications). 
 
 Percent of genome with CNA: `r format(round(summary.list$cna_frac * 100, 2), nsmall = 2)`%
 
@@ -700,7 +700,26 @@ Fitting <a href="https://cancer.sanger.ac.uk/signatures/sbs/">COSMIC signatures<
 this sample we obtain the following active SNV mutation signatures:
 
 
-```{r, SNV-signature,  dropAboveExp=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+```{r, SNV-siginfo, dropAboveExp=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+if (file.exists(file.path(params$outdir,"signatureMetadata.csv")) && file.good(paste0(params$outdir, "/deconstruct_sigs.png"))){ 
+    cat('<div id="SNV-Meta" class="section level2">',"\n")
+    cat("## SNV signature information")
+    cat("\n")
+    sig.metadata=fread(file.path(params$outdir,"signatureMetadata.csv"))
+     print(kable(sig.metadata,digits=2, "simple"))
+    cat("\n")
+    cat("\n")
+    cat('Click <a href="https://cancer.sanger.ac.uk/signatures/sbs/">here</a> for a catalog of COSMIC single base substitution signatures.')
+     cat("\n")
+     cat ("</div>","\n")
+}else{
+  cat("No active mutation signatures.")
+  cat ("\n<br>\n")
+}
+
+```
+
+```{r, SNV-signature,  dropBelow=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
 if (file.good(paste0(params$outdir, "/deconstruct_sigs.png"))){
     cat("\n")
     cat('<div id="deconstructsigs-first" class="section level2">')
@@ -731,24 +750,6 @@ if (file.good(paste0(params$outdir, "/deconstruct_sigs.png"))){
 }
 ```
 
-```{r, SNV-siginfo, dropBelow=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
-if (file.exists(file.path(params$outdir,"signatureMetadata.csv")) && file.good(paste0(params$outdir, "/deconstruct_sigs.png"))){ 
-    cat('<div id="SNV-Meta" class="section level2">',"\n")
-    cat("## SNV signature information")
-    cat("\n")
-    sig.metadata=fread(file.path(params$outdir,"signatureMetadata.csv"))
-     print(kable(sig.metadata,digits=2, "simple"))
-    cat("\n")
-    cat("\n")
-    cat('Click <a href="https://cancer.sanger.ac.uk/signatures/sbs/">here</a> for a catalog of COSMIC single base substitution signatures.')
-     cat("\n")
-     cat ("</div>","\n")
-}else{
-  cat("No active mutation signatures.")
-  cat ("\n<br>\n")
-}
-
-```
 
 # Oneness/Twoness
 

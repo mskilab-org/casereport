@@ -1005,10 +1005,10 @@ if (!opt$knit_only) {
 
             presentSigs=fread(file.path(opt$outdir,"Sig.csv"))
 	    sigMet=fread(file.path(opt$libdir,"data","sig.metadata.txt"),sep="\t")
-	    print(sigMet)
 	    thisMet=sigMet[sigMet$Signature %in% presentSigs$Signature,]
 	    thisMet$sig_count=presentSigs$sig_count
 	    thisMet$quantile=presentSigs$perc
+	    thisMet=thisMet[order(-thisMet$quantile), ]
 	    fwrite(thisMet, file.path(opt$outdir,"signatureMetadata.csv"))
             
         } else {
