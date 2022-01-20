@@ -286,8 +286,8 @@ if (nrow(cn.gallery.dt) > 0) {
 		)
 	)   
 	      cat("</div>")
-        cat('\n', '<br>', '\n\n')
     }
+        cat('\n', '<br>', '\n\n')
 }
 ```
 </div>

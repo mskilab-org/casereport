@@ -994,17 +994,18 @@ if (!opt$knit_only) {
                     message("Using background signature burden for whole Cell cohort")
                 }
             }
+	    sigMet=fread(file.path(opt$libdir,"data","sig.metadata.txt"),sep="\t")
             sigbar = deconstructsigs_histogram(sigs.fn = opt$deconstruct_variants,
                                                sigs.cohort.fn = sig.fn,
                                                id = opt$pair,
                                                cohort.type = background.type,
+						sigMet=sigMet,
 						outdir=opt$outdir)
             ppng(print(sigbar),
                  filename = report.config$sig_histogram,
                  height = 800, width = 800, res = 150)
 
             presentSigs=fread(file.path(opt$outdir,"Sig.csv"))
-	    sigMet=fread(file.path(opt$libdir,"data","sig.metadata.txt"),sep="\t")
 	    thisMet=sigMet[sigMet$Signature %in% presentSigs$Signature,]
 	    thisMet$sig_count=presentSigs$sig_count
 	    thisMet$quantile=presentSigs$perc
