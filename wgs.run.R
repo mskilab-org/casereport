@@ -39,6 +39,7 @@ if (!exists("opt")){
         make_option(c("--snpeff_config"), type = "character", default = "~/modules/SnpEff/snpEff.config", help = "snpeff.config file path"),
         make_option(c("--cohort_metadata"), type = "character", default = NA_character_, help = "Metadata of the background cohort"),
         make_option(c("--pmkb_interpretations"), type = "character", default = NA_character_, help = "Path to CVS with PMKB interpretations. If not provided, then a default table will be used (in data/pmkb-interpretations-06-11-2021.csv). See https://pmkb.weill.cornell.edu/about for details about PMKB."),
+        make_option(c("--deconv"), type = "character", default = "epic", help = "Method for RNA deconvolution"),
         make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir"),
         make_option(c("--verbose"), type = "logical", default = TRUE, action = "store_true", help = "Be verbose and write more messages during the process of producing the report."),
         make_option(c("--quantile_thresh"), type = "numeric", default = 0.05, help = "threshold for quantile for RNA expression"),
@@ -77,7 +78,7 @@ suppressMessages(expr = {
         library(gTrack)
         library(gUtils)
         library(tidyr)
-        library(dplyr)
+        library(tidyverse)
         library(ggforce)
         library(ggridges)
         library(ggrepel)
@@ -90,6 +91,9 @@ suppressMessages(expr = {
         library(deconstructSigs)
         library(DT)
         library(VariantAnnotation)
+        library(immunedeconv)
+        library(readr)
+        library(data.table)
         message("Loading critical dependencies from KevUtils")
         source(paste0(opt$libdir, "/utils.R"))
         source(paste0(opt$libdir, "/config.R"))
@@ -184,7 +188,10 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
     ## deconstructSigs
     report.config$sig_composition = paste0(report.config$outdir, "/deconstruct_sigs.png")
     report.config$sig_histogram = paste0(report.config$outdir, "/sig.composition.png")
-
+    
+    ## Deconvolution
+    report.config$deconv = paste0(report.config$outdir, "/", "deconv_results.txt")
+    
     ## summary
     report.config$summary_stats = paste0(report.config$outdir, "/summary.rds")
     report.config$oncotable = paste0(report.config$outdir, "/oncotable.rds")
@@ -1430,6 +1437,24 @@ if (!opt$knit_only) {
         saveRDS(summary.list, report.config$summary_stats)
     }
 
+    
+    ## #################
+    ## deconv
+    ## #################
+    if (check_file(report.config$deconv, opt$overwrite, opt$verbose)) {
+      message("Deconvolution data already exists, skipping")
+    } else {
+      message("Running Deconvolution algorithm")
+      tpm_raw = as.character(opt$tpm)
+      tpm_read <- read_delim(tpm_raw, col_names = T)
+      tpm_read_new <- tpm_read[,-1]
+      tpm_read_new_name <- as.matrix(tpm_read[,1])
+      rownames(tpm_read_new) <- tpm_read_new_name[,1] 
+      deconv_results = immunedeconv::deconvolute(tpm_read_new, opt$deconv)
+      data.table::fwrite(deconv_results, file.path(opt$outdir,"deconv_results.txt"), sep = '\t', quote = F, row.names = F)
+    }
+    
+    
     ## ################
     ## create oncotable
     ## ################

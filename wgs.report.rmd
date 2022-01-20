@@ -876,6 +876,20 @@ if (file.good(file.path(params$outdir, "allele.scatter.png"))){
 }
 ```
 
+
+***
+# Deconvolution
+
+This is deconvolution of this sample TPM Trasncriptome using `r readRDS(file.path(params$outdir, "cmd.args.rds"))$deconv` algorithm.
+
+
+
+```{r, deconv-results, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
+deconv_results.dt = fread(file.path(params$outdir, "deconv_results.txt"))
+DT::datatable(deconv_results.dt, options = list(scrollX = TRUE))
+```
+
+
 </div>
 
 
