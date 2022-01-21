@@ -1258,16 +1258,16 @@ rna_quantile = function(tpm.cohort, pair, tpm.pair = NULL) {
 #' @param sigs.cohort.fn (character) path to cohort
 #' @param pair (character)
 #' @param cohort.type (character) e.g. supplied, Cell, tumor type ( actually optional )
-#' @param cohort.type (character) e.g. supplied, Cell, tumor type ( actually optional )
 #' @param sigMet (data.table) data table with description of mutaitonal signatures (sig.metadata.txt in the casereport data folder)
-#' @param ... additional params passed ppng 
+#' @param ... additional params passed ppng
+#'
 #' @return histogram which you can then ppng etc.
 deconstructsigs_histogram = function(sigs.fn = NULL,
                                      sigs.cohort.fn = NULL,
                                      id = "",
                                      cohort.type = "",
-				     sigMet = NULL,
 				     outdir = "~",
+			  	     sigMet = NULL,
                                      ...) {
 
     allsig = data.table::fread(sigs.cohort.fn)
@@ -1306,12 +1306,12 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
 	
     fwrite(allsig[pair== id,],file.path(outdir,"Sig.csv"))
 
+	
     thisMet=sigMet[sigMet$Signature %in% allsig$Signature,]
     thisMet=thisMet[, Signature := factor(Signature, levels = new.slevels)]
-   
+
     allsig=merge(allsig,thisMet,by='Signature')
     allsig$Signature_Description=paste(allsig$Mutational.process," (",allsig$Signature,")")
-    
 
     sigbar = ggplot(allsig, aes(y = Signature_Description, x = sig_count, fill = Signature)) +
         geom_density_ridges(bandwidth = 0.1,
