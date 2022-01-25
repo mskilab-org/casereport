@@ -1,32 +1,41 @@
 #' zchoo Monday, Apr 26, 2021 02:24:31 PM
 ## This is a script to generate .png files for SV gallery
 
-#' @name create_cgc_gtrack
-#' @title create_cgc_gtrack
+#' @name create_genes_gtrack
+#' @title create_genes_gtrack
 #'
-#' @param cgc.fname (character)
-#' @param gencode (character)
+#' @param gencode.fname (character) path to GENCODE GFF
+#' @param genes (character vector) genes to mark using "label" GRangesList metadata column (all other genes will have label == NA)
+#' @param coding.only (logical) only include entries with gene_type == 'protein_coding'
+#' @param level.thresh (numeric) only include entries with level <= level.thresh
+#' @param cached.dir (character) path to directory in which to save the output gTrack
 #' @param verbose (logical)
 #'
 #' @return file name of gencode gTrack
-create_cgc_gtrack = function(cgc.fname = "./data/cgc.tsv",
-                             gencode.fname = NULL) {
-
-    if (!file.exists(cgc.fname)) {
-        stop("cgc.fname does not exist")
-    }
+create_genes_gtrack = function(genes = c(),
+                               gencode.fname = NULL,
+                               coding.only = TRUE,
+                               level.thresh = 2,
+                               cached.dir = Sys.getenv('GENCODE_DIR')) {
     if (is.null(gencode.fname) || !file.exists(gencode.fname)) {
         stop("gencode does not exist")
     }
 
-    cgc.gene.symbols = fread(cgc.fname)[["Gene Symbol"]]
-    gff = skidb::read_gencode(fn = gencode.fname)
-    cgc.gt = gTrack(gff, col = NA,
-                    grl.labelfield = "id", gr.labelfield = "exon_number",
-                    labels.suppress.gr = TRUE, labels.suppress = TRUE)
-                    ## gr.srt.label = gr.srt.label, cex.label = cex.label, gr.cex.label = gr.cex.label,                     ## labels.suppress.gr = labels.suppress.gr, stack.gap = stack.gap,
-                    ## colormaps = cmap, ...)
-    return(cgc.gt)
+    message('Generating genes gTrack')
+    gencode = rtracklayer::import(gencode.fname)
+    # adding label column (see https://github.com/mskilab/gTrack/pull/18 for details)
+    gene_names = gencode$gene_name
+    gene_names[which(!(gene_names %in% genes))] = NA
+    gencode$label = gene_names
+    if (isTRUE(coding.only)){
+        genode = gencode %Q% (gene_type == 'protein_coding')
+        if ('level' %in% names(mcols(gencode))){
+            gencode = gencode %Q% (level <= level.thresh)
+        }
+    }
+    genes.gt = gTrack::track.gencode(gencode = gencode,
+                                     chached.dir = cached.dir)
+    return(genes.gt)
 }
 
 #' @name gallery.wrapper
@@ -38,7 +47,6 @@ create_cgc_gtrack = function(cgc.fname = "./data/cgc.tsv",
 #' @param complex.fname (character)
 #' @param cvgt.fname
 #' @param gngt.fname
-#' @param cgcgt.fname CGC gene gTrack
 #' @param agt.fname allele gTrack path
 #' @param background.fname
 #' @param server
@@ -54,7 +62,6 @@ gallery.wrapper = function(complex.fname = NULL,
                            background.fname = "/data/sv.burden.txt",
                            cvgt.fname = "./coverage.gtrack.rds",
                            gngt.fname = "./data/gt.ge.hg19.rds",
-                           cgcgt.fname = NULL,
                            agt.fname = NULL,
                            server = "",
                            pair = "",
@@ -66,7 +73,7 @@ gallery.wrapper = function(complex.fname = NULL,
                            width = 1000,
                            outdir = "./") {
 
-    ## generate ridge plot
+    # generate ridge plot
     ridgeplot.fname = ridge.plot(complex.fname = complex.fname,
                                  background.fname = background.fname,
                                  ev.types = ev.types,
@@ -77,7 +84,6 @@ gallery.wrapper = function(complex.fname = NULL,
     svplot.dt = sv.plot(complex.fname = complex.fname,
                         cvgt.fname = cvgt.fname,
                         gngt.fname = gngt.fname,
-                        cgcgt.fname = cgcgt.fname,
                         agt.fname = agt.fname,
                         server = server,
                         pair = pair,
@@ -240,7 +246,6 @@ grab.window = function(gr, complex.fname,
 #' @param complex.fname (character) output from complex event caller
 #' @param cvgt.fname (character) coverage gTrack file path
 #' @param gngt.fname (character) gencode gTrack file path
-#' @param cgcgt.fname (character) CGC gTrack file path
 #' @param agt.fname (character) allele gTrack file name
 #' @param server (character) server url
 #' @param pair (character) pair id
@@ -258,7 +263,6 @@ cn.plot = function(drivers.fname = NULL,
                    complex.fname = NULL,
                    cvgt.fname = "./coverage.gtrack.rds",
                    gngt.fname = "./data/gt.ge.hg19.rds",
-                   cgcgt.fname = NULL,
                    agt.fname = NULL,
                    server = "",
                    pair = "",
@@ -327,17 +331,6 @@ cn.plot = function(drivers.fname = NULL,
         drivers.dt[, ev.js.range := gr.string(drivers.gr)]
         drivers.dt[, plot.link := paste0('//', server, "index.html?file=", pair, ".json&location=", ev.js.range, "&view=")]
 
-        ## read CGC gTrack if provided
-        if (!is.null(cgcgt.fname)) {
-            if (file.exists(cgcgt.fname)) {
-                cgc.gt = readRDS(cgcgt.fname)
-            } else {
-                cgc.gt = NULL
-            }
-        } else {
-            cgc.gt = NULL
-        }
-
         ## read allele gTrack if provided
         if (!is.null(agt.fname)) {
             if (file.exists(agt.fname)) {
@@ -362,49 +355,30 @@ cn.plot = function(drivers.fname = NULL,
         this.complex.gt$xaxis.chronly = TRUE
         this.complex.gt$y0 = 0
 
-        gngt$cex.label = 0.01 ## no labels for full gencode
         gngt$xaxis.chronly = TRUE
         gngt$name = "genes"
         gngt$ywid = 0.1
-        gngt$height = 2
+        gngt$height = 4
         gngt$yaxis.cex = 0.8
+        gngt$grl.labelfield = ''
 
         ## form gencode gTrack for just over/underexpressed genes
         drivers.gt.data = gngt@data[[1]][names(gngt@data[[1]]) %in% drivers.dt[, gene_name]]
-        drivers.gt = gTrack(drivers.gt.data,
-                            labels.suppress = FALSE,
-                            labels.suppress.gr = TRUE,
-                            height = 5,
-                            cex.label = 0.5,
-                            name = "drivers",
-                            xaxis.chronly = TRUE,
-                            ywid = 0.1,
-                            stack.gap = 1e6,
-                            yaxis.cex = 0.8)
-
-
-        if (!is.null(cgc.gt)) {
-            cgc.gt$cex.label = 0.5
-            cgc.gt$xaxis.chronly = TRUE
-            cgc.gt$name = "CGC"
-            cgc.gt$ywid = 0.1
-            cgc.gt$height = 5
-            cgc.gt$stack.gap = 1e6
-            gngt$yaxis.cex = 0.8
-
-            ## concatenate final gTracks
-            gt = c(gngt, cgc.gt, drivers.gt, cvgt, this.complex.gt)
-        } else {
-            gt = c(gngt, cvgt, drivers.gt, this.complex.gt)
-        }
+        drivers.gt = gngt
+        drivers.gt@data[[1]] = drivers.gt.data
+        drivers.gt$labels.suppress = TRUE
+        drivers.gt$name = "drivers"
+        drivers.gt$labels.suppress.gr = TRUE
+        drivers.gt$height = 5
+        drivers.gt$xaxis.chronly = TRUE
+        drivers.gt$ywid = 0.1
+        drivers.gt$yaxis.cex = 0.8
 
         if (!is.null(agt)) {
             agt$ylab = "CN"
             agt$yaxis.pretty = 3
             agt$xaxis.chronly = TRUE
             agt$y0 = 0
-
-            gt = c(agt, gt)
         }
 
         ## grab windows
@@ -435,6 +409,34 @@ cn.plot = function(drivers.fname = NULL,
                              win = GenomicRanges::trim(win + pad)
                          }
                          message(win)
+
+                         # assigning greater cex value to the driver gene in order to highlight it 
+                         drivers.df = values(drivers.gt@data[[1]])
+                         win_width = sum(width(win))
+                         cex.val = 0.3 # if the window is very wide then we will only show the highlight driver
+                         cex.vals = rep(cex.val, length(values(drivers.gt@data[[1]])$id))
+                         cex.val = ifelse(win_width > 20e6, 1e-5, 0.3) # if the window is very wide then we will only show the highlight driver
+                         if (win_width > 20e6){
+                             # if the window is really wide then we remove the labels from other drivers
+                             # we could do this in a smarter way where only in cases in which labels overlap then we remove them, but it doesn't seem worth the effort
+                             driver.labels = rep('', length(values(drivers.gt@data[[1]])$id))
+                             drivers.df$driver.label = driver.labels
+                             values(drivers.gt@data[[1]]) = drivers.df
+                             drivers.gt$grl.labelfield = 'driver.label'
+                         } else {
+                             drivers.gt$grl.labelfield = 'id'
+                         }
+                         names(cex.vals) = values(drivers.gt@data[[1]])$id
+                         cex.vals[as.character(drivers.gr$gene_name[ix])] = 0.6
+                         values(drivers.gt@data[[1]])$cex.label = cex.vals
+                         drivers.gt$grl.cexfield = 'cex.label'
+                         
+                         # TODO: print only the specific driver gene if the window larger than win.thresh
+                         gt = c(gngt, drivers.gt, cvgt, this.complex.gt)
+                         if (!is.null(agt)){
+                            gt = c(agt, gt)
+                         }
+                         gt$stack.gap = win_width / 10
                          ppng(plot(gt, win, legend.params = list(plot = FALSE)),
                               title = drivers.gr$gene_name[ix], ## title is the gene name
                               filename = drivers.dt$plot.fname[ix],
@@ -459,7 +461,7 @@ cn.plot = function(drivers.fname = NULL,
 #' @param complex.fname (character) output from complex event caller
 #' @param cvgt.fname (character) coverage gTrack file path
 #' @param gngt.fname (character) gencode gTrack file path
-#' @param cgcgt.fname (character) CGC gTrack file path
+#' @param genes.gt.fname (character) CGC gTrack file path
 #' @param agt.fname (character) allele gTrack file name
 #' @param server (character) server url
 #' @param pair (character) pair id
@@ -473,7 +475,7 @@ cn.plot = function(drivers.fname = NULL,
 sv.plot = function(complex.fname = NULL,
                    cvgt.fname = "./coverage.gtrack.rds",
                    gngt.fname = "./data/gt.ge.hg19.rds",
-                   cgcgt.fname = NULL,
+                   genes.gt.fname = NULL,
                    agt.fname = NULL,
                    server = "",
                    pair = "",
@@ -519,14 +521,14 @@ sv.plot = function(complex.fname = NULL,
         complex.ev[, plot.link := paste0('//', server, "index.html?file=", pair, ".json&location=", ev.js.range, "&view=")]
 
         ## read CGC gTrack if provided
-        if (!is.null(cgcgt.fname)) {
-            if (file.exists(cgcgt.fname)) {
-                cgc.gt = readRDS(cgcgt.fname)
+        if (!is.null(genes.gt.fname)) {
+            if (file.exists(genes.gt.fname)) {
+                genes.gt = readRDS(genes.gt.fname)
             } else {
-                cgc.gt = NULL
+                genes.gt = NULL
             }
         } else {
-            cgc.gt = NULL
+            genes.gt = NULL
         }
 
         ## read allele gTrack if provided
@@ -558,19 +560,20 @@ sv.plot = function(complex.fname = NULL,
         gngt$height = 2
         gngt$yaxis.cex = 0.8
 
-        if (!is.null(cgc.gt)) {
-            cgc.gt$cex.label = 0.5
-            cgc.gt$xaxis.chronly = TRUE
-            cgc.gt$name = "CGC"
-            cgc.gt$ywid = 0.1
-            cgc.gt$height = 5
-            cgc.gt$stack.gap = 1e6
+        if (!is.null(genes.gt)) {
+            genes.gt$cex.label = 0.5
+            genes.gt$labels.suppress = FALSE
+            genes.gt$xaxis.chronly = TRUE
+            genes.gt$name = "Genes"
+            genes.gt$ywid = 0.1
+            genes.gt$height = 5
+            genes.gt$stack.gap = 1e6
             gngt$yaxis.cex = 0.8
 
             ## concatenate final gTracks
-            gt = c(gngt, cgc.gt, cvgt, this.complex.gt)
+            gt = c(genes.gt, cvgt, this.complex.gt)
         } else {
-            gt = c(gngt, cvgt, this.complex.gt)
+            gt = c(cvgt, this.complex.gt)
         }
 
         if (!is.null(agt)) {
@@ -580,7 +583,7 @@ sv.plot = function(complex.fname = NULL,
 
             gt = c(agt, gt)
         }
-	
+
         ## save plots
         pts = lapply(1:nrow(complex.ev),
                      function(ix) {
