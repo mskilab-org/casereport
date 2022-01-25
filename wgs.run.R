@@ -1,5 +1,4 @@
 library(optparse)
-
 if (!exists("opt")){
     option_list = list(
         make_option(c("--libdir"), type = "character", help = "dir that contains this file and other source codes"),
@@ -31,7 +30,7 @@ if (!exists("opt")){
         make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
         make_option(c("--chrom_sizes"), type = "character", default = "~/DB/UCSC/hg19.broad.chrom.sizes", help = "chrom.sizes file of the reference genome"),
         make_option(c("--knit_only"), type = "logical", default = FALSE, action = "store_true", help = "if true, skip module and just knit"),
-        make_option(c("--amp_thresh"), type = "numeric", default = 4,
+        make_option(c("--amp_thresh"), type = "numeric", default = 2,
                     help = "Threshold over ploidy to call amplification"),
         make_option(c("--del_thresh"), type = "numeric", default = 0.5,
                     help = "Threshold over ploidy to call deletion"),
@@ -41,6 +40,7 @@ if (!exists("opt")){
         make_option(c("--snpeff_config"), type = "character", default = "~/modules/SnpEff/snpEff.config", help = "snpeff.config file path"),
         make_option(c("--cohort_metadata"), type = "character", default = NA_character_, help = "Metadata of the background cohort"),
         make_option(c("--pmkb_interpretations"), type = "character", default = NA_character_, help = "Path to CVS with PMKB interpretations. If not provided, then a default table will be used (in data/pmkb-interpretations-06-11-2021.csv). See https://pmkb.weill.cornell.edu/about for details about PMKB."),
+        make_option(c("--deconv"), type = "character", default = "epic", help = "Method for RNA deconvolution"),
         make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir"),
         make_option(c("--verbose"), type = "logical", default = TRUE, action = "store_true", help = "Be verbose and write more messages during the process of producing the report."),
         make_option(c("--quantile_thresh"), type = "numeric", default = 0.05, help = "threshold for quantile for RNA expression"),
@@ -82,7 +82,7 @@ suppressMessages(expr = {
         devtools::load_all('~ashaiber/git/gTrack')
         library(gUtils)
         library(tidyr)
-        library(dplyr)
+        library(tidyverse)
         library(ggforce)
         library(ggridges)
         library(ggrepel)
@@ -95,6 +95,9 @@ suppressMessages(expr = {
         library(deconstructSigs)
         library(DT)
         library(VariantAnnotation)
+        library(immunedeconv)
+        library(readr)
+        library(data.table)
         message("Loading critical dependencies from KevUtils")
         source(paste0(opt$libdir, "/utils.R"))
         source(paste0(opt$libdir, "/config.R"))
@@ -131,10 +134,14 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
         report.config$gencode_gtrack = paste0(report.config$outdir, "/", "gencode.composite.collapsed.rds")
     }
 
+    if (check_file(opt$drivers))
+        report.config$drivers = opt$drivers
+    else
+        report.config$drivers = NA_character_
+
+
     ## add CGC genes file
-    report.config$cgc = cgc.fname = ifelse(file.good(opt$drivers),
-                                           opt$drivers,
-                                           file.path(opt$libdir, "data", "cgc.tsv"))
+    report.config$cgc = cgc.fname = file.path(opt$libdir, "data", "cgc.tsv")
 
     ## add oncogenes, etc. to report config
     report.config$onc = file.path(report.config$libdir, "data", "onc.rds")
@@ -183,7 +190,10 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
     ## deconstructSigs
     report.config$sig_composition = paste0(report.config$outdir, "/deconstruct_sigs.png")
     report.config$sig_histogram = paste0(report.config$outdir, "/sig.composition.png")
-
+    
+    ## Deconvolution
+    report.config$deconv = paste0(report.config$outdir, "/", "deconv_results.txt")
+    
     ## summary
     report.config$summary_stats = paste0(report.config$outdir, "/summary.rds")
     report.config$oncotable = paste0(report.config$outdir, "/oncotable.rds")
@@ -382,7 +392,7 @@ if (!opt$knit_only) {
 
         genes_cn_annotated = get_gene_ampdel_annotations(genes_cn,
                                                          amp.thresh = opt$amp_thresh,
-                                                         del.thresh = opt$del_thresh)
+                                                         del.thresh = pmax(opt$del_thresh, 1))
 
         if (file.good(report.config$tpm_quantiles)) {
 
@@ -579,7 +589,9 @@ if (!opt$knit_only) {
                                    cgc.fname = report.config$cgc,
                                    onc = report.config$onc,
                                    tsg = report.config$tsg,
+                                   drivers.fname = report.config$drivers,
                                    ref.name = opt$ref,
+                                   type = "snv",
                                    verbose = TRUE)
 
         } else {
@@ -611,7 +623,9 @@ if (!opt$knit_only) {
                                        cgc.fname = report.config$cgc,
                                        onc = report.config$onc,
                                        tsg = report.config$tsg,
+                                       drivers.fname = report.config$drivers,
                                        ref.name = opt$ref,
+                                       type = "snv",
                                        verbose = TRUE)
 
             } else {
@@ -631,7 +645,9 @@ if (!opt$knit_only) {
                                    cgc.fname = report.config$cgc,
                                    onc = report.config$onc,
                                    tsg = report.config$tsg,
+                                   drivers.fname = report.config$drivers,
                                    ref.name = opt$ref,
+                                   type = "indel",
                                    verbose = TRUE)
         } else {
 
@@ -663,7 +679,9 @@ if (!opt$knit_only) {
                                        cgc.fname = report.config$cgc,
                                        onc = report.config$onc,
                                        tsg = report.config$tsg,
+                                       drivers.fname = report.config$drivers,
                                        ref.name = opt$ref,
+                                       type = "indel",
                                        verbose = TRUE)
 
             } else {
@@ -691,11 +709,62 @@ if (!opt$knit_only) {
             cgc = fread(report.config$cgc)
             tsg = readRDS(report.config$tsg)## cgc[get('Is Tumor Suppressor Gene') == 'Yes', get('Hugo Symbol')]
             onc = readRDS(report.config$onc)## cgc[get('Is Oncogene') == 'Yes', get('Hugo Symbol')]
+            
+            ## parsing drivers
+            ## this can be a text file that contains
+            ## either a 1-d vector of gene names
+            ## in this case, the gene.type later on is basename(opt$drivers)
+            ## or it can be a 2-column table
+            ## 1st column is gene name,
+            ## and 2nd col is annotation for gene.type
+            ## header can be commented out via "#"
+            txt.ptrn = "(.tsv|.txt|.csv|.tab)(.xz|.bz2|.gz){0,}$"
+            no_ext <- function (x, compression = FALSE) 
+            {
+                if (compression) 
+                    x <- sub("[.](gz|bz2|xz)$", "", x)
+                sub("([^.]+)\\.[[:alnum:]]+$", "\\1", x)
+            }
+            if (check_file(opt$drivers)) {
+                if (grepl(".rds$", opt$drivers, ignore.case = TRUE)) {
+                    drivers = readRDS(opt$drivers)
+                    if (!(is.character(drivers) ||
+                          inherits(drivers, c("matrix", "data.frame"))))
+                        drivers = NULL
+                        
+                } else if (grepl(txt.ptrn, opt$drivers)) {
+                    drivers = fread(opt$driver)
+                }
+
+                if (!is.null(drivers)) {
+
+                    if (NCOL(drivers) == 1) {
+                        ## annotating drivers by file name
+                        drivers = as.data.frame(drivers)
+                        drivers[[2]] = no_ext(basename(opt$drivers))  
+                    } 
+                    ## presuming the formatting above
+                    drivers = drivers[,c(1,2), drop = F]
+                    colnames(drivers) = c("gene", "driver.type")
+                    driver.mutations.dt$ord345987234 = 1:NROW(driver.mutations.dt)
+                    driver.mutations.dt = merge(driver.mutations.dt,
+                                                drivers,
+                                                by = "gene",
+                                                all.x = TRUE)
+                    driver.mutations.dt = driver.mutations.dt[order(ord345987234)]
+                    driver.mutations.dt$ord345987234 = NULL
+                }
+
+            }
+
 
             driver.mutations.dt[gene %in% tsg, gene.type := 'TSG']
             driver.mutations.dt[gene %in% onc, gene.type := 'ONC']
                                         # some genes are annotated in CGC as both
             driver.mutations.dt[gene %in% onc & gene %in% tsg, gene.type := 'ONC|TSG']
+            cols = c("gene", "gene.type", "driver.type", "Tier", "seqnames", "pos", "impact", "REF", "ALT", "variant.p", "vartype", "annotation")
+            driver.mutations.dt = driver.mutations.dt[,cols[cols %in% colnames(driver.mutations.dt)],
+                                with = FALSE]
         }
 
 
@@ -909,23 +978,23 @@ if (!opt$knit_only) {
                     message("Using background signature burden for whole Cell cohort")
                 }
             }
+            sigMet=fread(file.path(opt$libdir,"data","sig.metadata.txt"),sep="\t")
             sigbar = deconstructsigs_histogram(sigs.fn = opt$deconstruct_variants,
                                                sigs.cohort.fn = sig.fn,
                                                id = opt$pair,
                                                cohort.type = background.type,
-                        outdir=opt$outdir)
+                                               sigMet=sigMet,
+                                               outdir=opt$outdir)
             ppng(print(sigbar),
                  filename = report.config$sig_histogram,
                  height = 800, width = 800, res = 150)
 
             presentSigs=fread(file.path(opt$outdir,"Sig.csv"))
-        sigMet=fread(file.path(opt$libdir,"data","sig.metadata.txt"),sep="\t")
-        print(sigMet)
-        thisMet=sigMet[sigMet$Signature %in% presentSigs$Signature,]
-        thisMet$sig_count=presentSigs$sig_count
-        thisMet$quantile=presentSigs$perc
-        fwrite(thisMet, file.path(opt$outdir,"signatureMetadata.csv"))
-
+            thisMet=sigMet[sigMet$Signature %in% presentSigs$Signature,]
+            thisMet$sig_count=presentSigs$sig_count
+            thisMet$quantile=presentSigs$perc
+            thisMet=thisMet[order(-thisMet$quantile), ]
+            fwrite(thisMet, file.path(opt$outdir,"signatureMetadata.csv"))
         } else {
             message("deconstructSigs output not supplied.")
         }
@@ -934,7 +1003,7 @@ if (!opt$knit_only) {
 
     ## ##################
     ## HRDetect results
-    ## 
+    ##
     ## ##################
     if (!file.good(paste0(opt$outdir, "/hrdetect.rds")) | opt$overwrite){
         if (file.good(opt$hrd_results)){
@@ -1344,6 +1413,24 @@ if (!opt$knit_only) {
         saveRDS(summary.list, report.config$summary_stats)
     }
 
+    
+    ## #################
+    ## deconv
+    ## #################
+    if (check_file(report.config$deconv, opt$overwrite, opt$verbose)) {
+      message("Deconvolution data already exists, skipping")
+    } else {
+      message("Running Deconvolution algorithm")
+      tpm_raw = as.character(opt$tpm)
+      tpm_read <- read_delim(tpm_raw, col_names = T)
+      tpm_read_new <- tpm_read[,-1]
+      tpm_read_new_name <- as.matrix(tpm_read[,1])
+      rownames(tpm_read_new) <- tpm_read_new_name[,1] 
+      deconv_results = immunedeconv::deconvolute(tpm_read_new, opt$deconv)
+      data.table::fwrite(deconv_results, file.path(opt$outdir,"deconv_results.txt"), sep = '\t', quote = F, row.names = F)
+    }
+    
+    
     ## ################
     ## create oncotable
     ## ################
