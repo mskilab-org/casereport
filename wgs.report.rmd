@@ -277,21 +277,21 @@ if (nrow(cn.gallery.dt) > 0) {
         cat('<div id="',paste0(g,"-dcnv"),'" class="section level3">')
         cat("\n")
         cat("###", paste0(g, "<br>","\n"))
-	cat(
-		paste0('<p>',
-			'<a href="',
-			cn.gallery.dt[gene_name == g, plot.link],
-			'">',
-			'<img src="',
-			cn.gallery.dt[gene_name == g, plot.fname],
-			'" width="100%" />',
-			'</a>',
-			'</p>'
-		)
-	)   
-	      cat("</div>")
+        cat(
+            paste0('<p>',
+                    '<a href="',
+                    cn.gallery.dt[gene_name == g, plot.link],
+                    '">',
+                    '<img src="',
+                    cn.gallery.dt[gene_name == g, plot.fname],
+                    '" width="100%" />',
+                    '</a>',
+                    '</p>'
+            )
+        )   
+        cat("</div>")
     }
-        cat('\n', '<br>', '\n\n')
+    cat('\n', '<br>', '\n\n')
 }
 ```
 </div>

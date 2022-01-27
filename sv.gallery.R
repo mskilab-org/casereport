@@ -369,6 +369,7 @@ cn.plot = function(drivers.fname = NULL,
         drivers.gt$labels.suppress = TRUE
         drivers.gt$name = "drivers"
         drivers.gt$labels.suppress.gr = TRUE
+        drivers.gt$labels.suppress.grl = FALSE
         drivers.gt$height = 5
         drivers.gt$xaxis.chronly = TRUE
         drivers.gt$ywid = 0.1
@@ -408,18 +409,19 @@ cn.plot = function(drivers.fname = NULL,
                          } else {
                              win = GenomicRanges::trim(win + pad)
                          }
-                         message(win)
 
                          # assigning greater cex value to the driver gene in order to highlight it 
                          drivers.df = values(drivers.gt@data[[1]])
                          win_width = sum(width(win))
                          cex.val = 0.3 # if the window is very wide then we will only show the highlight driver
                          cex.vals = rep(cex.val, length(values(drivers.gt@data[[1]])$id))
-                         cex.val = ifelse(win_width > 20e6, 1e-5, 0.3) # if the window is very wide then we will only show the highlight driver
-                         if (win_width > 20e6){
+                         cex.val = ifelse(win_width > 100e6, 0.4, 0.3) # if the window is very wide then we will only show the highlight driver
+                         if (win_width > 20e9){
                              # if the window is really wide then we remove the labels from other drivers
                              # we could do this in a smarter way where only in cases in which labels overlap then we remove them, but it doesn't seem worth the effort
                              driver.labels = rep('', length(values(drivers.gt@data[[1]])$id))
+                             names(driver.labels) = values(drivers.gt@data[[1]])$id
+                             driver.labels[as.character(drivers.gr$gene_name[ix])] = as.character(drivers.gr$gene_name[ix])
                              drivers.df$driver.label = driver.labels
                              values(drivers.gt@data[[1]]) = drivers.df
                              drivers.gt$grl.labelfield = 'driver.label'
@@ -590,7 +592,7 @@ sv.plot = function(complex.fname = NULL,
                          ## prepare window
                          win = parse.grl(complex.ev$footprint[[ix]]) %>% unlist
                          if (pad > 0 & pad <= 1) {
-                             adjust = pmax(1e5, pad * width(win))
+                             adjust = pmax(1e6, pad * width(win))
                              win = GenomicRanges::trim(win + adjust)
                          } else {
                              win = GenomicRanges::trim(win + pad)

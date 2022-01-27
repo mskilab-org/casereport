@@ -77,7 +77,7 @@ suppressMessages(expr = {
     suppressPackageStartupMessages(expr = {
         library(forcats)
         library(stringr)
-        library(gGnome)
+        devtools::load_all('~ashaiber/git/gGnome')
         # FIXME: once this pull request is merged and gTrack is reinstalled then change the next line to "library(gTrack)"
         devtools::load_all('~ashaiber/git/gTrack')
         library(gUtils)
@@ -860,6 +860,8 @@ if (!opt$knit_only) {
         message("preparing CN gallery")
         ## grab ploidy
         pl = readRDS(opt$jabba_rds)$ploidy
+        cn.gallery.dir = paste0(opt$outdir, '/cn_gallery')
+        dir.create(cn.gallery.dir)
         cn.slickr.dt = cn.plot(drivers.fname = report.config$driver_scna,
                                report.config$complex,
                                cvgt.fname = report.config$coverage_gtrack,
@@ -872,7 +874,7 @@ if (!opt$knit_only) {
                                pad = 0.5,
                                height = 900,
                                width = 1000,
-                               outdir = opt$outdir)
+                               outdir = cn.gallery.dir)
         fwrite(cn.slickr.dt, report.config$scna_gtracks)
     } else {
         message("CN gallery files already exist")
@@ -895,6 +897,8 @@ if (!opt$knit_only) {
         message("gTracks of over/underexpressed genes already exist")
     } else {
         message("preparing expression gallery")
+        expr.gallery.dir = paste0(opt$outdir, '/expr_gallery')
+        dir.create(expr.gallery.dir)
         expr.slickr.dt = cn.plot(drivers.fname = report.config$rna_change,
                                  complex.fname = report.config$complex,
                                  cvgt.fname = report.config$coverage_gtrack,
@@ -907,7 +911,7 @@ if (!opt$knit_only) {
                                  pad = 0.5,
                                  height = 1600,
                                  width = 1000,
-                                 outdir = opt$outdir)
+                                 outdir = expr.gallery.dir)
         fwrite(expr.slickr.dt, report.config$expression_gtracks)
     }
 
