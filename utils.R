@@ -857,6 +857,10 @@ get_gene_ampdel_annotations = function(genes_cn, amp.thresh, del.thresh){
     genes_cn[min_cn > 1 & min_normalized_cn <= del.thresh, cnv := 'del']
     genes_cn[min_cn == 1 & min_cn < ncn, cnv := 'hetdel']
     genes_cn[min_cn == 0, cnv := 'homdel']
+    if ('cn.low' %in% names(genes_cn) && 'cn.high' %in% names(genes_cn)){
+        genes_cn[, LOH := FALSE]
+        genes_cn[cn.low == 0 & ncn > 0, LOH := TRUE]
+    }
     return(genes_cn)
 }
 
@@ -2533,14 +2537,19 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
 
                 ## subset for previously annotated variants if data table is nonempty
                 if (nrow(scna.dt) && "cnv" %in% colnames(scna.dt)) {
-                    scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel"),]
+                    if ('LOH' %in% colnames(scna.dt)){
+                        scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel") | LOH == TRUE, ]
+                    } else {
+                        scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel"),]
+                        scna.dt[, LOH := NA]
+                    }
                 }
 
                 ## if there are any CN variants, rbind them to existing output
                 if (nrow(scna.dt)) {
-                    sel.cols = intersect(c("gene_name", "gene", "cnv",
-                                           "min_cn", "min_normalized_cn", "max_cn", "max_normalized_cn",
-                                           "seqnames", "start", "end", "ncn"),
+                    sel.cols = intersect(c("gene_name", "gene", "cnv", "LOH",
+                                           "min_cn", "cn.low", "cn.high", "min_normalized_cn", "max_cn", "max_normalized_cn",
+                                           "seqnames", "start", "end", "ncn", "gene_id"),
                                          colnames(scna.dt))
                     scna = scna.dt[, ..sel.cols]
 
@@ -2556,6 +2565,8 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
 
                     ## set 'type' to cnv annotation if present
                     if ("cnv" %in% colnames(scna)) {
+                        # TODO: currently the type will not include LOH info
+                        #       so if we want the oncoprint to show this information in the future we will need to make some adjustments
                         setnames(scna, "cnv", "type")
                     } else {
                         scna[min_normalized_cn >= amp.thresh, type := 'amp']
@@ -2567,6 +2578,14 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
                     out = rbind(out, scna[, ":="(id = x,
                                                  track = "variants",
                                                  vartype = "scna",
+                                                 source = "jabba_rds")],
+                                fill = TRUE, use.names = TRUE)
+
+                    # add an loh vartype
+                    out = rbind(out, scna[, ":="(id = x,
+                                                 track = "variants",
+                                                 type = LOH,
+                                                 vartype = "loh",
                                                  source = "jabba_rds")],
                                 fill = TRUE, use.names = TRUE)
                 } else {
