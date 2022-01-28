@@ -3447,3 +3447,63 @@ wgs_gtrack = function(jabba_rds, cvgt.fname, agt.fname = NULL) {
     }
     return(gt)
 }
+
+
+#' @name makeSummaryTable
+#' @title makeSummaryTable
+#' @description
+#' 
+#' Function for generating a summary table of interesting driver genes for casereport.
+#'
+#' @param cnv_table file path to casereport copy number variants table
+#' @param fusions_table file path to casereport fusions table
+#' @param expression_table file path to casereport over/under expression table
+#' @param mutations_table file path to casereport driver mutations table
+#' @param onco_table file path to casereport oncotable
+#' @param the directory of casereport
+#' @return summary table of driver genes.
+makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_table,onco_table,cs_libdir){
+	genelist=vector()
+	if(file.good(cnv_table)){
+		genelist=c(genelist,fread(cnv_table)$gene_name)
+	}
+	if(file.good(fusions_table)){
+		genelist=c(genelist,fread(fusions_table)$driver.name)
+	}
+	if(file.good(expression_table)){
+		genelist=c(genelist,fread(expression_table)$gene)
+	}
+	if(file.good(mutations_table)){
+		genelist=c(genelist,fread(mutations_table)$gene)
+	}
+
+	oncotable=readRDS(onco_table)
+	summaryTable=NA
+	#pmkbTier=fread(paste0(cs_libdir,"/data/pmkb-tier.tsv"))
+	pmkbTier=get_pmkb_tier_table(NA)
+	for(i in 1:length(genelist)){
+		thisGene=oncotable[oncotable$gene==genelist[i] & !is.na(oncotable$gene),]
+		if(genelist[i] %in% pmkbTier$gene){
+			#thisTier=min(pmkbTier[pmkbTier$gene==thisGene$gene[1],]$Tier)	
+			thisTier=pmkbTier[pmkbTier$gene==thisGene$gene[1],]$tier
+		}else{
+			thisTier=NA
+		}
+
+		if(is.na(summaryTable)){
+			summaryTable=data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),track=toString(unique(thisGene$type)),source=toString(unique(thisGene$source)),tier=thisTier)
+		}else{
+			summaryTable=rbind(summaryTable,data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),track=toString(unique(thisGene$track)),source=toString(unique(thisGene$source)),tier=thisTier))
+		}
+	}
+	summaryTable$type=str_replace(summaryTable$type,"NA, ","")
+	summaryTable$role=str_replace(summaryTable$role,"NA, ","")
+	summaryTable$type=str_replace(summaryTable$type,", NA","")
+        summaryTable$role=str_replace(summaryTable$role,", NA","")
+
+	summaryTable$gene=paste0('<a href=https://www.oncokb.org/gene/', summaryTable$gene, ' target=_blank rel=noopener noreferrer >', summaryTable$gene, '</a>')
+
+	return(summaryTable[order(summaryTable$tier),])
+}
+
+

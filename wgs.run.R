@@ -195,6 +195,7 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
     ## summary
     report.config$summary_stats = paste0(report.config$outdir, "/summary.rds")
     report.config$oncotable = paste0(report.config$outdir, "/oncotable.rds")
+    report.config$summaryTable = paste0(report.config$outdir, "/summaryTable.txt")
 
     saveRDS(report.config, paste0(report.config$outdir, "/", "report.config.rds"))
 }
@@ -1489,6 +1490,21 @@ if (!opt$knit_only) {
                               verbose = TRUE)
         saveRDS(oncotable, report.config$oncotable)
     } 
+
+    ## ################
+    ## create summaryTable
+    ## ################
+
+
+   if (check_file(report.config$summaryTable, opt$overwrite, opt$verbose)) {
+        message("Summary Table already exists. Skipping!")
+    } else {
+        message("Generating summary table")
+	wol=makeSummaryTable(report.config$driver_scna,report.config$driver_fusions, report.config$rna_change_with_cn,report.config$driver_mutations,report.config$oncotable,opt$libdir)
+	fwrite(wol,report.config$summaryTable)
+	}
+
+
 }
 
 message("Optimizing PNGs")
