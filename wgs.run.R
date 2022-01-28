@@ -481,6 +481,14 @@ if (!opt$knit_only) {
                        "max_cn", "min_normalized_cn", "max_normalized_cn",
                        "expr.value", "expr.quantile",
                        "seqnames", "start", "end", "width", "ev.id", "ev.type")
+            if ('cn.low' %in% names(genes_cn_annotated) && 'cn.high' %in% names(genes_cn_annotated)){
+                # include allelic CN in the table
+                fields = c("gene_name", "annot", "surface",
+                       "cnv", "expr", "min_cn", 'cn.high', 'cn.low',
+                       "max_cn", "min_normalized_cn", "max_normalized_cn",
+                       "expr.value", "expr.quantile",
+                       "seqnames", "start", "end", "width", "ev.id", "ev.type")
+            }
             
             cn.fields = intersect(fields, names(driver.genes_cn))
             fwrite(driver.genes_cn[, ..cn.fields], report.config$driver_scna)
@@ -1483,7 +1491,6 @@ if (!opt$knit_only) {
         saveRDS(oncotable, report.config$oncotable)
     } 
 
-
     ## ################
     ## create summaryTable
     ## ################
@@ -1496,6 +1503,8 @@ if (!opt$knit_only) {
 	wol=makeSummaryTable(report.config$driver_scna,report.config$driver_fusions, report.config$rna_change_with_cn,report.config$driver_mutations,report.config$oncotable,opt$libdir)
 	fwrite(wol,report.config$summaryTable)
 	}
+
+
 }
 
 message("Optimizing PNGs")

@@ -233,6 +233,7 @@ DT::datatable(summary.dt, escape=FALSE)
 
 ***
 
+
 # Whole genome view {.tabset .tabset-fade .tabset-pills}
 
 ```{r, wgs-lead, dropAboveExp=TRUE, results = "asis", echo = FALSE}
