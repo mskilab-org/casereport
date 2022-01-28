@@ -3496,14 +3496,26 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 			summaryTable=rbind(summaryTable,data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),track=toString(unique(thisGene$track)),source=toString(unique(thisGene$source)),tier=thisTier))
 		}
 	}
+	
+	oncotable=oncotable[track == 'variants' & oncotable$gene %in% genelist,]
+	forCast=dcast(oncotable,gene~vartype,length)
+	summaryTable=merge(summaryTable,forCast,by="gene")	
+
 	summaryTable$type=str_replace(summaryTable$type,"NA, ","")
 	summaryTable$role=str_replace(summaryTable$role,"NA, ","")
 	summaryTable$type=str_replace(summaryTable$type,", NA","")
         summaryTable$role=str_replace(summaryTable$role,", NA","")
+	summaryTable$track=str_replace(summaryTable$type,"NA, ","")
+	summaryTable$track=str_replace(summaryTable$type,", NA","")
+
+	summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),1,0)	
 
 	summaryTable$gene=paste0('<a href=https://www.oncokb.org/gene/', summaryTable$gene, ' target=_blank rel=noopener noreferrer >', summaryTable$gene, '</a>')
 
-	return(summaryTable[order(summaryTable$tier),])
+	summaryTable=summaryTable[order(summaryTable$tier,summaryTable$withHetdel),]
+	summaryTable$withHetdel=NULL
+
+	return(summaryTable)
 }
 
 
