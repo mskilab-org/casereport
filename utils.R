@@ -3507,8 +3507,11 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 	summaryTable$role=str_replace(summaryTable$role,"NA, ","")
 	summaryTable$type=str_replace(summaryTable$type,", NA","")
         summaryTable$role=str_replace(summaryTable$role,", NA","")
-	summaryTable$track=str_replace(summaryTable$type,"NA, ","")
-	summaryTable$track=str_replace(summaryTable$type,", NA","")
+	summaryTable$track=str_replace(summaryTable$track,"NA, ","")
+	summaryTable$track=str_replace(summaryTable$track,", NA","")
+	summaryTable$track=str_replace(summaryTable$track,", ","")
+	summaryTable$type=str_replace(summaryTable$type,", ","")
+	summaryTable$role=str_replace(summaryTable$role,", ","")
 
 	summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),1,0)	
 

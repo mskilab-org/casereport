@@ -1503,6 +1503,8 @@ if (!opt$knit_only) {
     } else {
         message("Generating summary table")
 	wol=makeSummaryTable(report.config$driver_scna,report.config$driver_fusions, report.config$rna_change_with_cn,report.config$driver_mutations,report.config$oncotable,opt$libdir)
+	wol$tier=as.character(wol$tier)
+	wol[is.na(wol$tier),]$tier="Undefined"
 	fwrite(wol,report.config$summaryTable)
 	}
 
