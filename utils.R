@@ -3531,8 +3531,11 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 #' this is assuming that the reports are somewhere under /gpfs/commons/projects/imielinski_web
 #'
 #' @param jb Flow Job object
+#' @param output_file output TXT in which the tabular data will be saved. If not file is provided then the data is saved to a temporary file.
+#' @param libdir path to the casereport repository clone
+#' @param html_dir path to the directory in which to put the html version of the table
 #' @return data.table
-summarize_cases = function(jb){
+summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', html_dir = NULL){
     if (is.character(jb) && grepl('rds$', jb)){
         jb = readRDS(jb)
     }
@@ -3558,5 +3561,27 @@ summarize_cases = function(jb){
     })
     summ = rbindlist(summ, fill = T)
     dt = merge.data.table(dt[,.(id = get(k), link)], summ, by = 'id')
+    if (!is.null(output_file) && is.character(output_file) && dir.exists(dirname(output_file))){
+        message('Writing table to: ', output_file)
+        fwrite(dt, output_file)
+    }
+
+    if (!is.null(html_dir) && dir.exists(html_dir)){
+        html_path = normalizePath(paste0(html_dir, "/case.reports.html"))
+        message("Generating html output to: ", html_path)
+        if (!file.good(output_file)){
+            output_file = tempfile()
+            message('Writing table to: ', output_file)
+            fwrite(dt, output_file)
+        }
+        rmarkdown::render(
+            input = normalizePath(paste0(libdir, "/wgs.report.table.rmd")),
+            output_format = "html_document",
+            output_file = html_path,
+            knit_root_dir = normalizePath(html_dir),
+            ## params = report.config,
+            params = list(summary_table = normalizePath(output_file)),
+            quiet = FALSE)
+    }
     return(dt)
 }
