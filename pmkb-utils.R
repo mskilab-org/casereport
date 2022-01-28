@@ -30,7 +30,7 @@ get_pmkb_dt = function(pmkb_tsv = NA){
 #' @param pmkb_tsv (character) path to PMKB TSV (if not provided then the default table supplied with the package will be used
 get_pmkb_tier_table = function(pmkb_tsv = NA){
     pmkb.dt = get_pmkb_dt(pmkb_tsv)
-    return(pmkb_dt[, .(type = paste(sort(unique(gene.type)), collapse = '|'), tier = min(Tier)), by = gene])
+    return(pmkb.dt[, .(type = paste(sort(unique(gene.type)), collapse = '|'), tier = min(Tier)), by = gene])
 }
 
 
