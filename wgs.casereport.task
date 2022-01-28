@@ -27,6 +27,8 @@ input	tumor_type	tumor_type	value	"unknown"
 input	cohort_metadata	cohort_metadata	path	/dev/null
 input	ref		ref	value	"hg19"	## one of hg19, hg38
 input	flags	flags	value	""
+input	drivers	"~/git/casereport/data/ddr_pearl2015.tsv"	path
 input	condaenv	path_to_condaenv	path	"/gpfs/commons/groups/imielinski_lab/Software/anaconda3/envs/casereport"
+input	deconv	deconv	value	"epic"
 output	wgs_casereport	*wgs.report.html$
 output	oncotable	oncotable.rds$

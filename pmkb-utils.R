@@ -8,7 +8,7 @@
 #' Internal function to read the pmkb TSV (this is the simplified version that we produced from the PMKB interpretations CSV)
 #'
 #' @param pmkb_tsv (character) path to PMKB TSV (if not provided then the default table supplied with the package will be used
-get_pmkb_dt = function(pmkb_tsv){
+get_pmkb_dt = function(pmkb_tsv = NA){
     if (is.na(pmkb_tsv)){
         pmkb_tsv = file.path(opt$libdir, "data", "pmkb-tier.tsv")
         message('Using default PMKB annotations: ', pmkb_tsv)
@@ -16,6 +16,23 @@ get_pmkb_dt = function(pmkb_tsv){
         pmkb.dt = fread(pmkb_tsv)
         return(pmkb.dt)
 }
+
+#' @name get_pmkb_tier_table
+#' @title get_pmkb_tier_table
+#'
+#' @description
+#'
+#' Internal function to generate a table with a single tier value per gene
+#' 
+#' The output table includes columns: gene, type, and tier
+#' the type takes one of the following values: 'ONC', 'TSG', or 'ONC|TSG'. As of writing this the only gene with 'ONC|TSG' annotation was CDH1
+#'
+#' @param pmkb_tsv (character) path to PMKB TSV (if not provided then the default table supplied with the package will be used
+get_pmkb_tier_table = function(pmkb_tsv = NA){
+    pmkb.dt = get_pmkb_dt(pmkb_tsv)
+    return(pmkb_dt[, .(type = paste(sort(unique(gene.type)), collapse = '|'), tier = min(Tier)), by = gene])
+}
+
 
 
 #' @name annotate_with_pmkb
@@ -29,7 +46,7 @@ get_pmkb_dt = function(pmkb_tsv){
 #' @param driver.mutations.dt (data.table) must contain column "gene"
 annotate_with_pmkb = function(driver.mutations.dt, pmkb_tsv = NA){
     pmkb.dt = get_pmkb_dt(pmkb_tsv)
-    driver.mutations.dt.annotated.with.tier = merge.data.table(pmkb.dt[, .(gene.type = unique(gene.type), Tier = min(Tier)), by = gene], driver.mutations.dt, by = 'gene')
+    driver.mutations.dt.annotated.with.tier = merge.data.table(pmkb.dt[, .(gene.type = unique(gene.type), Tier = min(Tier)), by = gene], driver.mutations.dt, by = 'gene', all.y = TRUE)
     return(driver.mutations.dt.annotated.with.tier[order(Tier)])
 }
 

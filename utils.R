@@ -857,6 +857,10 @@ get_gene_ampdel_annotations = function(genes_cn, amp.thresh, del.thresh){
     genes_cn[min_cn > 1 & min_normalized_cn <= del.thresh, cnv := 'del']
     genes_cn[min_cn == 1 & min_cn < ncn, cnv := 'hetdel']
     genes_cn[min_cn == 0, cnv := 'homdel']
+    if ('cn.low' %in% names(genes_cn) && 'cn.high' %in% names(genes_cn)){
+        genes_cn[, LOH := FALSE]
+        genes_cn[cn.low == 0 & ncn > 0, LOH := TRUE]
+    }
     return(genes_cn)
 }
 
@@ -983,7 +987,12 @@ get_gene_copy_numbers = function(gg, gene_ranges,
                                    cn = NULL,
                                    normalized_cn = NULL)]
 
-    gene_cn_split_genes_min = gene_cn_segments[get(gene_id_col) %in% split_genes, .SD[which.min(cn)], by = gene_id_col][,.(get(gene_id_col), cn, ncn, normalized_cn)]
+    if ('cn.low' %in% names(ndt) && 'cn.high' %in% names(ndt)){
+        # we will simply take the cn.low and cn.high from the segment with minimal CN
+        gene_cn_split_genes_min = gene_cn_segments[get(gene_id_col) %in% split_genes, .SD[which.min(cn)], by = gene_id_col][,.(get(gene_id_col), cn, ncn, normalized_cn, cn.low, cn.high)]
+    } else {
+        gene_cn_split_genes_min = gene_cn_segments[get(gene_id_col) %in% split_genes, .SD[which.min(cn)], by = gene_id_col][,.(get(gene_id_col), cn, ncn, normalized_cn)]
+    }
     gene_cn_split_genes_min[, `:=`(min_normalized_cn = normalized_cn,
                                    min_cn = cn)]
     setnames(gene_cn_split_genes_min, 'V1', gene_id_col)
@@ -1009,6 +1018,9 @@ get_gene_copy_numbers = function(gg, gene_ranges,
     gene_cn_split_genes = merge.data.table(gene_cn_split_genes, number_of_segments_per_split_gene, by = gene_id_col)
 
     keep.fields = c('ncn', 'min_normalized_cn', 'min_cn', 'max_normalized_cn', 'max_cn', 'number_of_cn_segments')
+    if ('cn.low' %in% names(ndt) && 'cn.high' %in% names(ndt)){
+        keep.fields = c(keep.fields, 'cn.low', 'cn.high')
+    }
     keep.fields = c(keep.fields, mfields, 'seqnames', 'start', 'end', 'strand')
     gene_cn_table = rbind(gene_cn_split_genes[, ..keep.fields], gene_cn_non_split_genes[, ..keep.fields])
 
@@ -1258,6 +1270,7 @@ rna_quantile = function(tpm.cohort, pair, tpm.pair = NULL) {
 #' @param sigs.cohort.fn (character) path to cohort
 #' @param pair (character)
 #' @param cohort.type (character) e.g. supplied, Cell, tumor type ( actually optional )
+#' @param sigMet (data.table) data table with description of mutaitonal signatures (sig.metadata.txt in the casereport data folder)
 #' @param ... additional params passed ppng
 #'
 #' @return histogram which you can then ppng etc.
@@ -1266,6 +1279,7 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
                                      id = "",
                                      cohort.type = "",
 				     outdir = "~",
+			  	     sigMet = NULL,
                                      ...) {
 
     allsig = data.table::fread(sigs.cohort.fn)
@@ -1304,7 +1318,14 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
 	
     fwrite(allsig[pair== id,],file.path(outdir,"Sig.csv"))
 
-    sigbar = ggplot(allsig, aes(y = Signature, x = sig_count, fill = Signature)) +
+	
+    thisMet=sigMet[sigMet$Signature %in% allsig$Signature,]
+    thisMet=thisMet[, Signature := factor(Signature, levels = new.slevels)]
+
+    allsig=merge(allsig,thisMet,by='Signature')
+    allsig$Signature_Description=paste(allsig$Mutational.process," (",allsig$Signature,")")
+
+    sigbar = ggplot(allsig, aes(y = Signature_Description, x = sig_count, fill = Signature)) +
         geom_density_ridges(bandwidth = 0.1,
                             alpha = 0.5,
                             scale = 0.9,
@@ -1339,10 +1360,10 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
         labs(title = paste0("Signatures vs. ", cohort.type, " background"), x = "Burden") +
         theme_minimal() +
         theme(legend.position = "none",
-              title = element_text(size = 20, family = "sans"),
-              axis.title = element_text(size = 20, family = "sans"),
-              axis.text.x = element_text(size = 15, family = "sans"),
-              axis.text.y = element_text(size = 20, family = "sans"))
+              title = element_text(size = 9, family = "sans"),
+              axis.title = element_text(size = 10, family = "sans"),
+              axis.text.x = element_text(size = 10, family = "sans"),
+              axis.text.y = element_text(size = 7, family = "sans"))
     
     return(sigbar)
 }
@@ -2100,8 +2121,10 @@ create.summary = function(jabba_rds,
         message("Computing total width of deleted and amplified segments...")
     }
     
-    out$del_mbp = sum(segs.dt[cn <= (del.thresh * jab$ploidy), width], na.rm = TRUE) / 1e6
-    out$amp_mbp = sum(segs.dt[cn >= (amp.thresh * jab$ploidy), width], na.rm = TRUE) / 1e6
+    #out$del_mbp = sum(segs.dt[cn <= (del.thresh * jab$ploidy), width], na.rm = TRUE) / 1e6
+    out$del_mbp = sum(segs.dt[cn <= (0.5 * jab$ploidy), width], na.rm = TRUE) / 1e6
+    #out$amp_mbp = sum(segs.dt[cn >= (amp.thresh * jab$ploidy), width], na.rm = TRUE) / 1e6
+    out$amp_mbp = sum(segs.dt[cn >= (1.5 * jab$ploidy), width], na.rm = TRUE) / 1e6
     out$cna_mbp = out$del_mbp + out$amp_mbp
 
     if (verbose) {
@@ -2514,14 +2537,19 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
 
                 ## subset for previously annotated variants if data table is nonempty
                 if (nrow(scna.dt) && "cnv" %in% colnames(scna.dt)) {
-                    scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel"),]
+                    if ('LOH' %in% colnames(scna.dt)){
+                        scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel") | LOH == TRUE, ]
+                    } else {
+                        scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel"),]
+                        scna.dt[, LOH := NA]
+                    }
                 }
 
                 ## if there are any CN variants, rbind them to existing output
                 if (nrow(scna.dt)) {
-                    sel.cols = intersect(c("gene_name", "gene", "cnv",
-                                           "min_cn", "min_normalized_cn", "max_cn", "max_normalized_cn",
-                                           "seqnames", "start", "end", "ncn"),
+                    sel.cols = intersect(c("gene_name", "gene", "cnv", "LOH",
+                                           "min_cn", "cn.low", "cn.high", "min_normalized_cn", "max_cn", "max_normalized_cn",
+                                           "seqnames", "start", "end", "ncn", "gene_id"),
                                          colnames(scna.dt))
                     scna = scna.dt[, ..sel.cols]
 
@@ -2537,6 +2565,8 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
 
                     ## set 'type' to cnv annotation if present
                     if ("cnv" %in% colnames(scna)) {
+                        # TODO: currently the type will not include LOH info
+                        #       so if we want the oncoprint to show this information in the future we will need to make some adjustments
                         setnames(scna, "cnv", "type")
                     } else {
                         scna[min_normalized_cn >= amp.thresh, type := 'amp']
@@ -2548,6 +2578,14 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
                     out = rbind(out, scna[, ":="(id = x,
                                                  track = "variants",
                                                  vartype = "scna",
+                                                 source = "jabba_rds")],
+                                fill = TRUE, use.names = TRUE)
+
+                    # add an loh vartype
+                    out = rbind(out, scna[, ":="(id = x,
+                                                 track = "variants",
+                                                 type = LOH,
+                                                 vartype = "loh",
                                                  source = "jabba_rds")],
                                 fill = TRUE, use.names = TRUE)
                 } else {
