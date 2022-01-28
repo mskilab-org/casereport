@@ -3521,3 +3521,42 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 }
 
 
+#' @name summarize_cases
+#' @title summarize_cases
+#' @description
+#' 
+#' Very ad-hoc function for mskilab use only!
+#'
+#' takes a case report flow module and produces a data.table with links to the reports
+#' this is assuming that the reports are somewhere under /gpfs/commons/projects/imielinski_web
+#'
+#' @param jb Flow Job object
+#' @return data.table
+summarize_cases = function(jb){
+    if (is.character(jb) && grepl('rds$', jb)){
+        jb = readRDS(jb)
+    }
+    if (!inherits(jb, 'Job')){
+        stop('jb must be of class Flow::Job, but you provided: ', class(jb))
+    }
+    dt = outputs(jb)
+    dt[, link := paste0('<a href=', wgs_casereport,
+                        '>report</a>')]
+    dt[, link:=gsub('/gpfs/commons/projects/imielinski_web/','//mskiweb.nygenome.org/', link)]
+    summary.fn = paste0(outdir(jb),'/summary.rds')
+    names(summary.fn) = ids(jb)
+    k = dt %>% key
+    summ = lapply(ids(jb), function(ix){
+        fn = summary.fn[ix]
+        if (file.good(fn)){
+            summary.dt = readRDS(fn) %>% as.data.table
+            summary.dt[, id := ix]
+            return(summary.dt)
+        }
+        sdt = data.table(id = ix)
+        return(sdt)
+    })
+    summ = rbindlist(summ, fill = T)
+    dt = merge.data.table(dt[,.(id = get(k), link)], summ, by = 'id')
+    return(dt)
+}
