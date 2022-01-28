@@ -224,6 +224,15 @@ Tumor Mutation Burden (TMB): `r format(round(summary.list$mut_per_mbp, 2), 2)` p
 
 ***
 
+# Summary Driver Table
+
+```{r, summ-driver, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE}
+summary.dt = fread(file.path(params$outdir, "summaryTable.txt"))
+DT::datatable(summary.dt, escape=FALSE)
+```
+
+***
+
 # Whole genome view {.tabset .tabset-fade .tabset-pills}
 
 ```{r, wgs-lead, dropAboveExp=TRUE, results = "asis", echo = FALSE}
