@@ -711,6 +711,8 @@ if(file.good(file.path(params$outdir, "sv.gallery.txt")) && nrow(sv.slickr.dt) &
 
 ```{r, driver-snv-indel, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
 driver.mutations.dt = fread(file.path(params$outdir, "driver.mutations.txt"))
+driver.mutations.dt$Tier=as.character(driver.mutations.dt$Tier)
+driver.mutations.dt[is.na(driver.mutations.dt$Tier),]$Tier="Undefined"
 DT::datatable(driver.mutations.dt, options = list(scrollX = TRUE))
 ```
 
@@ -903,8 +905,10 @@ This is deconvolution of this sample TPM Trasncriptome using `r readRDS(file.pat
 
 
 ```{r, deconv-results, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
-deconv_results.dt = fread(file.path(params$outdir, "deconv_results.txt"))
-DT::datatable(deconv_results.dt, options = list(scrollX = TRUE))
+if (file.good(file.path(params$outdir, "deconv_results.txt"))){
+    deconv_results.dt = fread(file.path(params$outdir, "deconv_results.txt"))
+    DT::datatable(deconv_results.dt, options = list(scrollX = TRUE))
+}
 ```
 
 

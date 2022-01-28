@@ -858,8 +858,9 @@ get_gene_ampdel_annotations = function(genes_cn, amp.thresh, del.thresh){
     genes_cn[min_cn == 1 & min_cn < ncn, cnv := 'hetdel']
     genes_cn[min_cn == 0, cnv := 'homdel']
     if ('cn.low' %in% names(genes_cn) && 'cn.high' %in% names(genes_cn)){
-        genes_cn[, LOH := FALSE]
-        genes_cn[cn.low == 0 & ncn > 0, LOH := TRUE]
+        genes_cn[, loh := '']
+        genes_cn[is.na(cn.low), loh := NA]
+        genes_cn[cn.low == 0 & ncn > 0, loh := 'loh']
     }
     return(genes_cn)
 }
@@ -2537,20 +2538,21 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
 
                 ## subset for previously annotated variants if data table is nonempty
                 if (nrow(scna.dt) && "cnv" %in% colnames(scna.dt)) {
-                    if ('LOH' %in% colnames(scna.dt)){
-                        scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel") | LOH == TRUE, ]
+                    if ('loh' %in% colnames(scna.dt)){
+                        scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel") | loh == TRUE, ]
                     } else {
                         scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel"),]
-                        scna.dt[, LOH := NA]
+                        scna.dt[, loh := NA]
                     }
                 }
 
                 ## if there are any CN variants, rbind them to existing output
                 if (nrow(scna.dt)) {
-                    sel.cols = intersect(c("gene_name", "gene", "cnv", "LOH",
+                    sel.cols = intersect(c("gene_name", "gene", "cnv", "loh",
                                            "min_cn", "cn.low", "cn.high", "min_normalized_cn", "max_cn", "max_normalized_cn",
                                            "seqnames", "start", "end", "ncn", "gene_id"),
                                          colnames(scna.dt))
+                    sel.cols = intersect(sel.cols, names(scna.dt))
                     scna = scna.dt[, ..sel.cols]
 
                     ## make sure that gene is named as gene instead of gene_name
@@ -2565,7 +2567,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
 
                     ## set 'type' to cnv annotation if present
                     if ("cnv" %in% colnames(scna)) {
-                        # TODO: currently the type will not include LOH info
+                        # TODO: currently the type will not include loh info
                         #       so if we want the oncoprint to show this information in the future we will need to make some adjustments
                         setnames(scna, "cnv", "type")
                     } else {
@@ -2584,7 +2586,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
                     # add an loh vartype
                     out = rbind(out, scna[, ":="(id = x,
                                                  track = "variants",
-                                                 type = LOH,
+                                                 type = loh,
                                                  vartype = "loh",
                                                  source = "jabba_rds")],
                                 fill = TRUE, use.names = TRUE)
@@ -3505,8 +3507,11 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 	summaryTable$role=str_replace(summaryTable$role,"NA, ","")
 	summaryTable$type=str_replace(summaryTable$type,", NA","")
         summaryTable$role=str_replace(summaryTable$role,", NA","")
-	summaryTable$track=str_replace(summaryTable$type,"NA, ","")
-	summaryTable$track=str_replace(summaryTable$type,", NA","")
+	summaryTable$track=str_replace(summaryTable$track,"NA, ","")
+	summaryTable$track=str_replace(summaryTable$track,", NA","")
+	summaryTable$track=str_replace(summaryTable$track,", ","")
+	summaryTable$type=str_replace(summaryTable$type,", ","")
+	summaryTable$role=str_replace(summaryTable$role,", ","")
 
 	summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),1,0)	
 

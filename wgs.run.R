@@ -342,7 +342,7 @@ if (!opt$knit_only) {
                                                 quantile.thresh = opt$quantile_thresh,
                                                 verbose = TRUE)
 	    library(matrixStats)
-	    cohort=fread(opt$tpm_cohort,sep="\t")
+	    cohort=fread(opt$tpm_cohort)
 	    W=data.table(gene=cohort$"gene",Avg=rowMeans(log10(cohort[,!("gene")]+1)),SD=rowSds(log10(as.matrix(cohort[,!("gene")]+1))))
 	    melted.expr$zscore=(log10(melted.expr$value+1)-W$Avg)/W$SD
         } else {
@@ -1454,14 +1454,16 @@ if (!opt$knit_only) {
     if (check_file(report.config$deconv, opt$overwrite, opt$verbose)) {
       message("Deconvolution data already exists, skipping")
     } else {
-      message("Running Deconvolution algorithm")
-      tpm_raw = as.character(opt$tpm)
-      tpm_read <- read_delim(tpm_raw, col_names = T)
-      tpm_read_new <- tpm_read[,-1]
-      tpm_read_new_name <- as.matrix(tpm_read[,1])
-      rownames(tpm_read_new) <- tpm_read_new_name[,1] 
-      deconv_results = immunedeconv::deconvolute(tpm_read_new, opt$deconv)
-      data.table::fwrite(deconv_results, file.path(opt$outdir,"deconv_results.txt"), sep = '\t', quote = F, row.names = F)
+      if (file.good(opt$tpm)){
+        message("Running Deconvolution algorithm")
+        tpm_raw = as.character(opt$tpm)
+        tpm_read <- read_delim(tpm_raw, col_names = T)
+        tpm_read_new <- tpm_read[,-1]
+        tpm_read_new_name <- as.matrix(tpm_read[,1])
+        rownames(tpm_read_new) <- tpm_read_new_name[,1] 
+        deconv_results = immunedeconv::deconvolute(tpm_read_new, opt$deconv)
+        data.table::fwrite(deconv_results, file.path(opt$outdir,"deconv_results.txt"), sep = '\t', quote = F, row.names = F)
+      }
     }
     
     
@@ -1501,6 +1503,8 @@ if (!opt$knit_only) {
     } else {
         message("Generating summary table")
 	wol=makeSummaryTable(report.config$driver_scna,report.config$driver_fusions, report.config$rna_change_with_cn,report.config$driver_mutations,report.config$oncotable,opt$libdir)
+	wol$tier=as.character(wol$tier)
+	wol[is.na(wol$tier),]$tier="Undefined"
 	fwrite(wol,report.config$summaryTable)
 	}
 
