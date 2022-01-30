@@ -1457,7 +1457,7 @@ if (!opt$knit_only) {
       if (file.good(opt$tpm)){
         message("Running Deconvolution algorithm")
         tpm_raw = as.character(opt$tpm)
-        tpm_read <- read_delim(tpm_raw, col_names = T)
+        tpm_read <- data.table::fread(tpm_raw, header = TRUE)
         tpm_read_new <- tpm_read[,-1]
         tpm_read_new_name <- as.matrix(tpm_read[,1])
         rownames(tpm_read_new) <- tpm_read_new_name[,1] 
