@@ -1021,13 +1021,6 @@ if (!opt$knit_only) {
                  filename = report.config$sig_histogram,
                  height = 800, width = 800, res = 150)
 
-            #presentSigs=fread(file.path(opt$outdir,"Sig.csv"))
-	    #thisMet=sigMet[sigMet$Signature %in% presentSigs$Signature,]
-	    #thisMet$sig_count=presentSigs$sig_count
-	    #thisMet$quantile=presentSigs$perc
-	    #thisMet=thisMet[order(-thisMet$quantile), ]
-	    #fwrite(thisMet, file.path(opt$outdir,"signatureMetadata.csv"))
-
 	    presentSigs=fread(file.path(opt$outdir,"Sig.csv"))
             presentSigs$pair=NULL
             thisMet=sigMet[sigMet$Signature %in% presentSigs$Signature,]
