@@ -3534,7 +3534,7 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 #' takes a case report flow module and produces a data.table with links to the reports
 #' this is assuming that the reports are somewhere under /gpfs/commons/projects/imielinski_web
 #'
-#' @param jb Flow Job object
+#' @param jb Flow Job object or a data.frame/data.table containing the contents of outputs(jb), where jb is the case report Flow Job object.
 #' @param output_file output TXT in which the tabular data will be saved. If not file is provided then the data is saved to a temporary file.
 #' @param libdir path to the casereport repository clone
 #' @param html_dir path to the directory in which to put the html version of the table
@@ -3544,20 +3544,31 @@ summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', 
     if (is.character(jb) && grepl('rds$', jb)){
         jb = readRDS(jb)
     }
-    if (!inherits(jb, 'Job')){
-        stop('jb must be of class Flow::Job, but you provided: ', class(jb))
+    if (!inherits(jb, 'Job') && !inherits(jb, 'data.frame')){
+        stop('jb must be a data.frame or an object of class Flow::Job, but you provided: ', class(jb))
     }
     if (!is.null(output_file) && !is.character(output_file)){
         stop('Invalid value for output_file. output_file must be of class character, but you provided: ', class(output_file))
     }
-    dt = outputs(jb)
+    if (inherits(jb, 'data.frame')){
+        dt = as.data.table(jb)
+        if (is.null(key(dt))){
+            setkeyv(dt, names(dt)[1])
+        }
+    } else {
+        dt = outputs(jb)
+    }
+    if (!('wgs_casereport' %in% names(dt))){
+        stop('Invalid input. The input job information must contain column "wgs_casereport"')
+    }
+    summary.fn = paste0(dirname(dt[, wgs_casereport]),'/summary.rds')
     dt[, link := paste0('<a href=', wgs_casereport,
                         '>report</a>')]
     dt[, link:=gsub('/gpfs/commons/projects/imielinski_web/','//mskiweb.nygenome.org/', link)]
-    summary.fn = paste0(outdir(jb),'/summary.rds')
-    names(summary.fn) = ids(jb)
     k = dt %>% key
-    summ = lapply(ids(jb), function(ix){
+    iids = dt[,get(k)]
+    names(summary.fn) = iids
+    summ = lapply(iids, function(ix){
         fn = summary.fn[ix]
         if (file.good(fn)){
             summary.dt = readRDS(fn) %>% as.data.table
@@ -3576,7 +3587,7 @@ summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', 
     if (!is.null(metadata) && is.data.frame(metadata) && all(!duplicated(as.data.table(metadata[, 1])))){
         metadata = as.data.table(metadata)
         setnames(metadata, names(metadata)[1], 'id')
-        dt = merge.data.table(dt, metadata, all.x = T)
+        dt = merge.data.table(metadata, dt, all.y = T, by = 'id')
     }
 
     if (!is.null(html_dir) && dir.exists(html_dir)){
