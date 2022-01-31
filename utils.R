@@ -857,6 +857,11 @@ get_gene_ampdel_annotations = function(genes_cn, amp.thresh, del.thresh){
     genes_cn[min_cn > 1 & min_normalized_cn <= del.thresh, cnv := 'del']
     genes_cn[min_cn == 1 & min_cn < ncn, cnv := 'hetdel']
     genes_cn[min_cn == 0, cnv := 'homdel']
+    if ('cn.low' %in% names(genes_cn) && 'cn.high' %in% names(genes_cn)){
+        genes_cn[, loh := '']
+        genes_cn[is.na(cn.low), loh := NA]
+        genes_cn[cn.low == 0 & ncn > 1 & min_cn > 0, loh := 'loh']
+    }
     return(genes_cn)
 }
 
@@ -983,7 +988,12 @@ get_gene_copy_numbers = function(gg, gene_ranges,
                                    cn = NULL,
                                    normalized_cn = NULL)]
 
-    gene_cn_split_genes_min = gene_cn_segments[get(gene_id_col) %in% split_genes, .SD[which.min(cn)], by = gene_id_col][,.(get(gene_id_col), cn, ncn, normalized_cn)]
+    if ('cn.low' %in% names(ndt) && 'cn.high' %in% names(ndt)){
+        # we will simply take the cn.low and cn.high from the segment with minimal CN
+        gene_cn_split_genes_min = gene_cn_segments[get(gene_id_col) %in% split_genes, .SD[which.min(cn)], by = gene_id_col][,.(get(gene_id_col), cn, ncn, normalized_cn, cn.low, cn.high)]
+    } else {
+        gene_cn_split_genes_min = gene_cn_segments[get(gene_id_col) %in% split_genes, .SD[which.min(cn)], by = gene_id_col][,.(get(gene_id_col), cn, ncn, normalized_cn)]
+    }
     gene_cn_split_genes_min[, `:=`(min_normalized_cn = normalized_cn,
                                    min_cn = cn)]
     setnames(gene_cn_split_genes_min, 'V1', gene_id_col)
@@ -1009,6 +1019,9 @@ get_gene_copy_numbers = function(gg, gene_ranges,
     gene_cn_split_genes = merge.data.table(gene_cn_split_genes, number_of_segments_per_split_gene, by = gene_id_col)
 
     keep.fields = c('ncn', 'min_normalized_cn', 'min_cn', 'max_normalized_cn', 'max_cn', 'number_of_cn_segments')
+    if ('cn.low' %in% names(ndt) && 'cn.high' %in% names(ndt)){
+        keep.fields = c(keep.fields, 'cn.low', 'cn.high')
+    }
     keep.fields = c(keep.fields, mfields, 'seqnames', 'start', 'end', 'strand')
     gene_cn_table = rbind(gene_cn_split_genes[, ..keep.fields], gene_cn_non_split_genes[, ..keep.fields])
 
@@ -2525,15 +2538,21 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
 
                 ## subset for previously annotated variants if data table is nonempty
                 if (nrow(scna.dt) && "cnv" %in% colnames(scna.dt)) {
-                    scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel"),]
+                    if ('loh' %in% colnames(scna.dt)){
+                        scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel") | loh == TRUE, ]
+                    } else {
+                        scna.dt = scna.dt[cnv %in% c("amp", "del", "homdel", "hetdel"),]
+                        scna.dt[, loh := NA]
+                    }
                 }
 
                 ## if there are any CN variants, rbind them to existing output
                 if (nrow(scna.dt)) {
-                    sel.cols = intersect(c("gene_name", "gene", "cnv",
-                                           "min_cn", "min_normalized_cn", "max_cn", "max_normalized_cn",
-                                           "seqnames", "start", "end", "ncn"),
+                    sel.cols = intersect(c("gene_name", "gene", "cnv", "loh",
+                                           "min_cn", "cn.low", "cn.high", "min_normalized_cn", "max_cn", "max_normalized_cn",
+                                           "seqnames", "start", "end", "ncn", "gene_id"),
                                          colnames(scna.dt))
+                    sel.cols = intersect(sel.cols, names(scna.dt))
                     scna = scna.dt[, ..sel.cols]
 
                     ## make sure that gene is named as gene instead of gene_name
@@ -2548,6 +2567,8 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
 
                     ## set 'type' to cnv annotation if present
                     if ("cnv" %in% colnames(scna)) {
+                        # TODO: currently the type will not include loh info
+                        #       so if we want the oncoprint to show this information in the future we will need to make some adjustments
                         setnames(scna, "cnv", "type")
                     } else {
                         scna[min_normalized_cn >= amp.thresh, type := 'amp']
@@ -2559,6 +2580,14 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
                     out = rbind(out, scna[, ":="(id = x,
                                                  track = "variants",
                                                  vartype = "scna",
+                                                 source = "jabba_rds")],
+                                fill = TRUE, use.names = TRUE)
+
+                    # add an loh vartype
+                    out = rbind(out, scna[, ":="(id = x,
+                                                 track = "variants",
+                                                 type = loh,
+                                                 vartype = "loh",
                                                  source = "jabba_rds")],
                                 fill = TRUE, use.names = TRUE)
                 } else {
@@ -3419,4 +3448,162 @@ wgs_gtrack = function(jabba_rds, cvgt.fname, agt.fname = NULL) {
         gt = c(agt, cvgt, gg.gt)
     }
     return(gt)
+}
+
+
+#' @name makeSummaryTable
+#' @title makeSummaryTable
+#' @description
+#' 
+#' Function for generating a summary table of interesting driver genes for casereport.
+#'
+#' @param cnv_table file path to casereport copy number variants table
+#' @param fusions_table file path to casereport fusions table
+#' @param expression_table file path to casereport over/under expression table
+#' @param mutations_table file path to casereport driver mutations table
+#' @param onco_table file path to casereport oncotable
+#' @param the directory of casereport
+#' @return summary table of driver genes.
+makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_table,onco_table,cs_libdir){
+	genelist=vector()
+	if(file.good(cnv_table)){
+		genelist=c(genelist,fread(cnv_table)$gene_name)
+	}
+	if(file.good(fusions_table)){
+		genelist=c(genelist,fread(fusions_table)$driver.name)
+	}
+	if(file.good(expression_table)){
+		genelist=c(genelist,fread(expression_table)$gene)
+	}
+	if(file.good(mutations_table)){
+		genelist=c(genelist,fread(mutations_table)$gene)
+	}
+
+    oncotable=readRDS(onco_table)
+    summaryTable=NA
+    pmkbTier=get_pmkb_tier_table(NA)
+    for(i in 1:length(genelist)){
+        thisGene=oncotable[oncotable$gene==genelist[i] & !is.na(oncotable$gene),]
+        if(genelist[i] %in% pmkbTier$gene){
+            #thisTier=min(pmkbTier[pmkbTier$gene==thisGene$gene[1],]$Tier)  
+            thisTier=pmkbTier[pmkbTier$gene==thisGene$gene[1],]$tier
+        }else{
+            thisTier=NA
+        }
+
+        if(is.na(summaryTable)){
+            summaryTable=data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),tier=thisTier,source=toString(unique(thisGene$source)))
+        }else{
+            summaryTable=rbind(summaryTable,data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),tier=thisTier,source=toString(unique(thisGene$source))))     }
+    }
+    
+    summaryTable$type=str_replace_all(summaryTable$type,"NA, ","")
+    summaryTable$role=str_replace_all(summaryTable$role,"NA, ","")
+    summaryTable$type=str_replace_all(summaryTable$type,", NA","")
+    summaryTable$role=str_replace_all(summaryTable$role,", NA","")
+    summaryTable$type=str_replace_all(summaryTable$type,", $","")
+    summaryTable$role=str_replace_all(summaryTable$role,", $","")
+
+    summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),"True","False")    
+
+    summaryTable$gene=paste0('<a href=https://www.oncokb.org/gene/', summaryTable$gene, ' target=_blank rel=noopener noreferrer >', summaryTable$gene, '</a>')
+
+    summaryTable=summaryTable[order(summaryTable$tier,summaryTable$withHetdel),]
+    summaryTable$withHetdel=NULL
+
+
+    summaryTable=summaryTable[!(summaryTable$type=="del"),]
+    summaryTable=summaryTable[!(summaryTable$type=="del" & summaryTable$role=="ONC"),]
+    summaryTable=summaryTable[grepl("underexpression",summaryTable$type,fixed=TRUE) & summaryTable$role=="ONC",]
+    summaryTable=summaryTable[grepl("overexpression",summaryTable$type,fixed=TRUE) & summaryTable$role=="TSG",]
+
+    summaryTable$type=str_replace_all(summaryTable$type,"del"," loss")
+    
+	return(summaryTable)
+}
+
+
+#' @name summarize_cases
+#' @title summarize_cases
+#' @description
+#' 
+#' Very ad-hoc function for mskilab use only!
+#'
+#' takes a case report flow module and produces a data.table with links to the reports
+#' this is assuming that the reports are somewhere under /gpfs/commons/projects/imielinski_web
+#'
+#' @param jb Flow Job object or a data.frame/data.table containing the contents of outputs(jb), where jb is the case report Flow Job object.
+#' @param output_file output TXT in which the tabular data will be saved. If not file is provided then the data is saved to a temporary file.
+#' @param libdir path to the casereport repository clone
+#' @param html_dir path to the directory in which to put the html version of the table
+#' @param metadata data.frame or data.table with additional metadata for the samples in jb. The metadata table must contain a header. The first column of the metadata should contain sample names that match the sample names in the Job object and should only contain unique values, otherwise this table is ignored and no metadata is added.
+#' @return data.table
+summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', html_dir = NULL, metadata = NULL){
+    if (is.character(jb) && grepl('rds$', jb)){
+        jb = readRDS(jb)
+    }
+    if (!inherits(jb, 'Job') && !inherits(jb, 'data.frame')){
+        stop('jb must be a data.frame or an object of class Flow::Job, but you provided: ', class(jb))
+    }
+    if (!is.null(output_file) && !is.character(output_file)){
+        stop('Invalid value for output_file. output_file must be of class character, but you provided: ', class(output_file))
+    }
+    if (inherits(jb, 'data.frame')){
+        dt = as.data.table(jb)
+        if (is.null(key(dt))){
+            setkeyv(dt, names(dt)[1])
+        }
+    } else {
+        dt = outputs(jb)
+    }
+    if (!('wgs_casereport' %in% names(dt))){
+        stop('Invalid input. The input job information must contain column "wgs_casereport"')
+    }
+    summary.fn = paste0(dirname(dt[, wgs_casereport]),'/summary.rds')
+    dt[, link := paste0('<a href=', wgs_casereport,
+                        '>report</a>')]
+    dt[, link:=gsub('/gpfs/commons/projects/imielinski_web/','//mskiweb.nygenome.org/', link)]
+    k = dt %>% key
+    iids = dt[,get(k)]
+    names(summary.fn) = iids
+    summ = lapply(iids, function(ix){
+        fn = summary.fn[ix]
+        if (file.good(fn)){
+            summary.dt = readRDS(fn) %>% as.data.table
+            summary.dt[, id := ix]
+            return(summary.dt)
+        }
+        sdt = data.table(id = ix)
+        return(sdt)
+    })
+    summ = rbindlist(summ, fill = T)
+    dt = merge.data.table(dt[,.(id = get(k), link)], summ, by = 'id')
+    if (!is.null(output_file) && is.character(output_file) && dir.exists(dirname(output_file))){
+        message('Writing table to: ', output_file)
+        fwrite(dt, output_file)
+    }
+    if (!is.null(metadata) && is.data.frame(metadata) && all(!duplicated(as.data.table(metadata[, 1])))){
+        metadata = as.data.table(metadata)
+        setnames(metadata, names(metadata)[1], 'id')
+        dt = merge.data.table(metadata, dt, all.y = T, by = 'id')
+    }
+
+    if (!is.null(html_dir) && dir.exists(html_dir)){
+        html_path = normalizePath(paste0(html_dir, "/case.reports.html"))
+        message("Generating html output to: ", html_path)
+        if (!file.good(output_file)){
+            output_file = tempfile()
+            message('Writing table to: ', output_file)
+            fwrite(dt, output_file)
+        }
+        rmarkdown::render(
+            input = normalizePath(paste0(libdir, "/wgs.report.table.rmd")),
+            output_format = "html_document",
+            output_file = html_path,
+            knit_root_dir = normalizePath(html_dir),
+            ## params = report.config,
+            params = list(summary_table = normalizePath(output_file)),
+            quiet = FALSE)
+    }
+    return(dt)
 }

@@ -1,0 +1,28 @@
+---
+output:
+  html_document:
+    df_print: paged
+    toc: false
+    toc_float: false
+    theme: flatly
+params:
+    summary_table: ""
+---
+
+```{css, echo = FALSE}
+.main-container { max-width: 90%; }
+```
+
+```{r, results = "asis", echo = FALSE}
+library(data.table)
+if (file.good(params$summary_table)){
+    dt = fread(params$summary_table)
+    classes = sapply(dt,class)
+    # if from some reason the sample name column is numeric we still don't want to touch it
+    numeric_cols = names(dt[, -1])[classes[-1] == 'numeric']
+    for (col_ in numeric_cols){
+        dt[, (col_) := signif(get(col_), digits = 3)]
+    }
+    DT::datatable(dt, escape=FALSE,options = list(scrollX = TRUE, pageLength=100, lengthMenu = c(5, 10, 20,50,100)))
+}
+```

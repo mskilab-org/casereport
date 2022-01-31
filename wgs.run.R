@@ -197,6 +197,7 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
     ## summary
     report.config$summary_stats = paste0(report.config$outdir, "/summary.rds")
     report.config$oncotable = paste0(report.config$outdir, "/oncotable.rds")
+    report.config$summaryTable = paste0(report.config$outdir, "/summaryTable.txt")
 
     saveRDS(report.config, paste0(report.config$outdir, "/", "report.config.rds"))
 }
@@ -460,7 +461,19 @@ if (!opt$knit_only) {
                        "max_cn", "min_normalized_cn", "max_normalized_cn",
                        "expr.value", "expr.quantile",
                        "seqnames", "start", "end", "width", "ev.id", "ev.type")
+<<<<<<< HEAD
 
+=======
+            if ('cn.low' %in% names(genes_cn_annotated) && 'cn.high' %in% names(genes_cn_annotated)){
+                # include allelic CN in the table
+                fields = c("gene_name", "annot", "surface",
+                       "cnv", "expr", "min_cn", 'cn.high', 'cn.low',
+                       "max_cn", "min_normalized_cn", "max_normalized_cn",
+                       "expr.value", "expr.quantile",
+                       "seqnames", "start", "end", "width", "ev.id", "ev.type")
+            }
+            
+>>>>>>> main
             cn.fields = intersect(fields, names(driver.genes_cn))
             fwrite(driver.genes_cn[, ..cn.fields], report.config$driver_scna)
         }
@@ -1424,14 +1437,16 @@ if (!opt$knit_only) {
     if (check_file(report.config$deconv, opt$overwrite, opt$verbose)) {
       message("Deconvolution data already exists, skipping")
     } else {
-      message("Running Deconvolution algorithm")
-      tpm_raw = as.character(opt$tpm)
-      tpm_read <- read_delim(tpm_raw, col_names = T)
-      tpm_read_new <- tpm_read[,-1]
-      tpm_read_new_name <- as.matrix(tpm_read[,1])
-      rownames(tpm_read_new) <- tpm_read_new_name[,1] 
-      deconv_results = immunedeconv::deconvolute(tpm_read_new, opt$deconv)
-      data.table::fwrite(deconv_results, file.path(opt$outdir,"deconv_results.txt"), sep = '\t', quote = F, row.names = F)
+      if (file.good(opt$tpm)){
+        message("Running Deconvolution algorithm")
+        tpm_raw = as.character(opt$tpm)
+        tpm_read <- data.table::fread(tpm_raw, header = TRUE)
+        tpm_read_new <- tpm_read[,-1]
+        tpm_read_new_name <- as.matrix(tpm_read[,1])
+        rownames(tpm_read_new) <- tpm_read_new_name[,1] 
+        deconv_results = immunedeconv::deconvolute(tpm_read_new, opt$deconv)
+        data.table::fwrite(deconv_results, file.path(opt$outdir,"deconv_results.txt"), sep = '\t', quote = F, row.names = F)
+      }
     }
     
     
@@ -1460,6 +1475,23 @@ if (!opt$knit_only) {
                               verbose = TRUE)
         saveRDS(oncotable, report.config$oncotable)
     } 
+
+    ## ################
+    ## create summaryTable
+    ## ################
+
+
+   if (check_file(report.config$summaryTable, opt$overwrite, opt$verbose)) {
+        message("Summary Table already exists. Skipping!")
+    } else {
+        message("Generating summary table")
+	wol=makeSummaryTable(report.config$driver_scna,report.config$driver_fusions, report.config$rna_change_with_cn,report.config$driver_mutations,report.config$oncotable,opt$libdir)
+	wol$tier=as.character(wol$tier)
+	wol[is.na(wol$tier),]$tier="Undefined"
+	fwrite(wol,report.config$summaryTable)
+	}
+
+
 }
 
 
