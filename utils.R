@@ -3479,43 +3479,43 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 		genelist=c(genelist,fread(mutations_table)$gene)
 	}
 
-	oncotable=readRDS(onco_table)
-	summaryTable=NA
-	pmkbTier=get_pmkb_tier_table(NA)
-	for(i in 1:length(genelist)){
-		thisGene=oncotable[oncotable$gene==genelist[i] & !is.na(oncotable$gene),]
-		if(genelist[i] %in% pmkbTier$gene){
-			#thisTier=min(pmkbTier[pmkbTier$gene==thisGene$gene[1],]$Tier)	
-			thisTier=pmkbTier[pmkbTier$gene==thisGene$gene[1],]$tier
-		}else{
-			thisTier=NA
-		}
+    oncotable=readRDS(onco_table)
+    summaryTable=NA
+    pmkbTier=get_pmkb_tier_table(NA)
+    for(i in 1:length(genelist)){
+        thisGene=oncotable[oncotable$gene==genelist[i] & !is.na(oncotable$gene),]
+        if(genelist[i] %in% pmkbTier$gene){
+            #thisTier=min(pmkbTier[pmkbTier$gene==thisGene$gene[1],]$Tier)  
+            thisTier=pmkbTier[pmkbTier$gene==thisGene$gene[1],]$tier
+        }else{
+            thisTier=NA
+        }
 
-		if(is.na(summaryTable)){
-			summaryTable=data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),tier=thisTier,source=toString(unique(thisGene$source)))
-		}else{
-			summaryTable=rbind(summaryTable,data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),tier=thisTier,source=toString(unique(thisGene$source))))		}
-	}
-	
-	summaryTable$type=str_replace_all(summaryTable$type,"NA, ","")
-	summaryTable$role=str_replace_all(summaryTable$role,"NA, ","")
-	summaryTable$type=str_replace_all(summaryTable$type,", NA","")
-        summaryTable$role=str_replace_all(summaryTable$role,", NA","")
-	summaryTable$type=str_replace_all(summaryTable$type,", $","")
-	summaryTable$role=str_replace_all(summaryTable$role,", $","")
+        if(is.na(summaryTable)){
+            summaryTable=data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),tier=thisTier,source=toString(unique(thisGene$source)))
+        }else{
+            summaryTable=rbind(summaryTable,data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),tier=thisTier,source=toString(unique(thisGene$source))))     }
+    }
+    
+    summaryTable$type=str_replace_all(summaryTable$type,"NA, ","")
+    summaryTable$role=str_replace_all(summaryTable$role,"NA, ","")
+    summaryTable$type=str_replace_all(summaryTable$type,", NA","")
+    summaryTable$role=str_replace_all(summaryTable$role,", NA","")
+    summaryTable$type=str_replace_all(summaryTable$type,", $","")
+    summaryTable$role=str_replace_all(summaryTable$role,", $","")
 
-	summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),"True","False")	
+    summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),"True","False")    
 
-	summaryTable$gene=paste0('<a href=https://www.oncokb.org/gene/', summaryTable$gene, ' target=_blank rel=noopener noreferrer >', summaryTable$gene, '</a>')
+    summaryTable$gene=paste0('<a href=https://www.oncokb.org/gene/', summaryTable$gene, ' target=_blank rel=noopener noreferrer >', summaryTable$gene, '</a>')
 
-	summaryTable=summaryTable[order(summaryTable$tier,summaryTable$withHetdel),]
-	summaryTable$withHetdel=NULL
+    summaryTable=summaryTable[order(summaryTable$tier,summaryTable$withHetdel),]
+    summaryTable$withHetdel=NULL
 
 
-	summaryTable=summaryTable[!(summaryTable$type=="del"),]
-	summaryTable=summaryTable[!(summaryTable$type=="del" & summaryTable$role=="ONC"),]
-	summaryTable$type=str_replace_all(summaryTable$type,"del"," loss")
-	
+    summaryTable=summaryTable[!(summaryTable$type=="del"),]
+    summaryTable=summaryTable[!(summaryTable$type=="del" & summaryTable$role=="ONC"),]
+    summaryTable$type=str_replace_all(summaryTable$type,"del"," loss")
+    
 	return(summaryTable)
 }
 
@@ -3533,13 +3533,17 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 #' @param output_file output TXT in which the tabular data will be saved. If not file is provided then the data is saved to a temporary file.
 #' @param libdir path to the casereport repository clone
 #' @param html_dir path to the directory in which to put the html version of the table
+#' @param metadata data.frame or data.table with additional metadata for the samples in jb. The metadata table must contain a header. The first column of the metadata should contain sample names that match the sample names in the Job object and should only contain unique values, otherwise this table is ignored and no metadata is added.
 #' @return data.table
-summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', html_dir = NULL){
+summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', html_dir = NULL, metadata = NULL){
     if (is.character(jb) && grepl('rds$', jb)){
         jb = readRDS(jb)
     }
     if (!inherits(jb, 'Job')){
         stop('jb must be of class Flow::Job, but you provided: ', class(jb))
+    }
+    if (!is.null(output_file) && !is.character(output_file)){
+        stop('Invalid value for output_file. output_file must be of class character, but you provided: ', class(output_file))
     }
     dt = outputs(jb)
     dt[, link := paste0('<a href=', wgs_casereport,
@@ -3563,6 +3567,11 @@ summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', 
     if (!is.null(output_file) && is.character(output_file) && dir.exists(dirname(output_file))){
         message('Writing table to: ', output_file)
         fwrite(dt, output_file)
+    }
+    if (!is.null(metadata) && is.data.frame(metadata) && all(!duplicated(as.data.table(metadata[, 1])))){
+        metadata = as.data.table(metadata)
+        setnames(metadata, names(metadata)[1], 'id')
+        dt = merge.data.table(dt, metadata, all.x = T)
     }
 
     if (!is.null(html_dir) && dir.exists(html_dir)){
