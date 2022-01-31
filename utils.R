@@ -3494,7 +3494,8 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
         if(is.na(summaryTable)){
             summaryTable=data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),tier=thisTier,source=toString(unique(thisGene$source)))
         }else{
-            summaryTable=rbind(summaryTable,data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),tier=thisTier,source=toString(unique(thisGene$source))))     }
+            summaryTable=rbind(summaryTable,data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),tier=thisTier,source=toString(unique(thisGene$source))))     
+		}
     }
     
     summaryTable$type=str_replace_all(summaryTable$type,"NA, ","")
@@ -3511,14 +3512,14 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
     summaryTable=summaryTable[order(summaryTable$tier,summaryTable$withHetdel),]
     summaryTable$withHetdel=NULL
 
-
     summaryTable=summaryTable[!(summaryTable$type=="del"),]
     summaryTable=summaryTable[!(summaryTable$type=="del" & summaryTable$role=="ONC"),]
-    summaryTable=summaryTable[grepl("underexpression",summaryTable$type,fixed=TRUE) & summaryTable$role=="ONC",]
-    summaryTable=summaryTable[grepl("overexpression",summaryTable$type,fixed=TRUE) & summaryTable$role=="TSG",]
+    print(summaryTable) 
+    summaryTable=summaryTable[!(grepl("underexpression",summaryTable$type,fixed=TRUE) & summaryTable$role=="ONC"),]
+    summaryTable=summaryTable[!(grepl("overexpression",summaryTable$type,fixed=TRUE) & summaryTable$role=="TSG"),]
 
     summaryTable$type=str_replace_all(summaryTable$type,"del"," loss")
-    
+  
 	return(summaryTable)
 }
 
