@@ -3479,48 +3479,43 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 		genelist=c(genelist,fread(mutations_table)$gene)
 	}
 
-	oncotable=readRDS(onco_table)
-	summaryTable=NA
-	#pmkbTier=fread(paste0(cs_libdir,"/data/pmkb-tier.tsv"))
-	pmkbTier=get_pmkb_tier_table(NA)
-	for(i in 1:length(genelist)){
-		thisGene=oncotable[oncotable$gene==genelist[i] & !is.na(oncotable$gene),]
-		if(genelist[i] %in% pmkbTier$gene){
-			#thisTier=min(pmkbTier[pmkbTier$gene==thisGene$gene[1],]$Tier)	
-			thisTier=pmkbTier[pmkbTier$gene==thisGene$gene[1],]$tier
-		}else{
-			thisTier=NA
-		}
+    oncotable=readRDS(onco_table)
+    summaryTable=NA
+    pmkbTier=get_pmkb_tier_table(NA)
+    for(i in 1:length(genelist)){
+        thisGene=oncotable[oncotable$gene==genelist[i] & !is.na(oncotable$gene),]
+        if(genelist[i] %in% pmkbTier$gene){
+            #thisTier=min(pmkbTier[pmkbTier$gene==thisGene$gene[1],]$Tier)  
+            thisTier=pmkbTier[pmkbTier$gene==thisGene$gene[1],]$tier
+        }else{
+            thisTier=NA
+        }
 
-		if(is.na(summaryTable)){
-			summaryTable=data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),track=toString(unique(thisGene$type)),source=toString(unique(thisGene$source)),tier=thisTier)
-		}else{
-			summaryTable=rbind(summaryTable,data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),track=toString(unique(thisGene$track)),source=toString(unique(thisGene$source)),tier=thisTier))
-		}
-	}
-	
-	oncotable=oncotable[track == 'variants' & oncotable$gene %in% genelist,]
-	forCast=dcast(oncotable,gene~vartype,length)
-	forCast[,2:ncol(forCast)]=lapply(forCast[,2:ncol(forCast)],function(x) {ifelse(x==1,"True","False")})
-	summaryTable=merge(summaryTable,forCast,by="gene")	
+        if(is.na(summaryTable)){
+            summaryTable=data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),tier=thisTier,source=toString(unique(thisGene$source)))
+        }else{
+            summaryTable=rbind(summaryTable,data.table(gene=thisGene$gene[1],role=toString(unique(thisGene$role)),type=toString(unique(thisGene$type)),tier=thisTier,source=toString(unique(thisGene$source))))     }
+    }
+    
+    summaryTable$type=str_replace_all(summaryTable$type,"NA, ","")
+    summaryTable$role=str_replace_all(summaryTable$role,"NA, ","")
+    summaryTable$type=str_replace_all(summaryTable$type,", NA","")
+    summaryTable$role=str_replace_all(summaryTable$role,", NA","")
+    summaryTable$type=str_replace_all(summaryTable$type,", $","")
+    summaryTable$role=str_replace_all(summaryTable$role,", $","")
 
-	summaryTable$type=str_replace_all(summaryTable$type,"NA, ","")
-	summaryTable$role=str_replace_all(summaryTable$role,"NA, ","")
-	summaryTable$type=str_replace_all(summaryTable$type,", NA","")
-        summaryTable$role=str_replace_all(summaryTable$role,", NA","")
-	summaryTable$track=str_replace_all(summaryTable$track,"NA, ","")
-	summaryTable$track=str_replace_all(summaryTable$track,", NA","")
-	summaryTable$type=str_replace_all(summaryTable$type,", $","")
-	summaryTable$role=str_replace_all(summaryTable$role,", $","")
-	summaryTable$track=str_replace_all(summaryTable$track,", $","")
+    summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),"True","False")    
 
-	summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),"True","False")	
+    summaryTable$gene=paste0('<a href=https://www.oncokb.org/gene/', summaryTable$gene, ' target=_blank rel=noopener noreferrer >', summaryTable$gene, '</a>')
 
-	summaryTable$gene=paste0('<a href=https://www.oncokb.org/gene/', summaryTable$gene, ' target=_blank rel=noopener noreferrer >', summaryTable$gene, '</a>')
+    summaryTable=summaryTable[order(summaryTable$tier,summaryTable$withHetdel),]
+    summaryTable$withHetdel=NULL
 
-	summaryTable=summaryTable[order(summaryTable$tier,summaryTable$withHetdel),]
-	summaryTable$withHetdel=NULL
 
+    summaryTable=summaryTable[!(summaryTable$type=="del"),]
+    summaryTable=summaryTable[!(summaryTable$type=="del" & summaryTable$role=="ONC"),]
+    summaryTable$type=str_replace_all(summaryTable$type,"del"," loss")
+    
 	return(summaryTable)
 }
 
