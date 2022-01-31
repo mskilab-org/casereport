@@ -3501,19 +3501,20 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 	
 	oncotable=oncotable[track == 'variants' & oncotable$gene %in% genelist,]
 	forCast=dcast(oncotable,gene~vartype,length)
+	forCast[,2:ncol(forCast)]=lapply(forCast[,2:ncol(forCast)],function(x) {ifelse(x==1,"True","False")})
 	summaryTable=merge(summaryTable,forCast,by="gene")	
 
-	summaryTable$type=str_replace(summaryTable$type,"NA, ","")
-	summaryTable$role=str_replace(summaryTable$role,"NA, ","")
-	summaryTable$type=str_replace(summaryTable$type,", NA","")
-        summaryTable$role=str_replace(summaryTable$role,", NA","")
-	summaryTable$track=str_replace(summaryTable$track,"NA, ","")
-	summaryTable$track=str_replace(summaryTable$track,", NA","")
-	summaryTable$track=str_replace(summaryTable$track,", ","")
-	summaryTable$type=str_replace(summaryTable$type,", ","")
-	summaryTable$role=str_replace(summaryTable$role,", ","")
+	summaryTable$type=str_replace_all(summaryTable$type,"NA, ","")
+	summaryTable$role=str_replace_all(summaryTable$role,"NA, ","")
+	summaryTable$type=str_replace_all(summaryTable$type,", NA","")
+        summaryTable$role=str_replace_all(summaryTable$role,", NA","")
+	summaryTable$track=str_replace_all(summaryTable$track,"NA, ","")
+	summaryTable$track=str_replace_all(summaryTable$track,", NA","")
+	summaryTable$type=str_replace_all(summaryTable$type,", $","")
+	summaryTable$role=str_replace_all(summaryTable$role,", $","")
+	summaryTable$track=str_replace_all(summaryTable$track,", $","")
 
-	summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),1,0)	
+	summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),"True","False")	
 
 	summaryTable$gene=paste0('<a href=https://www.oncokb.org/gene/', summaryTable$gene, ' target=_blank rel=noopener noreferrer >', summaryTable$gene, '</a>')
 
@@ -3524,3 +3525,67 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 }
 
 
+#' @name summarize_cases
+#' @title summarize_cases
+#' @description
+#' 
+#' Very ad-hoc function for mskilab use only!
+#'
+#' takes a case report flow module and produces a data.table with links to the reports
+#' this is assuming that the reports are somewhere under /gpfs/commons/projects/imielinski_web
+#'
+#' @param jb Flow Job object
+#' @param output_file output TXT in which the tabular data will be saved. If not file is provided then the data is saved to a temporary file.
+#' @param libdir path to the casereport repository clone
+#' @param html_dir path to the directory in which to put the html version of the table
+#' @return data.table
+summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', html_dir = NULL){
+    if (is.character(jb) && grepl('rds$', jb)){
+        jb = readRDS(jb)
+    }
+    if (!inherits(jb, 'Job')){
+        stop('jb must be of class Flow::Job, but you provided: ', class(jb))
+    }
+    dt = outputs(jb)
+    dt[, link := paste0('<a href=', wgs_casereport,
+                        '>report</a>')]
+    dt[, link:=gsub('/gpfs/commons/projects/imielinski_web/','//mskiweb.nygenome.org/', link)]
+    summary.fn = paste0(outdir(jb),'/summary.rds')
+    names(summary.fn) = ids(jb)
+    k = dt %>% key
+    summ = lapply(ids(jb), function(ix){
+        fn = summary.fn[ix]
+        if (file.good(fn)){
+            summary.dt = readRDS(fn) %>% as.data.table
+            summary.dt[, id := ix]
+            return(summary.dt)
+        }
+        sdt = data.table(id = ix)
+        return(sdt)
+    })
+    summ = rbindlist(summ, fill = T)
+    dt = merge.data.table(dt[,.(id = get(k), link)], summ, by = 'id')
+    if (!is.null(output_file) && is.character(output_file) && dir.exists(dirname(output_file))){
+        message('Writing table to: ', output_file)
+        fwrite(dt, output_file)
+    }
+
+    if (!is.null(html_dir) && dir.exists(html_dir)){
+        html_path = normalizePath(paste0(html_dir, "/case.reports.html"))
+        message("Generating html output to: ", html_path)
+        if (!file.good(output_file)){
+            output_file = tempfile()
+            message('Writing table to: ', output_file)
+            fwrite(dt, output_file)
+        }
+        rmarkdown::render(
+            input = normalizePath(paste0(libdir, "/wgs.report.table.rmd")),
+            output_format = "html_document",
+            output_file = html_path,
+            knit_root_dir = normalizePath(html_dir),
+            ## params = report.config,
+            params = list(summary_table = normalizePath(output_file)),
+            quiet = FALSE)
+    }
+    return(dt)
+}
