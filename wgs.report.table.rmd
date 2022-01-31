@@ -1,0 +1,19 @@
+---
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
+    theme: flatly
+params:
+    summary_table: ""
+---
+
+```{r, results = "asis", echo = FALSE}
+library(data.table)
+if (file.good(params$summary_table)){
+    dt = fread(params$summary_table)
+    dt[,3:ncol(dt)]=lapply(dt[,3:ncol(dt)],signif,digits=3)
+    DT::datatable(dt, escape=FALSE,options = list(scrollX = TRUE))
+}
+```
