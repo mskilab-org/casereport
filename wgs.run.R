@@ -1007,11 +1007,16 @@ if (!opt$knit_only) {
                  height = 800, width = 800, res = 150)
 
             presentSigs=fread(file.path(opt$outdir,"Sig.csv"))
-            thisMet=sigMet[sigMet$Signature %in% presentSigs$Signature,]
-            thisMet$sig_count=presentSigs$sig_count
-            thisMet$quantile=presentSigs$perc
-            thisMet=thisMet[order(-thisMet$quantile), ]
-            fwrite(thisMet, file.path(opt$outdir,"signatureMetadata.csv"))
+                presentSigs$pair=NULL
+                thisMet=sigMet[sigMet$Signature %in% presentSigs$Signature,]
+            print(presentSigs)
+            print(thisMet)
+                metTable=merge(presentSigs,thisMet,by="Signature")
+            metTable=metTable[,c("Signature","Mutational.process","sig_count","perc")]
+            colnames(metTable)=c("Signature","Mutational.process","sig_count","quantile")
+                metTable=metTable[order(-metTable$quantile), ]
+                fwrite(metTable, file.path(opt$outdir,"signatureMetadata.csv"))
+
         } else {
             message("deconstructSigs output not supplied.")
         }
