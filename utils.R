@@ -3481,7 +3481,6 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 
 	oncotable=readRDS(onco_table)
 	summaryTable=NA
-	#pmkbTier=fread(paste0(cs_libdir,"/data/pmkb-tier.tsv"))
 	pmkbTier=get_pmkb_tier_table(NA)
 	for(i in 1:length(genelist)){
 		thisGene=oncotable[oncotable$gene==genelist[i] & !is.na(oncotable$gene),]
@@ -3517,7 +3516,6 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 	summaryTable=summaryTable[!(summaryTable$type=="del" & summaryTable$role=="ONC"),]
 	summaryTable$type=str_replace_all(summaryTable$type,"del"," loss")
 	
-
 	return(summaryTable)
 }
 
