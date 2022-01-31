@@ -2,12 +2,16 @@
 output:
   html_document:
     df_print: paged
-    toc: true
-    toc_float: true
+    toc: false
+    toc_float: false
     theme: flatly
 params:
     summary_table: ""
 ---
+
+```{css, echo = FALSE}
+.main-container { max-width: 90%; }
+```
 
 ```{r, results = "asis", echo = FALSE}
 library(data.table)
@@ -19,6 +23,6 @@ if (file.good(params$summary_table)){
     for (col_ in numeric_cols){
         dt[, (col_) := signif(get(col_), digits = 3)]
     }
-    DT::datatable(dt, escape=FALSE,options = list(scrollX = TRUE))
+    DT::datatable(dt, escape=FALSE,options = list(scrollX = TRUE, pageLength=100, lengthMenu = c(5, 10, 20,50,100)))
 }
 ```
