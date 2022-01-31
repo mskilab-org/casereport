@@ -13,7 +13,12 @@ params:
 library(data.table)
 if (file.good(params$summary_table)){
     dt = fread(params$summary_table)
-    dt[,3:ncol(dt)]=lapply(dt[,3:ncol(dt)],signif,digits=3)
+    classes = sapply(dt,class)
+    # if from some reason the sample name column is numeric we still don't want to touch it
+    numeric_cols = names(dt[, -1])[classes[-1] == 'numeric']
+    for (col_ in numeric_cols){
+        dt[, (col_) := signif(get(col_), digits = 3)]
+    }
     DT::datatable(dt, escape=FALSE,options = list(scrollX = TRUE))
 }
 ```
