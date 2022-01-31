@@ -3514,6 +3514,9 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 
     summaryTable=summaryTable[!(summaryTable$type=="del"),]
     summaryTable=summaryTable[!(summaryTable$type=="del" & summaryTable$role=="ONC"),]
+    summaryTable=summaryTable[grepl("underexpression",summaryTable$type,fixed=TRUE) & summaryTable$role=="ONC",]
+    summaryTable=summaryTable[grepl("overexpression",summaryTable$type,fixed=TRUE) & summaryTable$role=="TSG",]
+
     summaryTable$type=str_replace_all(summaryTable$type,"del"," loss")
     
 	return(summaryTable)
