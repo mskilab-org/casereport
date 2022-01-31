@@ -860,7 +860,7 @@ get_gene_ampdel_annotations = function(genes_cn, amp.thresh, del.thresh){
     if ('cn.low' %in% names(genes_cn) && 'cn.high' %in% names(genes_cn)){
         genes_cn[, loh := '']
         genes_cn[is.na(cn.low), loh := NA]
-        genes_cn[cn.low == 0 & ncn > 0, loh := 'loh']
+        genes_cn[cn.low == 0 & ncn > 1 & min_cn > 0, loh := 'loh']
     }
     return(genes_cn)
 }
