@@ -726,6 +726,7 @@ if (file.exists(file.path(params$outdir,"signatureMetadata.csv")) && file.good(p
     cat("## SNV signature information")
     cat("\n")
     sig.metadata=fread(file.path(params$outdir,"signatureMetadata.csv"))
+    sig.metadata=sig.metadata[order(sig.metadata$sig_count,decreasing = TRUE),]
      print(kable(sig.metadata,digits=2, "simple"))
     cat("\n")
     cat("\n")

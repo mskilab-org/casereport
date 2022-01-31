@@ -3501,19 +3501,20 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 	
 	oncotable=oncotable[track == 'variants' & oncotable$gene %in% genelist,]
 	forCast=dcast(oncotable,gene~vartype,length)
+	forCast[,2:ncol(forCast)]=lapply(forCast[,2:ncol(forCast)],function(x) {ifelse(x==1,"True","False")})
 	summaryTable=merge(summaryTable,forCast,by="gene")	
 
-	summaryTable$type=str_replace(summaryTable$type,"NA, ","")
-	summaryTable$role=str_replace(summaryTable$role,"NA, ","")
-	summaryTable$type=str_replace(summaryTable$type,", NA","")
-        summaryTable$role=str_replace(summaryTable$role,", NA","")
-	summaryTable$track=str_replace(summaryTable$track,"NA, ","")
-	summaryTable$track=str_replace(summaryTable$track,", NA","")
-	summaryTable$track=str_replace(summaryTable$track,", ","")
-	summaryTable$type=str_replace(summaryTable$type,", ","")
-	summaryTable$role=str_replace(summaryTable$role,", ","")
+	summaryTable$type=str_replace_all(summaryTable$type,"NA, ","")
+	summaryTable$role=str_replace_all(summaryTable$role,"NA, ","")
+	summaryTable$type=str_replace_all(summaryTable$type,", NA","")
+        summaryTable$role=str_replace_all(summaryTable$role,", NA","")
+	summaryTable$track=str_replace_all(summaryTable$track,"NA, ","")
+	summaryTable$track=str_replace_all(summaryTable$track,", NA","")
+	summaryTable$type=str_replace_all(summaryTable$type,", $","")
+	summaryTable$role=str_replace_all(summaryTable$role,", $","")
+	summaryTable$track=str_replace_all(summaryTable$track,", $","")
 
-	summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),1,0)	
+	summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),"True","False")	
 
 	summaryTable$gene=paste0('<a href=https://www.oncokb.org/gene/', summaryTable$gene, ' target=_blank rel=noopener noreferrer >', summaryTable$gene, '</a>')
 
