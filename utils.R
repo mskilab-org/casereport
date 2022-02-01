@@ -776,16 +776,6 @@ get_oncogenes_with_amp = function(oncotable){
     return(strout)
 }
 
-get_TSG_with_homdels = function(oncotable){
-    homdel_tsgs = oncotable[grepl('TSG', role)][type == 'homdel']
-    strout = 'There are no tumor suppressor genes with homozygous deletions.'
-    if (homdel_tsgs[, .N] > 0){
-                                        # TODO: we can later add the CN for each of these genes
-        strout = paste0(paste(unique(homdel_tsgs$gene), collapse = ', '), '.')
-    }
-    return(strout)
-}
-
 #' @name check_file
 #' @title check_file
 #'
