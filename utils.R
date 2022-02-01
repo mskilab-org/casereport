@@ -2018,20 +2018,7 @@ filter.snpeff = function(vcf,
         return (dummy.out)
     }
 
-    if (verbose) {
-        message("Grabbing relevant isoforms..")
-    }
-
-    if (ref.name == "hg19") {
-        isoforms = fread(cgc.fname)[["GRCh37 RefSeq"]]
-    } else {
-        isoforms = fread(cgc.fname)[["GRCh38 RefSeq"]]
-    }
-
-    ## vcf.gr = vcf.gr %Q% (feature_id %in% isoforms)
-    ## deduplicate variants, preferably keeping documented isoforms
     vcf.gr = vcf.gr %Q%
-        ## (order(!feature_id %in% isoforms, decreasing = FALSE)) %Q%
         (!duplicated(paste(CHROM, POS)))
 
     ## if (length(vcf.gr) == 0) {
