@@ -135,9 +135,6 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
     
 
     ## add CGC genes file
-    ## report.config$cgc = cgc.fname = ifelse(file.good(opt$drivers),
-    ##                                        opt$drivers,
-    ##                                        file.path(opt$libdir, "data", "cgc.tsv"))
     report.config$cgc = cgc.fname = file.path(opt$libdir, "data", "cgc.tsv")
     
     
