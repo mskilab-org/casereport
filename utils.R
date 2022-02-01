@@ -1904,7 +1904,6 @@ grab.gene.ranges = function(gngt.fname, genes = as.character()) {
 #' 
 #' @param vcf (character) vcf file name
 #' @param gngt.fname (character) gencode gTrack file name
-#' @param cgc.fname (character) cgc.tsv with columns "Gene Symbol" and "Tier"
 #' @param onc (character) path to .rds file with character vector of oncogenes
 #' @param tsg (character) path to .rds file with character vector of TSGs
 #' @param ref.name (character) one of hg19 or hg38
@@ -1913,7 +1912,7 @@ grab.gene.ranges = function(gngt.fname, genes = as.character()) {
 #' @return data.table with columns gene, seqnames, pos, REF, ALT, variant.p, vartype, annotation
 filter.snpeff = function(vcf,
                          gngt.fname,
-                         cgc.fname, onc, tsg, drivers.fname, ref.name = "hg19", verbose = FALSE,
+                         onc, tsg, drivers.fname, ref.name = "hg19", verbose = FALSE,
                          type = NULL) {
 
     if (NROW(type) == 0) {
@@ -2032,7 +2031,6 @@ filter.snpeff = function(vcf,
         message("Found ", length(vcf.gr), " variants, overlapping with genes")
     }
 
-    ## genes = fread(cgc.fname)[["Hugo Symbol"]]
     genes = c(readRDS(onc), readRDS(tsg), drivers)
 
     if (length(genes) == 0) {

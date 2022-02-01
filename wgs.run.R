@@ -615,7 +615,6 @@ if (!opt$knit_only) {
             ## grab annotations
             snv.dt = filter.snpeff(vcf = opt$snpeff_snv_bcf,
                                    gngt.fname = report.config$gencode_gtrack,
-                                   cgc.fname = report.config$cgc,
                                    onc = report.config$onc,
                                    tsg = report.config$tsg,
                                    drivers.fname = report.config$drivers,
@@ -649,7 +648,6 @@ if (!opt$knit_only) {
                 ## grab annotations
                 snv.dt = filter.snpeff(vcf = report.config$snpeff_snv_bcf,
                                        gngt.fname = report.config$gencode_gtrack,
-                                       cgc.fname = report.config$cgc,
                                        onc = report.config$onc,
                                        tsg = report.config$tsg,
                                        drivers.fname = report.config$drivers,
@@ -671,7 +669,6 @@ if (!opt$knit_only) {
             ## grab annotations
             indel.dt = filter.snpeff(vcf = report.config$snpeff_indel_bcf,
                                    gngt.fname = report.config$gencode_gtrack,
-                                   cgc.fname = report.config$cgc,
                                    onc = report.config$onc,
                                    tsg = report.config$tsg,
                                    drivers.fname = report.config$drivers,
@@ -705,7 +702,6 @@ if (!opt$knit_only) {
                 ## grab annotations
                 indel.dt = filter.snpeff(vcf = report.config$snpeff_indel_bcf,
                                        gngt.fname = report.config$gencode_gtrack,
-                                       cgc.fname = report.config$cgc,
                                        onc = report.config$onc,
                                        tsg = report.config$tsg,
                                        drivers.fname = report.config$drivers,
