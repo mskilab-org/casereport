@@ -338,10 +338,12 @@ if (!opt$knit_only) {
                                                 gencode.gtrack = report.config$gencode_gtrack,
                                                 quantile.thresh = opt$quantile_thresh,
                                                 verbose = TRUE)
-	    library(matrixStats)
-	    cohort=fread(opt$tpm_cohort)
-	    W=data.table(gene=cohort$"gene",Avg=rowMeans(log10(cohort[,!("gene")]+1)),SD=rowSds(log10(as.matrix(cohort[,!("gene")]+1))))
-	    melted.expr$zscore=(log10(melted.expr$value+1)-W$Avg)/W$SD
+            if (!requireNamespace("matrixStats", quietly = TRUE)) {
+                  stop("Package matrixStats needed for RNA data processing.")
+            }
+            cohort=fread(opt$tpm_cohort)
+            W=data.table(gene=cohort$"gene",Avg=matrixStats::rowMeans(log10(cohort[,!("gene")]+1)),SD=rowSds(log10(as.matrix(cohort[,!("gene")]+1))))
+            melted.expr$zscore=(log10(melted.expr$value+1)-W$Avg)/W$SD
         } else {
             message("RNA input not supplied.")
             melted.expr = data.table(gene = as.character(),
@@ -624,7 +626,7 @@ if (!opt$knit_only) {
             if (file.good(opt$snv_vcf)) {
 
                 message("Running SNV SnpEff")
-                snpeff.libdir = normalizePath(file.path(opt$libdir, "SnpEff_module"))
+                snpeff.libdir = normalizePath(system.file("extdata", "SnpEff_module", package = "casereport"))
                 snpeff.ref = opt$ref
                 snpeff.vcf = normalizePath(opt$snv_vcf)
                 snpeff.outdir = normalizePath(file.path(opt$outdir, "snpeff", "snv"))
@@ -678,7 +680,7 @@ if (!opt$knit_only) {
             if (file.good(opt$indel_vcf)) {
 
                 message("Running SNV SnpEff")
-                snpeff.libdir = normalizePath(file.path(opt$libdir, "SnpEff_module"))
+                snpeff.libdir = normalizePath(system.file("extdata", "SnpEff_module", package = "casereport"))
                 snpeff.ref = opt$ref
                 snpeff.vcf = normalizePath(opt$indel_vcf)
                 snpeff.outdir = normalizePath(file.path(opt$outdir, "snpeff", "indel"))

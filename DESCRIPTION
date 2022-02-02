@@ -1,0 +1,66 @@
+Package: casereport
+Title: casereport: Whole-genome + transcription based report for cancer genomes
+Version: 0.1
+Authors@R:
+	c(person("Xiaotong", "Yao", email = "xiaotong.yao23@gmail.com", role = c("aut")),
+	  person("Marcin", "Imielinski", email = "mai9037@med.cornell.edu", role = c("aut")),
+	  person("Joel", "Rosine", email = "", role = c("aut")),
+	  person("Zi-Ning", "Choo", email = "zining01@gmail.com", role = c("aut")),
+	  person("Juan Sebastián", "Andrade", email = "", role = c("aut")),
+	  person("Ahmed", "Elkhanany", email = "", role = c("aut")),
+	  person("Alon", "Shaiber", email = "alon.shaiber@gmail.com", role = c("aut"))
+     )
+Description: The casereport package includes a collection of tools to identify, annotate, and visualize genomic alterations in cancer patient samples including germline and somatic SNVs, somatic SVs (including annotation of complex events). The data generated is made highly accessible in an HTML report, which allows browsing of highlighted potential drivers as well as diving into detailed visualizations of alterations. In addition to the HTML report, all identified alterations are included in a comprehensive tabular format (Oncotable).
+Remotes: 
+  github::mskilab/gUtils,
+  github::mskilab/gTrack,
+  github::mskilab/skidb,
+  github::icbi-lab/immunedeconv,
+  bioc::3.10/S4Vectors,
+  bioc::3.10/GenomicRanges,
+  bioc::3.10/rtracklayer,
+  bioc::3.10/VariantAnnotation,
+  bioc::3.10/GenomeInfoDb
+Depends:
+    R (>= 3.6.0),
+    data.table (>= 1.11),
+    ComplexHeatmap,
+    deconstructSigs,
+    DT,
+    forcats,
+    ggExtra,
+    ggforce,
+    gGnome,
+    ggplot2,
+    ggrepel,
+    ggridges,
+    gTrack,
+    htmlwidgets,
+    httr,
+    hwriter,
+    immunedeconv,
+    jsonlite,
+    kableExtra,
+    knitr,
+    plotly,
+    readr,
+    rmarkdown,
+    shiny,
+    skidb,
+    slickR,
+    stringr,
+    svglite,
+    tidyr,
+    tidyverse,
+    VariantAnnotation
+Imports:
+    gUtils
+Suggests: 
+    testthat (>= 2.0),
+    covr,
+    RCurl,
+    matrixStats
+License: GPL-3
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.2

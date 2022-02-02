@@ -323,10 +323,12 @@ get_oncokb_gene_entry_url = function(oncokb.response){
             }
             alteration = alterations[[1]]
             if (is.character(alteration) & length(alteration) > 0){
-                library(RCurl)
-                                        # if a URL exists for the specific alteration then let's go there
+                if (!requireNamespace("RCurl", quietly = TRUE)) {
+                      stop("Package RCurl needed.")
+                }
+                # if a URL exists for the specific alteration then let's go there
                 url_alteration = paste0(baseurl, '/', gene, '/', alteration, '/')
-                if (url.exists(url_alteration)){
+                if (RCurl::url.exists(url_alteration)){
                     return(url_alteration)
                 }
             }
