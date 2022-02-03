@@ -10,7 +10,7 @@
 #' @param pmkb_tsv (character) path to PMKB TSV (if not provided then the default table supplied with the package will be used
 get_pmkb_dt = function(pmkb_tsv = NA){
     if (is.na(pmkb_tsv)){
-        pmkb_tsv = file.path(opt$libdir, "data", "pmkb-tier.tsv")
+        pmkb_tsv = system.file("extdata", "pmkb-tier.tsv", package = "casereport")
         message('Using default PMKB annotations: ', pmkb_tsv)
     }
         pmkb.dt = fread(pmkb_tsv)
@@ -72,7 +72,7 @@ annotate_with_pmkb = function(driver.mutations.dt, pmkb_tsv = NA){
 extract_variant_types_from_pmkb = function(pmkb.csv = NA, output_file = NA){
     if (is.na(pmkb.csv)){
         message('No PMKB interpretations CSV input specified.')
-        pmkb.csv = file.path(opt$libdir, "data", "pmkb-interpretations-06-11-2021.csv")
+        pmkb.csv = system.file("extdata", "pmkb-interpretations-06-11-2021.csv", package = "casereport")
         message('Using default PMKB interpretations CSV: ', pmkb.csv)
     }
     pmkb.interpretations = fread(pmkb.csv)

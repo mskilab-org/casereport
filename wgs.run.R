@@ -56,13 +56,13 @@ if (!exists("opt")){
         opt$gencode = "~/DB/GENCODE/hg38/v38/gencode.v38.annotation.gtf"
         opt$genes = "~/DB/GENCODE/hg38/v38/gencode.v38.genes.gtf"
         Sys.setenv(DEFAULT_GENOME = "BSgenome.Hsapiens.UCSC.hg38::Hsapiens")
-        opt$cytoband = file.path(opt$libdir, "data", "hg38.cytoband.txt")
+        opt$cytoband = system.file("extdata", "hg38.cytoband.txt", package = "casereport")
     } else if (opt$ref == "hg19") {
         message("Using reference: ", opt$ref)
         opt$gencode = "~/DB/GENCODE/gencode.v19.annotation.gtf"
         opt$genes = "~/DB/GENCODE/gencode.v19.genes.gtf"
         Sys.setenv(DEFAULT_GENOME = "BSgenome.Hsapiens.UCSC.hg19::Hsapiens")
-        opt$cytoband = file.path(opt$libdir, "data", "hg19.cytoband.txt")
+        opt$cytoband = system.file("extdata",  "hg19.cytoband.txt", package = "casereport")
     } else {
         stop("Invalid entry for $ref provided: ", opt$ref)
     }
@@ -126,7 +126,7 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
     report.config$coverage_gtrack = paste0(report.config$outdir, "/coverage.gtrack.rds")
     report.config$allele_gtrack = paste0(report.config$outdir, "/agtrack.rds")
     report.config$cgc_gtrack = paste0(report.config$outdir, "/", "cgc.gtrack.rds")
-    report.config$gencode_gtrack = file.path(opt$libdir, "data", "gt.ge.hg19.rds") ## this is provided
+    report.config$gencode_gtrack = system.file("extdata", "gt.ge.hg19.rds", package = "casereport") ## this is provided
 
     if (check_file(opt$drivers))
         report.config$drivers = opt$drivers
@@ -135,13 +135,13 @@ if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
     
 
     ## add CGC genes file
-    report.config$cgc = cgc.fname = file.path(opt$libdir, "data", "cgc.tsv")
+    report.config$cgc = cgc.fname = system.file("extdata", "cgc.tsv", package = "casereport")
     
     
     ## add oncogenes, etc. to report config
-    report.config$onc = file.path(report.config$libdir, "data", "onc.rds")
-    report.config$tsg = file.path(report.config$libdir, "data", "tsg.rds")
-    report.config$surface = file.path(report.config$libdir, "data", "surface.rds")
+    report.config$onc = system.file("extdata", "onc.rds", package = "casereport")
+    report.config$tsg = system.file("extdata", "tsg.rds", package = "casereport")
+    report.config$surface = system.file("extdata", "surface.rds", package = "casereport")
 
     ## purity/ploidy plots
     report.config$cn_plot = paste0(report.config$outdir, "/", "cn.pp.png")
@@ -863,7 +863,7 @@ if (!opt$knit_only) {
         message("Preparing SV gallery")
 
         sv.slickr.dt = gallery.wrapper(complex.fname = report.config$complex,
-                                       background.fname = file.path(opt$libdir, "data", "sv.burden.txt"),
+                                       background.fname = system.file("extdata", "sv.burden.txt", package = "casereport"),
                                        cvgt.fname = report.config$coverage_gtrack,
                                        gngt.fname = report.config$gencode_gtrack,
                                        cgcgt.fname = report.config$cgc_gtrack,
@@ -982,7 +982,7 @@ if (!opt$knit_only) {
         if (file.good(opt$deconstruct_variants)) {
 
             ## identify correct background type
-            sig.fn = file.path(opt$libdir, "data", "all.signatures.txt")
+            sig.fn = system.file("extdata", "all.signatures.txt", package = "casereport")
             background.type = "Cell cohort"
             if (file.good(opt$sigs_cohort)){
                 sig.fn = opt$sigs_cohort
@@ -991,7 +991,7 @@ if (!opt$knit_only) {
                 if (!is.null(opt$tumor_type) & !is.na(opt$tumor_type)) {
 
                     ## tumor type specific signature
-                    tumor.sig.fn = file.path(opt$libdir, "data", paste0(opt$tumor_type, ".signatures.txt"))
+                    tumor.sig.fn = system.file("extdata", paste0(opt$tumor_type, ".signatures.txt"), package = "casereport")
 
                     ## check if file exists for specific tumor type
                     if (file.exists(tumor.sig.fn)) {
@@ -1005,7 +1005,7 @@ if (!opt$knit_only) {
                     message("Using background signature burden for whole Cell cohort")
                 }
             }
-	    sigMet=fread(file.path(opt$libdir,"data","sig.metadata.txt"),sep="\t")
+	    sigMet=fread(system.file("extdata", "sig.metadata.txt", package = "casereport"), sep="\t")
             sigbar = deconstructsigs_histogram(sigs.fn = opt$deconstruct_variants,
                                                sigs.cohort.fn = sig.fn,
                                                id = opt$pair,
@@ -1050,7 +1050,7 @@ if (!opt$knit_only) {
             hrd = merge.data.table(hrd.out, hrd.dat[, .(variable, data = value)], by = "variable")
 
             ## original training data
-            hrd_cohort = fread(paste0(opt$libdir, "/data/hrdetect.og.txt"))
+            hrd_cohort = fread(system.file("extdata", "/data/hrdetect.og.txt", package = "casereport"))
             hrd_cohort = data.table::melt(hrd_cohort, id.vars = c("pair", "is.hrd"))
             ## if (opt$pair %in% hrd_cohort$pair){
             hrd_cohort = rbindlist(list(hrd_cohort[pair!=opt$pair], hrd.dat), fill = TRUE)
@@ -1181,7 +1181,7 @@ if (!opt$knit_only) {
             ## ot = merge(ot.out, ot.dat[, .(variable, data = value)], by = "variable")
 
             ## original training data
-            ot_cohort = readRDS(paste0(opt$libdir, "/data/ot_scores_cohort.rds"))
+            ot_cohort = readRDS(system.file("extdata", "/data/ot_scores_cohort.rds", package = "casereport"))
 
             ## if (opt$pair %in% hrd_cohort$pair){
             ot_cohort = rbind(ot_cohort[!pair %in% opt$pair], ot, fill = T)
