@@ -2988,7 +2988,7 @@ oncoprint = function(tumors = NULL,
 
   packed_legends = list()
   bottomtracks = list()
-  if (signature & any(oncotab$track == 'signature'))
+  if (isTRUE(signature) && any(oncotab$track == 'signature') && 'frac' %in% names(oncotab))
   {
     sigd = oncotab[track == 'signature', ][type != 'Residual', ]
 
