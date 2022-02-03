@@ -3,7 +3,7 @@ Title: casereport: Whole-genome + transcription based report for cancer genomes
 Version: 0.1
 Authors@R:
 	c(person("Xiaotong", "Yao", email = "xiaotong.yao23@gmail.com", role = c("aut")),
-	  person("Marcin", "Imielinski", email = "mai9037@med.cornell.edu", role = c("aut")),
+	  person("Marcin", "Imielinski", email = "mai9037@med.cornell.edu", role = c("aut", "cre")),
 	  person("Joel", "Rosine", email = "", role = c("aut")),
 	  person("Zi-Ning", "Choo", email = "zining01@gmail.com", role = c("aut")),
 	  person("Juan Sebastián", "Andrade", email = "", role = c("aut")),
@@ -20,6 +20,7 @@ Remotes:
   bioc::3.10/GenomicRanges,
   bioc::3.10/rtracklayer,
   bioc::3.10/VariantAnnotation,
+  bioc::3.10/ComplexHeatmap,
   bioc::3.10/GenomeInfoDb
 Depends:
     R (>= 3.6.0),
