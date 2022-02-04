@@ -1,4 +1,12 @@
-run.wgs.report = function(opt){
+#' @name wgs.report
+#' @title wgs.report
+#'
+#' @description
+#'
+#' Generate a WGS case report
+#' 
+#' @param opt list with the input parameters for the wgs casereport. For more information on parameters run "Rscript wgs.report --help" in the command line.
+wgs.report = function(opt){
     message("Loading Libraries -- Please wait...")
     suppressMessages(expr = {
         suppressPackageStartupMessages(expr = {

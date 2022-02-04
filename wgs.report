@@ -1,4 +1,6 @@
+#!/usr/bin/env Rscript
 library(optparse)
+
 if (!exists("opt")){
     option_list = list(
         make_option(c("--libdir"), type = "character", help = "dir that contains this file and other source codes"),
@@ -69,5 +71,5 @@ if (!exists("opt")){
     saveRDS(opt, paste0(opt$outdir, '/cmd.args.rds'))
 }
 
-casereport::run.wgs.report(opt)
+casereport::wgs.report(opt)
 
