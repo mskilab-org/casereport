@@ -15,6 +15,7 @@ Remotes:
   github::mskilab/gUtils,
   github::mskilab/gTrack,
   github::mskilab/skidb,
+  github::mskilab/Flow,
   github::icbi-lab/immunedeconv,
   bioc::3.10/S4Vectors,
   bioc::3.10/GenomicRanges,
@@ -60,6 +61,7 @@ Suggests:
     testthat (>= 3.0.0),
     covr,
     RCurl,
+    Flow,
     matrixStats
 License: GPL-3
 Encoding: UTF-8
