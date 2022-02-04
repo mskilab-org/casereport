@@ -1,0 +1,383 @@
+##fileformat=VCFv4.2
+##reference=file:///gpfs/commons/home/khadi/DB/GATK/human_g1k_v37_decoy.fasta
+##contig=<ID=1,length=249250621>
+##contig=<ID=2,length=243199373>
+##contig=<ID=3,length=198022430>
+##contig=<ID=4,length=191154276>
+##contig=<ID=5,length=180915260>
+##contig=<ID=6,length=171115067>
+##contig=<ID=7,length=159138663>
+##contig=<ID=8,length=146364022>
+##contig=<ID=9,length=141213431>
+##contig=<ID=10,length=135534747>
+##contig=<ID=11,length=135006516>
+##contig=<ID=12,length=133851895>
+##contig=<ID=13,length=115169878>
+##contig=<ID=14,length=107349540>
+##contig=<ID=15,length=102531392>
+##contig=<ID=16,length=90354753>
+##contig=<ID=17,length=81195210>
+##contig=<ID=18,length=78077248>
+##contig=<ID=19,length=59128983>
+##contig=<ID=20,length=63025520>
+##contig=<ID=21,length=48129895>
+##contig=<ID=22,length=51304566>
+##contig=<ID=GL000191.1,length=106433>
+##contig=<ID=GL000192.1,length=547496>
+##contig=<ID=GL000193.1,length=189789>
+##contig=<ID=GL000194.1,length=191469>
+##contig=<ID=GL000195.1,length=182896>
+##contig=<ID=GL000196.1,length=38914>
+##contig=<ID=GL000197.1,length=37175>
+##contig=<ID=GL000198.1,length=90085>
+##contig=<ID=GL000199.1,length=169874>
+##contig=<ID=GL000200.1,length=187035>
+##contig=<ID=GL000201.1,length=36148>
+##contig=<ID=GL000202.1,length=40103>
+##contig=<ID=GL000203.1,length=37498>
+##contig=<ID=GL000204.1,length=81310>
+##contig=<ID=GL000205.1,length=174588>
+##contig=<ID=GL000206.1,length=41001>
+##contig=<ID=GL000207.1,length=4262>
+##contig=<ID=GL000208.1,length=92689>
+##contig=<ID=GL000209.1,length=159169>
+##contig=<ID=GL000210.1,length=27682>
+##contig=<ID=GL000211.1,length=166566>
+##contig=<ID=GL000212.1,length=186858>
+##contig=<ID=GL000213.1,length=164239>
+##contig=<ID=GL000214.1,length=137718>
+##contig=<ID=GL000215.1,length=172545>
+##contig=<ID=GL000216.1,length=172294>
+##contig=<ID=GL000217.1,length=172149>
+##contig=<ID=GL000218.1,length=161147>
+##contig=<ID=GL000219.1,length=179198>
+##contig=<ID=GL000220.1,length=161802>
+##contig=<ID=GL000221.1,length=155397>
+##contig=<ID=GL000222.1,length=186861>
+##contig=<ID=GL000223.1,length=180455>
+##contig=<ID=GL000224.1,length=179693>
+##contig=<ID=GL000225.1,length=211173>
+##contig=<ID=GL000226.1,length=15008>
+##contig=<ID=GL000227.1,length=128374>
+##contig=<ID=GL000228.1,length=129120>
+##contig=<ID=GL000229.1,length=19913>
+##contig=<ID=GL000230.1,length=43691>
+##contig=<ID=GL000231.1,length=27386>
+##contig=<ID=GL000232.1,length=40652>
+##contig=<ID=GL000233.1,length=45941>
+##contig=<ID=GL000234.1,length=40531>
+##contig=<ID=GL000235.1,length=34474>
+##contig=<ID=GL000236.1,length=41934>
+##contig=<ID=GL000237.1,length=45867>
+##contig=<ID=GL000238.1,length=39939>
+##contig=<ID=GL000239.1,length=33824>
+##contig=<ID=GL000240.1,length=41933>
+##contig=<ID=GL000241.1,length=42152>
+##contig=<ID=GL000242.1,length=43523>
+##contig=<ID=GL000243.1,length=43341>
+##contig=<ID=GL000244.1,length=39929>
+##contig=<ID=GL000245.1,length=36651>
+##contig=<ID=GL000246.1,length=38154>
+##contig=<ID=GL000247.1,length=36422>
+##contig=<ID=GL000248.1,length=39786>
+##contig=<ID=GL000249.1,length=38502>
+##contig=<ID=MT,length=16569>
+##contig=<ID=NC_007605,length=171823>
+##contig=<ID=X,length=155270560>
+##contig=<ID=Y,length=59373566>
+##contig=<ID=hs37d5,length=35477943>
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=AD,Number=R,Type=Integer,Description="Allelic Depths of REF and ALT(s) in the order listed">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	DETROIT562_UPPER_AERODIGESTIVE_TRACT	NORMAL
+1	1119315	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	1463118	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	1463119	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	1669817	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	6409922	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	16056336	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	16202963	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	23279550	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	24140788	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	24998723	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	26510626	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	37282696	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	43919368	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	54656540	.	G	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	60506770	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	63005551	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	114454800	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	152084133	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	152323839	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	158618386	.	T	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	160793413	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	183617194	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	200950193	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	8890377	.	T	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	25095518	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	71591185	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	84880978	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	100625344	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	122125332	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	128386070	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	131126711	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	141609234	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	179442145	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	179554265	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	210518039	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	217735683	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	223521035	.	G	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	225630459	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	242109207	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	19436643	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	33099713	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	47049166	.	A	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	55513589	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	73433164	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	115805275	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	123419262	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	123699330	.	G	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	141497261	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	167196763	.	T	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	178952085	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	186301751	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+4	68449325	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+4	68449326	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+4	77661948	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+4	153691523	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+4	183600932	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+5	163381	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+5	14610393	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+5	41172399	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+5	63510062	.	G	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+5	102894981	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+5	156649940	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+5	176895872	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	6175009	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	10877600	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	13592056	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	25918718	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	27215675	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	27860651	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	29574992	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	30529648	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	31711736	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	42072524	.	G	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	73830254	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	74228757	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	75861631	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	78172146	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	84871515	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	101094631	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	109766678	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	130762799	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	147122985	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	151152186	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+7	1513985	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+7	47876614	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+7	94038918	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+7	99771576	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+7	100678518	.	G	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+7	105305734	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+7	107302107	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+7	127026129	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+7	128478407	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+8	56668816	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+8	101154064	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+8	101270854	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+8	104924280	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+8	107722954	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+8	145750003	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+9	13224538	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+9	33166777	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+9	88961363	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+9	115805634	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+9	135205518	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+9	139309056	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+10	3109793	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+10	22898625	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+10	44140185	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+10	68687980	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+10	75058719	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+10	103563506	.	T	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+10	105372694	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+10	120809446	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+10	124897153	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	972152	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	4674212	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	5462013	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	10517198	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	57996080	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	61675117	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	62416749	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	64112481	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	64419552	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	64880136	.	G	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	65788976	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	67808766	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	68174006	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	70017132	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	74414394	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	85779799	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	114401368	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	114569051	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	115109219	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	118498594	.	T	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	119535873	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	122805174	.	A	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	134856315	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	4714198	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	4736528	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	4737961	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	6204685	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	7984268	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	10978763	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	15134390	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	27538495	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	45833699	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	49165659	.	G	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	50153042	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	50357941	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	52845519	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	65174778	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	69326550	.	T	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	85674069	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	104046378	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	106633826	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	122265844	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	124414989	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	131569201	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	132335719	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+13	53418989	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+14	21993487	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+14	36986880	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+14	45494995	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+14	89327638	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+14	89327639	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+14	104482343	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+15	25981272	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+15	28230272	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+15	41786134	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+15	42107965	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+15	52643475	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+15	65425625	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+15	86284634	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+15	90168403	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	814112	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	1747828	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	1828548	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	2053703	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	4867673	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	11836472	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	23091398	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	29985129	.	T	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	30370131	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	49670138	.	G	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	55880440	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	68893826	.	T	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	75263914	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	75269856	.	T	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	7578406	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	27493609	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	34074162	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	38793813	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	39464159	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	39464160	.	A	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	40717934	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	42429934	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	48182741	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	57196715	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	61562724	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	62043561	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	74072888	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	76433911	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	76522997	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+18	5445164	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+18	29339912	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+18	67871397	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	629587	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	5265180	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	6366330	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	6459519	.	G	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	10081346	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	12089092	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	12996365	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	14162779	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	18378152	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	18652732	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	35800811	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	41355815	.	T	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	41387586	.	T	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	41744487	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	47584796	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	52149177	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	58967516	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+20	17475228	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+20	31659077	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+20	33805748	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+22	17288782	.	G	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+22	19184125	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+22	31799186	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+22	39627697	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+22	42611203	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+22	47274574	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+22	50724476	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+X	44008137	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+X	71349975	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+X	101911414	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+X	151302991	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+X	153599368	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+10	13217603	.	A	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	89774355	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	119535911	.	A	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+15	28200335	.	C	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+15	37390357	.	A	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	11554511	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	48696217	.	A	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+21	45877059	.	G	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+22	42952576	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	78680457	.	T	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	1463118	.	TG	CT	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	226736697	.	T	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	51429396	.	A	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+4	68449325	.	TG	CT	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+5	1087140	.	A	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+7	4800802	.	A	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+7	39379401	.	A	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+7	47937641	.	T	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+7	99943487	.	G	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+8	21996554	.	G	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	1268711	.	G	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	67174315	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+11	68483400	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+13	53421503	.	T	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+14	89327638	.	GA	AG	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+16	81069675	.	A	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	48619437	.	A	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	31796075	.	C	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	116579847	.	A	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+10	51851256	.	T	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+10	51851257	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+10	51851274	.	G	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+17	39740548	.	C	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	89250461	.	T	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	186314830	.	T	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+13	21382722	.	T	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	15601878	.	TATCTCTGTTCA	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+2	179433954	.	A	AT	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+5	31313492	.	TTTACATCGAAACTTCTTGACCG	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	30679788	.	TTC	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	148865677	.	GCAGCCCCGC	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+12	133235867	.	GGGGGAGCCCTCACCTCTCCGTGACA	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+14	57046775	.	TAC	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+19	10468330	.	CTT	C	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	23420084	.	A	AT	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	86842010	.	G	GT	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	90493134	.	AGGGGAAGTAGGGGT	A	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+1	183086576	.	TGGTAAGTAAGGCTAGAAAGCAGTCTGACCTGCTGTGTGCCTCTGTTTAGTCTCAGTCTCACATTCTTGCCCACCATTGTGTCTGTATTCCA	T	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+3	3216891	.	G	GT	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+4	367457	.	A	AAC	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+4	367458	.	GTC	G	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+4	81207563	.	G	GA	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+6	7609095	.	C	CA	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
+8	100654345	.	G	GA	.	PASS	.	GT:AD:DP	0/1:.,.:.	0/0:.,.:.
