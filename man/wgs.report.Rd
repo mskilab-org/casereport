@@ -7,8 +7,7 @@
 wgs.report(opt)
 }
 \arguments{
-\item{opt}{list with the input parameters for the wgs casereport. For more information on parameters run "Rscript wgs.report --help" in the command line.
-add whether gene is TSG or ONCO}
+\item{opt}{list with the input parameters for the wgs casereport. For more information on parameters run "Rscript wgs.report --help" in the command line.}
 }
 \description{
 Generate a WGS case report
