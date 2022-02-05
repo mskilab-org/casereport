@@ -9,8 +9,7 @@ makeSummaryTable(
   fusions_table,
   expression_table,
   mutations_table,
-  onco_table,
-  cs_libdir
+  onco_table
 )
 }
 \arguments{
