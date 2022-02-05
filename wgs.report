@@ -40,7 +40,7 @@ if (!exists("opt")){
         make_option(c("--ref"), type = "character", default = "hg19", help = "one of 'hg19', 'hg38'"),
         make_option(c("--snpeff_config"), type = "character", default = "~/modules/SnpEff/snpEff.config", help = "snpeff.config file path"),
         make_option(c("--cohort_metadata"), type = "character", default = NA_character_, help = "Metadata of the background cohort"),
-        make_option(c("--pmkb_interpretations"), type = "character", default = NA_character_, help = "Path to CVS with PMKB interpretations. If not provided, then a default table will be used (in data/pmkb-interpretations-06-11-2021.csv). See https://pmkb.weill.cornell.edu/about for details about PMKB."),
+        make_option(c("--pmkb_interpretations"), type = "character", default = system.file('extdata', 'pmkb-interpretations-06-11-2021.csv', package = 'casereport'), help = "Path to CVS with PMKB interpretations. If not provided, then a default table will be used (in data/pmkb-interpretations-06-11-2021.csv). See https://pmkb.weill.cornell.edu/about for details about PMKB."),
         make_option(c("--deconv"), type = "character", default = "epic", help = "Method for RNA deconvolution"),
         make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir"),
         make_option(c("--verbose"), type = "logical", default = TRUE, action = "store_true", help = "Be verbose and write more messages during the process of producing the report."),
@@ -52,24 +52,9 @@ if (!exists("opt")){
     opt$outdir = normalizePath(opt$outdir)
     opt$libdir = normalizePath(opt$libdir)
 
-    ## make sure $genes and $gencode are correct given genome version
-    if (opt$ref == "hg38") {
-        message("Using reference: ", opt$ref)
-        opt$gencode = "~/DB/GENCODE/hg38/v38/gencode.v38.annotation.gtf"
-        opt$genes = "~/DB/GENCODE/hg38/v38/gencode.v38.genes.gtf"
-        Sys.setenv(DEFAULT_GENOME = "BSgenome.Hsapiens.UCSC.hg38::Hsapiens")
-        opt$cytoband = system.file("extdata", "hg38.cytoband.txt", package = "casereport")
-    } else if (opt$ref == "hg19") {
-        message("Using reference: ", opt$ref)
-        opt$gencode = "~/DB/GENCODE/gencode.v19.annotation.gtf"
-        opt$genes = "~/DB/GENCODE/gencode.v19.genes.gtf"
-        Sys.setenv(DEFAULT_GENOME = "BSgenome.Hsapiens.UCSC.hg19::Hsapiens")
-        opt$cytoband = system.file("extdata",  "hg19.cytoband.txt", package = "casereport")
-    } else {
-        stop("Invalid entry for $ref provided: ", opt$ref)
-    }
     saveRDS(opt, paste0(opt$outdir, '/cmd.args.rds'))
 }
 
+devtools::load_all('~/git/case2')
 casereport::wgs.report(opt)
 

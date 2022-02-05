@@ -6,6 +6,7 @@
 #' Generate a WGS case report
 #' 
 #' @param opt list with the input parameters for the wgs casereport. For more information on parameters run "Rscript wgs.report --help" in the command line.
+#' @export
 wgs.report = function(opt){
     message("Loading Libraries -- Please wait...")
     suppressMessages(expr = {
@@ -32,12 +33,7 @@ wgs.report = function(opt){
             library(immunedeconv)
             library(readr)
             library(data.table)
-            message("Loading critical dependencies from KevUtils")
-            source(paste0(opt$libdir, "/utils.R"))
-            source(paste0(opt$libdir, "/config.R"))
-            source(paste0(opt$libdir, "/pmkb-utils.R"))
-            source(file.path(opt$libdir, "sv.gallery.R"))
-            source(file.path(opt$libdir, "fusion.gallery.R"))
+            library(casereport)
             data.table::setDTthreads(1)
         })
     })
@@ -45,6 +41,64 @@ wgs.report = function(opt){
     ##################
     ## Initialize a report config
     ##################
+    if (is.null(opt$outdir)){
+        opt$outdir = './'
+    }
+
+    NA_default_params = c('cbs_cov_rds', 'cbs_nseg_rds', 'het_pileups_wgs',
+                          "deconstruct_sigs", "deconstruct_variants",
+                          "sigs_cohort", "tpm", "hrd_results",
+                          "ot_results", "snv_vcf", "indel_vcf", "snpeff_snv_bcf",
+                          "snpeff_indel_bcf", "drivers", "cohort_metadata"
+                          )
+    for (param in NA_default_params){
+        opt = set_param(opt, param, NA_character_)
+    }
+    default_opt = list(chrom_sizes = system.file('extdata', 'hg19.broad.chrom.sizes', package = "casereport"),
+                       libdir = find.package('casereport'),
+                       gencode = '~/DB/GENCODE/gencode.v19.annotation.gtf', # FIXME: mskilab path
+                       genes = '~/DB/GENCODE/gencode.v19.genes.gtf', # FIXME: mskilab path
+                       tpm_cohort = '~/data/PCAWG/final_release/tpm.cohort.tsv.gz', # FIXME: mskilab path
+                       knit_only = FALSE,
+                       amp_thresh = 2,
+                       del_thresh = 0.5,
+                       server = "https://mskilab.com/gGraph/",
+                       tumor_type = "",
+                       ref = 'hg19',
+                       snpeff_config = '~/modules/SnpEff/snpEff.config', # FIXME: this is refering to an mskilab path
+                       pmkb_interpretations = system.file('extdata', 'pmkb-interpretations-06-11-2021.csv', package = 'casereport'),
+                       deconv = 'epic',
+                       overwrite = FALSE,
+                       verbose = TRUE,
+                       quantile_thresh = 0.05,
+                       include_surface = FALSE)
+    missing_params = setdiff(names(default_opt), names(opt))
+    if (length(missing_params) > 0){
+        for (param in missing_params){
+            opt[param] = default_opt[[param]]
+        }
+    }
+    ## make sure $genes and $gencode are correct given genome version
+    # FIXME: there are a bunch of mskilab paths here
+    if (opt$ref == "hg38") {
+        message("Using reference: ", opt$ref)
+        opt$gencode = "~/DB/GENCODE/hg38/v38/gencode.v38.annotation.gtf"
+        opt$genes = "~/DB/GENCODE/hg38/v38/gencode.v38.genes.gtf"
+        Sys.setenv(DEFAULT_GENOME = "BSgenome.Hsapiens.UCSC.hg38::Hsapiens")
+        opt$cytoband = system.file("extdata", "hg38.cytoband.txt", package = "casereport")
+        opt$chrom_sizes = system.file('extdata', 'hg38.chrom.sizes', package = "casereport")
+    } else if (opt$ref == "hg19") {
+        message("Using reference: ", opt$ref)
+        opt$gencode = "~/DB/GENCODE/gencode.v19.annotation.gtf"
+        opt$genes = "~/DB/GENCODE/gencode.v19.genes.gtf"
+        Sys.setenv(DEFAULT_GENOME = "BSgenome.Hsapiens.UCSC.hg19::Hsapiens")
+        opt$cytoband = system.file("extdata",  "hg19.cytoband.txt", package = "casereport")
+        opt$chrom_sizes = system.file('extdata', 'hg19.broad.chrom.sizes', package = "casereport")
+    } else {
+        stop("Invalid entry for $ref provided: ", opt$ref)
+    }
+
+    saveRDS(opt, paste0(opt$outdir, '/cmd.args.rds'))
 
     if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
         report.config = readRDS(paste0(opt$outdir, "/", "report.config.rds"))
@@ -341,10 +395,12 @@ wgs.report = function(opt){
             }
 
             gg = gG(jabba = opt$jabba_rds)
+            pl = gg$meta$ploidy
+            pl = ifelse(is.null(pl), 2, pl)
             genes_cn = get_gene_copy_numbers(gg,
                                              gene_ranges = opt$genes,
                                              nseg = nseg,
-                                             ploidy = kag$ploidy,
+                                             ploidy = pl,
                                              simplify_seqnames = (opt$ref == "hg19"),
                                              complex.fname = report.config$complex)
             
@@ -1423,7 +1479,7 @@ wgs.report = function(opt){
                                          deconstruct_variants = opt$deconstruct_variants,
                          hrd_results = opt$hrd_results,
                                          key = "pair")
-            oncotable = oncotable(oncotable.input,
+            oncotable = casereport::oncotable(oncotable.input,
                                   gencode = opt$genes,
                                   verbose = TRUE)
             saveRDS(oncotable, report.config$oncotable)
@@ -1438,7 +1494,7 @@ wgs.report = function(opt){
             message("Summary Table already exists. Skipping!")
         } else {
             message("Generating summary table")
-        wol=makeSummaryTable(report.config$driver_scna,report.config$driver_fusions, report.config$rna_change_with_cn,report.config$driver_mutations,report.config$oncotable,opt$libdir)
+        wol=makeSummaryTable(report.config$driver_scna,report.config$driver_fusions, report.config$rna_change_with_cn,report.config$driver_mutations,report.config$oncotable)
         wol$tier=as.character(wol$tier)
         wol[is.na(wol$tier),]$tier="Undefined"
         fwrite(wol,report.config$summaryTable)
@@ -1447,17 +1503,10 @@ wgs.report = function(opt){
 
     }
 
-    message("Optimizing PNGs")
-    cm = paste("python",
-               paste0(opt$libdir, "/", "optimize_png.py"),
-               "--dirname",
-               opt$outdir)
-    system(cm)
-
 
     message("Start knitting")
     rmarkdown::render(
-        input = normalizePath(paste0(opt$libdir, "/wgs.report.rmd")),
+        input = normalizePath(system.file('extdata', 'case_report_module/wgs.report.rmd', package = 'casereport')),
         output_format = "html_document",
         output_file = normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html")),
         knit_root_dir = normalizePath(opt$outdir),

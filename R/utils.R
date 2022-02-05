@@ -2577,7 +2577,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
             out = rbind(out, data.table(id = x, type = NA, source = 'jabba_rds', track = "variants"), fill = TRUE, use.names = TRUE)
         }
 
-        if (file.good(dat[x, proximity]) && nrow(readRDS(dat[x, proximity])$dt)) {
+        if ('proximity' %in% names(dat) && file.good(dat[x, proximity]) && nrow(readRDS(dat[x, proximity])$dt)) {
             if (verbose)
                 message('Processing proximity results.')
             proximity.dt = readRDS(opt$proximity)$dt[reldist < max.reldist & refdist > min.refdist,]
@@ -3441,7 +3441,7 @@ wgs_gtrack = function(jabba_rds, cvgt.fname, agt.fname = NULL) {
 #' @param onco_table file path to casereport oncotable
 #' @param the directory of casereport
 #' @return summary table of driver genes.
-makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_table,onco_table,cs_libdir){
+makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_table,onco_table){
 	genelist=vector()
 	if(file.good(cnv_table)){
 		genelist=c(genelist,fread(cnv_table)$gene_name)
@@ -3574,7 +3574,7 @@ summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', 
             fwrite(dt, output_file)
         }
         rmarkdown::render(
-            input = normalizePath(paste0(libdir, "/wgs.report.table.rmd")),
+            input = normalizePath(system.file('extdata', 'case_report_module/wgs.report.table.rmd', package = 'casereport')),
             output_format = "html_document",
             output_file = html_path,
             knit_root_dir = normalizePath(html_dir),
@@ -3583,4 +3583,22 @@ summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', 
             quiet = FALSE)
     }
     return(dt)
+}
+
+
+#' @name set_param
+#' @title set_param
+#' @description
+#' 
+#' check if a field exists in a list and if not then set it
+#'
+#' @param l input list
+#' @param name the name of the field
+#' @param value the value to assign if the field is NULL (by default NA_character_)
+#' @return list
+set_param = function(l = list(), name = '', value = NA_character_){
+    if (!(name %in% names(l))){
+        l[name] = value
+    }
+    return(l)
 }
