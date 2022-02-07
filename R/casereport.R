@@ -465,7 +465,7 @@ wgs.report = function(opt){
                                                          (cnv %in% c("hetdel", "homdel") & gene_name %in% tsg)]
                 }
                 
-                #' add whether gene is TSG or ONCO
+                # add whether gene is TSG or ONCO
                 driver.genes_cn[gene_name %in% onc, annot := "ONC"]
                 driver.genes_cn[gene_name %in% tsg, annot := "TSG"]
 
