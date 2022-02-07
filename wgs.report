@@ -55,6 +55,5 @@ if (!exists("opt")){
     saveRDS(opt, paste0(opt$outdir, '/cmd.args.rds'))
 }
 
-devtools::load_all('~/git/case2')
 casereport::wgs.report(opt)
 
