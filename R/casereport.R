@@ -8,6 +8,9 @@
 #' @param opt list with the input parameters for the wgs casereport. For more information on parameters run "Rscript wgs.report --help" in the command line.
 #' @export
 wgs.report = function(opt){
+    if (inherits(opt, 'data.frame')){
+        opt = as.list(opt)
+    }
     message("Loading Libraries -- Please wait...")
     suppressMessages(expr = {
         suppressPackageStartupMessages(expr = {
