@@ -1,0 +1,60 @@
+#!/usr/bin/env Rscript
+library(optparse)
+
+if (!exists("opt")){
+    option_list = list(
+        make_option(c("--libdir"), type = "character", help = "dir that contains this file and other source codes"),
+        make_option(c("--outdir"), type = "character", default = './', help = "Directory to dump output into"),
+        make_option(c("--pair"), type = "character", help = "ID of this sample"),
+        make_option(c("--jabba_rds"), type = "character", help = "jabba output, 'jabba.simple.rds'"),
+        make_option(c("--cbs_cov_rds"), type = "character", default = NA_character_, help = "cbs_cov output"),
+        make_option(c("--cbs_nseg_rds"), type = "character", default = NA_character_, help = "cbs_nseg_rds output"),
+        make_option(c("--het_pileups_wgs"), type = "character", default = NA_character_, help = "cbs_cov output"),
+        make_option(c("--complex"), type = "character", help = "complex event caller, RDS"),
+        make_option(c("--fusions"), type = "character", help = "fusions module output, RDS"),
+        make_option(c("--proximity"), type = "character", help = "proximity module output, RDS"),
+        make_option(c("--enhancer"), type = "character", help = "annotation of putative active enhancers in the tissue type, used for proximity analysis"),
+        make_option(c("--deconstruct_sigs"), type = "character", default = NA_character_, help = "deconstruct_sigs module output, RDS"),
+        make_option(c("--deconstruct_variants"), type = "character", default = NA_character_, help = "deconstruct_sigs module variant output, TXT"),
+        make_option(c("--sigs_cohort"), type = "character", default = NA_character_, help = "variant count for each signature in a cohort"),
+        make_option(c("--tpm"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in this sample (raw kallisto output acceptable)"),
+        make_option(c("--tpm_cohort"), type = "character", default = NA_character_, help = "Textual file containing the TPM values of genes in a reference cohort"),
+        make_option(c("--hrd_results"), type = "character", default = NA_character_, help = "The comprehensive HRDetect module results"),
+        make_option(c("--ot_results"), type = "character", default = NA_character_, help = "Oneness/Twoness module results"),
+        make_option(c("--snv_vcf"), type = "character", default = NA_character_, help = "SNV vcf file (e.g. strelka)"),
+        make_option(c("--indel_vcf"), type = "character", default = NA_character_, help = "indel vcf file (e.g. strelka)"),
+        make_option(c("--snpeff_snv_bcf"), type = "character", default = NA_character_, help = "snpeff snv results )bcf)"),
+        make_option(c("--snpeff_indel_bcf"), type = "character", default = NA_character_, help = "snpeff indel results (bcf)"),
+        make_option(c("--gencode"), type = "character", default = "~/DB/GENCODE/gencode.v19.annotation.gtf", help = "GENCODE gene models in GTF/GFF3 formats"),
+        make_option(c("--genes"), type = "character", default = '~/DB/GENCODE/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
+        ## make_option(c("--genes"), type = "character", default = 'http://mskilab.com/fishHook/hg19/gencode.v19.genes.gtf', help = "GENCODE gene models collapsed so that each gene is represented by a single range. This is simply a collapsed version of --gencode."),
+        make_option(c("--drivers"), type = "character", default = NA_character_, help = "path to file with gene symbols (see /data/cgc.tsv for example)"),
+        make_option(c("--chrom_sizes"), type = "character", default = "~/DB/UCSC/hg19.broad.chrom.sizes", help = "chrom.sizes file of the reference genome"),
+        make_option(c("--knit_only"), type = "logical", default = FALSE, action = "store_true", help = "if true, skip module and just knit"),
+        make_option(c("--amp_thresh"), type = "numeric", default = 2,
+                    help = "Threshold over ploidy to call amplification"),
+        make_option(c("--del_thresh"), type = "numeric", default = 0.5,
+                    help = "Threshold over ploidy to call deletion"),
+        make_option(c("--server"), type = "character", default = "https://mskilab.com/gGraph/", help = "URL of the gGnome.js browser"),
+        make_option(c("--tumor_type"), type = "character", default = "", help = "tumor type"),
+        make_option(c("--ref"), type = "character", default = "hg19", help = "one of 'hg19', 'hg38'"),
+        make_option(c("--snpeff_config"), type = "character", default = "~/modules/SnpEff/snpEff.config", help = "snpeff.config file path"),
+        make_option(c("--cohort_metadata"), type = "character", default = NA_character_, help = "Metadata of the background cohort"),
+        make_option(c("--pmkb_interpretations"), type = "character", default = system.file('extdata', 'pmkb-interpretations-06-11-2021.csv', package = 'casereport'), help = "Path to CVS with PMKB interpretations. If not provided, then a default table will be used (in data/pmkb-interpretations-06-11-2021.csv). See https://pmkb.weill.cornell.edu/about for details about PMKB."),
+        make_option(c("--deconv"), type = "character", default = "epic", help = "Method for RNA deconvolution"),
+        make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir"),
+        make_option(c("--verbose"), type = "logical", default = TRUE, action = "store_true", help = "Be verbose and write more messages during the process of producing the report."),
+        make_option(c("--quantile_thresh"), type = "numeric", default = 0.05, help = "threshold for quantile for RNA expression"),
+        make_option(c("--include_surface"), type = "logical", default = FALSE, action = "store_true", help = "include surface genes in CNA and RNA differential expression analysis")
+    )
+    parseobj = OptionParser(option_list = option_list)
+    opt = parse_args(parseobj)
+    opt$outdir = normalizePath(opt$outdir)
+    opt$libdir = normalizePath(opt$libdir)
+
+    saveRDS(opt, paste0(opt$outdir, '/cmd.args.rds'))
+}
+
+devtools::load_all('~/git/case2')
+casereport::wgs.report(opt)
+
