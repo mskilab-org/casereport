@@ -2211,9 +2211,12 @@ grab.hets = function(agt.fname = NULL,
 #' @param height (numeric) plot height
 #' @param width (numeric) plot width
 #' @param output.fname (character) path of output directory
+#' @param purity (numeric) if not provided then the value is read from the input JaBbA
+#' @param ploidy (numeric) if not provided then the value is read from the input JaBbA
 #' @param verbose (logical)
 #'
 #' @return output.fname
+#' @export
 pp_plot = function(jabba_rds = NULL,
                    cov.fname = NULL,
                    hets.fname = NULL,
@@ -2226,12 +2229,16 @@ pp_plot = function(jabba_rds = NULL,
                    height = 800,
                    width = 800,
                    output.fname = "./plot.png",
+                   purity = NA,
+                   ploidy = NA,
                    verbose = FALSE) {
 
     if (is.null(jabba_rds) || !file.exists(jabba_rds)) {
         stop("jabba_rds does not exist")
     }
     jab = readRDS(jabba_rds)
+    purity = ifelse(!is.na(purity) && is.numeric(purity), purity, purity)
+    ploidy = ifelse(!is.na(ploidy) && is.numeric(ploidy), ploidy, ploidy)
     if (!allele) {
         if (is.null(cov.fname) || !file.exists(cov.fname)) {
             stop("cov.fname not supplied and allele = TRUE")
@@ -2255,7 +2262,7 @@ pp_plot = function(jabba_rds = NULL,
         if (verbose) {
             message("Grabbing coverage and converting rel2abs")
         }
-        cov$cn = rel2abs(cov, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = FALSE)
+        cov$cn = rel2abs(cov, field = field, purity = purity, ploidy = ploidy, allele = FALSE)
         ## get mean CN over JaBbA segments
         if (verbose) {
             message("computing mean over jabba segments")
@@ -2270,7 +2277,7 @@ pp_plot = function(jabba_rds = NULL,
         if (verbose) {
             message("Grabbing transformation slope and intercept")
         }
-        eqn = rel2abs(cov, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = FALSE, return.params = TRUE)
+        eqn = rel2abs(cov, field = field, purity = purity, ploidy = ploidy, allele = FALSE, return.params = TRUE)
         dt = as.data.table(tiles)
     } else {
         if (is.null(hets.fname) || !file.exists(hets.fname)) {
@@ -2286,8 +2293,8 @@ pp_plot = function(jabba_rds = NULL,
         if (verbose) {
             message("Grabbing hets and converting rel2abs")
         }
-        hets$cn = rel2abs(hets, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = TRUE)
-        eqn = rel2abs(hets, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = TRUE, return.params = TRUE)
+        hets$cn = rel2abs(hets, field = field, purity = purity, ploidy = ploidy, allele = TRUE)
+        eqn = rel2abs(hets, field = field, purity = purity, ploidy = ploidy, allele = TRUE, return.params = TRUE)
         if (verbose) {
             message("computing mean over jabba segments")
         }
@@ -2304,7 +2311,7 @@ pp_plot = function(jabba_rds = NULL,
                    as.data.table(minor.tiles)[, .(seqnames, start, end, allele = "minor", cn)])
     }
 
-    maxval = plot.max * jab$ploidy # max dosage
+    maxval = plot.max * ploidy # max dosage
     minval = plot.min ## min dosage
 
     ## remove things with weird ploidy
@@ -2382,9 +2389,6 @@ pp_plot = function(jabba_rds = NULL,
 
     }
 
-    if (verbose) {
-        message("Saving results to: ", normalizePath(output.fname))
-    }
     return(pt) ##ppng(print(pt), filename = normalizePath(output.fname), height = height, width = width)
 }
 
@@ -3464,6 +3468,11 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
     oncotable=readRDS(onco_table)
     summaryTable=NA
     pmkbTier=get_pmkb_tier_table(NA)
+    if (length(genelist) == 0){
+        return(data.table(gene = character(), role = character(),
+             type = character(), tier = character(),
+             source = character()))
+    }
     for(i in 1:length(genelist)){
         thisGene=oncotable[oncotable$gene==genelist[i] & !is.na(oncotable$gene),]
         if(genelist[i] %in% pmkbTier$gene){
@@ -3520,6 +3529,7 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 #' @param html_dir path to the directory in which to put the html version of the table
 #' @param metadata data.frame or data.table with additional metadata for the samples in jb. The metadata table must contain a header. The first column of the metadata should contain sample names that match the sample names in the Job object and should only contain unique values, otherwise this table is ignored and no metadata is added.
 #' @return data.table
+#' @export
 summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', html_dir = NULL, metadata = NULL){
     if (is.character(jb) && grepl('rds$', jb)){
         jb = readRDS(jb)

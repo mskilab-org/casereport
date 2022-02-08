@@ -17,6 +17,8 @@ pp_plot(
   height = 800,
   width = 800,
   output.fname = "./plot.png",
+  purity = NA,
+  ploidy = NA,
   verbose = FALSE
 )
 }
@@ -44,6 +46,10 @@ pp_plot(
 \item{width}{(numeric) plot width}
 
 \item{output.fname}{(character) path of output directory}
+
+\item{purity}{(numeric) if not provided then the value is read from the input JaBbA}
+
+\item{ploidy}{(numeric) if not provided then the value is read from the input JaBbA}
 
 \item{verbose}{(logical)}
 }
