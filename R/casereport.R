@@ -334,7 +334,7 @@ wgs.report = function(opt){
                       stop("Package matrixStats needed for RNA data processing.")
                 }
                 cohort=fread(opt$tpm_cohort)
-                W=data.table(gene=cohort$"gene",Avg=matrixStats::rowMeans(log10(cohort[,!("gene")]+1)),SD=rowSds(log10(as.matrix(cohort[,!("gene")]+1))))
+                W=data.table(gene=cohort$"gene",Avg=rowMeans(log10(cohort[,!("gene")]+1)),SD=rowSds(log10(as.matrix(cohort[,!("gene")]+1))))
                 melted.expr$zscore=(log10(melted.expr$value+1)-W$Avg)/W$SD
             } else {
                 message("RNA input not supplied.")
