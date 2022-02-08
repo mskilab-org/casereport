@@ -61,8 +61,7 @@ Suggests:
     testthat (>= 3.0.0),
     covr,
     RCurl,
-    Flow,
-    matrixStats
+    Flow
 License: GPL-3
 Encoding: UTF-8
 LazyData: true

@@ -276,6 +276,9 @@ wgs.report = function(opt){
                          plot.max = 2,
                          bins = 100,
                          verbose = TRUE)
+            if (verbose) {
+                message("Saving results to: ", normalizePath(output.fname))
+            }
             ppng(print(pt), filename = report.config$cn_plot, height = 500, width = 500)
         } 
 
@@ -330,11 +333,8 @@ wgs.report = function(opt){
                                                     gencode.gtrack = report.config$gencode_gtrack,
                                                     quantile.thresh = opt$quantile_thresh,
                                                     verbose = TRUE)
-                if (!requireNamespace("matrixStats", quietly = TRUE)) {
-                      stop("Package matrixStats needed for RNA data processing.")
-                }
                 cohort=fread(opt$tpm_cohort)
-                W=data.table(gene=cohort$"gene",Avg=matrixStats::rowMeans(log10(cohort[,!("gene")]+1)),SD=rowSds(log10(as.matrix(cohort[,!("gene")]+1))))
+                W=data.table(gene=cohort$"gene",Avg=rowMeans(log10(cohort[,!("gene")]+1)),SD=rowSds(log10(as.matrix(cohort[,!("gene")]+1))))
                 melted.expr$zscore=(log10(melted.expr$value+1)-W$Avg)/W$SD
             } else {
                 message("RNA input not supplied.")
