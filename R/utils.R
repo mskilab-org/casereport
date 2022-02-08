@@ -2074,6 +2074,7 @@ filter.snpeff = function(vcf,
 #' - cna_frac
 #' - mut_count
 #' - mut_per_mbp
+#' @export
 create.summary = function(jabba_rds,
                           snv_vcf,
                           indel_vcf,
@@ -2429,7 +2430,7 @@ pp_plot = function(jabba_rds = NULL,
 #' @param mc.cores number of cores for multithreading
 #' @param verbose logical flag 
 #' @author Marcin Imielinski
-
+#' @export
 oncotable = function(tumors, gencode = NULL, verbose = TRUE,
                      amp.thresh = 4,
                      filter = 'PASS',
@@ -3388,6 +3389,7 @@ plot_expression_histograms = function(rna.change.fn = NULL,
 #' @param agt.fname (character) allele gtrack
 #'
 #' @return gTrack object with nice formatting
+#' @export
 wgs_gtrack = function(jabba_rds, cvgt.fname, agt.fname = NULL) {
 
     gg = gG(jabba = jabba_rds)
