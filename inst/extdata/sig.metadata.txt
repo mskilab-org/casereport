@@ -1,5 +1,5 @@
 Signature	Mutational.process	MP.Summary
-1	Spontaneous deamination of 5-methylcytosine	"Temozolomide chemo./@MMR def. +@temozolomide"
+1	Spontaneous deamination of 5-methylcytosine	"deamination of 5mC"
 2	APOBEC activity	"APOBEC activity"
 3	HR deficiency	"HR def."
 4	Tobacco smoking	"Tobacco smoking"
