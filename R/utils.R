@@ -3461,6 +3461,11 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
     oncotable=readRDS(onco_table)
     summaryTable=NA
     pmkbTier=get_pmkb_tier_table(NA)
+    if (length(genelist) == 0){
+        return(data.table(gene = character(), role = character(),
+             type = character(), tier = character(),
+             source = character()))
+    }
     for(i in 1:length(genelist)){
         thisGene=oncotable[oncotable$gene==genelist[i] & !is.na(oncotable$gene),]
         if(genelist[i] %in% pmkbTier$gene){
