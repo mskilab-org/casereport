@@ -1044,7 +1044,7 @@ wgs.report = function(opt){
                 hrd = merge.data.table(hrd.out, hrd.dat[, .(variable, data = value)], by = "variable")
 
                 ## original training data
-                hrd_cohort = fread(system.file("extdata", "/data/hrdetect.og.txt", package = "casereport"))
+                hrd_cohort = fread(system.file("extdata", "hrdetect.og.txt", package = "casereport"))
                 hrd_cohort = data.table::melt(hrd_cohort, id.vars = c("pair", "is.hrd"))
                 ## if (opt$pair %in% hrd_cohort$pair){
                 hrd_cohort = rbindlist(list(hrd_cohort[pair!=opt$pair], hrd.dat), fill = TRUE)
@@ -1179,7 +1179,7 @@ wgs.report = function(opt){
                 ## ot = merge(ot.out, ot.dat[, .(variable, data = value)], by = "variable")
 
                 ## original training data
-                ot_cohort = readRDS(system.file("extdata", "/data/ot_scores_cohort.rds", package = "casereport"))
+                ot_cohort = readRDS(system.file("extdata", "ot_scores_cohort.rds", package = "casereport"))
 
                 ## if (opt$pair %in% hrd_cohort$pair){
                 ot_cohort = rbind(ot_cohort[!pair %in% opt$pair], ot, fill = T)
