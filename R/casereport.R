@@ -1157,6 +1157,7 @@ wgs.report = function(opt){
             check_file(report.config$twoness, opt$overwrite)
         if (!all.ot){
             if (file.good(opt$ot_results)) {
+                message('Processing oneness_twoness')
                 ot.res = readRDS(opt$ot_results)
                 ot = merge(ot.res$expl_variables,
                            ot.res$ot_scores)
