@@ -1030,6 +1030,7 @@ wgs.report = function(opt){
         ## HRDetect results
         ## 
         ## ##################
+        # FIXME: should probably check for the existence of the plots and not just the RDS file
         if (!file.good(paste0(opt$outdir, "/hrdetect.rds")) | opt$overwrite){
             if (file.good(opt$hrd_results)){
                 hrd.res = readRDS(opt$hrd_results)
@@ -1039,7 +1040,6 @@ wgs.report = function(opt){
                 ## melt the output results
                 hrd.out = as.data.table(hrd.res$hrdetect_output) %>% data.table::melt()
                 hrd.out[, pair := opt$pair]
-                saveRDS(hrd.out, paste0(opt$outdir, "/hrdetect.rds"))
 
                 hrd = merge.data.table(hrd.out, hrd.dat[, .(variable, data = value)], by = "variable")
 
@@ -1140,7 +1140,11 @@ wgs.report = function(opt){
                 png(paste0(opt$outdir, "/hrdetect.prop.dat.png"), width = 800, height = 200)
                 print(hrd.plot.2)
                 dev.off()
+
+                saveRDS(hrd.out, paste0(opt$outdir, "/hrdetect.rds"))
             }
+        } else {
+            message("hrdetect output already exists")
         }
 
         ## ##################
