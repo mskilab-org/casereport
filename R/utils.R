@@ -1317,7 +1317,7 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
 
     allsig=merge(allsig,thisMet,by='Signature')
     allsig$Signature_Description=paste(allsig$MP.Summary,"\n (",allsig$Signature,")")
-    allsig$Signature_Description=str_replace(allsig$Signature_Description,"   ","")
+    allsig$Signature_Description=str_replace(allsig$Signature_Description,"   ","\n")
 
     sigbar = ggplot(allsig, aes(y = Signature_Description, x = sig_count, fill = Signature)) +
         geom_density_ridges(bandwidth = 0.1,
