@@ -3517,6 +3517,7 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 #' @param html_dir path to the directory in which to put the html version of the table
 #' @param metadata data.frame or data.table with additional metadata for the samples in jb. The metadata table must contain a header. The first column of the metadata should contain sample names that match the sample names in the Job object and should only contain unique values, otherwise this table is ignored and no metadata is added.
 #' @return data.table
+#' @export
 summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', html_dir = NULL, metadata = NULL){
     if (is.character(jb) && grepl('rds$', jb)){
         jb = readRDS(jb)
