@@ -1323,7 +1323,7 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
     #allsig$Signature_Description=str_replace(allsig$Signature_Description,"@temozolomide","\ntemozolomide")
     #allsig=allsig[order(-allsig$sig_count),]
     sigMet=sigMet[, Signature := factor(Signature, levels = new.slevels)]
-    fwrite(allsig,"~//gpfs/commons/home/jandrademartínez")
+    fwrite(allsig,"/gpfs/commons/home/jandrademartínez")
 	
     sigbar = ggplot(allsig, aes(y = Signature_Description, x = sig_count, fill = Signature)) +
         geom_density_ridges(bandwidth = 0.1,
