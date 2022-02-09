@@ -1,8 +1,11 @@
 test_that("Run case report for G32831", {
 
+    nm = 'G32831'
+    case.dir = paste0(tempdir(), '/casereport')
+    dir.create(case.dir, showWarnings = FALSE, recursive = TRUE, mode = "0777")
     opt = list(
-             pair = 'G32831',
-             outdir = tempdir(),
+             pair = nm,
+             outdir = case.dir,
              jabba_rds = system.file('extdata', 'G32831/jabba.simple.rds', package = "casereport"),
              cbs_cov_rds = system.file('extdata', 'G32831/G32831.Detroit_562.chr11.window.rds', package = "casereport"),
              fusions = system.file('extdata', 'G32831/fusions.rds', package = "casereport"),
@@ -15,8 +18,7 @@ test_that("Run case report for G32831", {
              snpeff_snv_bcf = system.file('extdata', 'G32831/annotated.bcf', package = "casereport"))
 
     wgs.report(opt)
-
-
+    expect_true(file.exists(paste0(case.dir, '/', nm, '.wgs.report.html')))
 
 #    library(Flow)
 #    task.file = system.file('extdata', 'case_report_module/wgs.casereport.task', package = 'casereport')
