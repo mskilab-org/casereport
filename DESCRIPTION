@@ -11,7 +11,7 @@ Authors@R:
 	  person("Alon", "Shaiber", email = "alon.shaiber@gmail.com", role = c("aut"))
      )
 Description: The casereport package includes a collection of tools to identify, annotate, and visualize genomic alterations in cancer patient samples including germline and somatic SNVs, somatic SVs (including annotation of complex events). The data generated is made highly accessible in an HTML report, which allows browsing of highlighted potential drivers as well as diving into detailed visualizations of alterations. In addition to the HTML report, all identified alterations are included in a comprehensive tabular format (Oncotable).
-Remotes: 
+Remotes:
   github::mskilab/gUtils,
   github::mskilab/gTrack,
   github::mskilab/skidb,
@@ -57,7 +57,7 @@ Depends:
     VariantAnnotation
 Imports:
     gUtils
-Suggests: 
+Suggests:
     testthat (>= 3.0.0),
     covr,
     RCurl,

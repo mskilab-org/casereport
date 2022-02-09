@@ -2234,8 +2234,8 @@ pp_plot = function(jabba_rds = NULL,
         stop("jabba_rds does not exist")
     }
     jab = readRDS(jabba_rds)
-    purity = ifelse(!is.na(purity) && is.numeric(purity), purity, purity)
-    ploidy = ifelse(!is.na(ploidy) && is.numeric(ploidy), ploidy, ploidy)
+    purity = ifelse(!is.na(purity) && is.numeric(purity), purity, jab$purity)
+    ploidy = ifelse(!is.na(ploidy) && is.numeric(ploidy), ploidy, jab$ploidy)
     if (!allele) {
         if (is.null(cov.fname) || !file.exists(cov.fname)) {
             stop("cov.fname not supplied and allele = TRUE")
