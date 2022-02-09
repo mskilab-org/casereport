@@ -1311,14 +1311,15 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
 	
     fwrite(allsig[pair== id,],file.path(outdir,"Sig.csv"))
     print(allsig)
-	
+    
+    sigMet[, Signature := factor(Signature, levels = new.slevels)]
     thisMet=sigMet[sigMet$Signature %in% allsig$Signature,]
-
+    
     allsig=merge(allsig,thisMet,by='Signature')
+    print(allsig)
     allsig$Signature_Description=paste(allsig$MP.Summary,"\n (",allsig$Signature,")")
     allsig$Signature_Description=str_replace(allsig$Signature_Description,"@","\n")
     allsig$Signature_Description=str_replace(allsig$Signature_Description,"@temozolomide","\ntemozolomide")
-    print(allsig)
     allsig=allsig[order(-allsig$sig_count),]
     print(allsig)
 	
