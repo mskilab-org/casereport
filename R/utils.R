@@ -1310,11 +1310,14 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
     allsig[, Signature := factor(Signature, levels = new.slevels)]
 	
     fwrite(allsig[pair== id,],file.path(outdir,"Sig.csv"))
-    print(allsig)
     
-    sigMet=sigMet[, Signature := factor(Signature, levels = new.slevels)]
+    allSig$Signature=as.character(allSig$Signature)
+    sigMet$Signature=as.character(sigMet$Signature)
+    #sigMet=sigMet[, Signature := factor(Signature, levels = new.slevels)]
     thisMet=sigMet[sigMet$Signature %in% allsig$Signature,]
     
+    
+	
     allsig=merge(allsig,thisMet,by='Signature')
     print(allsig)
     allsig$Signature_Description=paste(allsig$MP.Summary,"\n (",as.character(allsig$Signature),")")
