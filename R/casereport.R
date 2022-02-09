@@ -276,9 +276,7 @@ wgs.report = function(opt){
                          plot.max = 2,
                          bins = 100,
                          verbose = TRUE)
-            if (verbose) {
-                message("Saving results to: ", normalizePath(output.fname))
-            }
+            message("Saving results to: ", normalizePath(report.config$cn_plot))
             ppng(print(pt), filename = report.config$cn_plot, height = 500, width = 500)
         } 
 
