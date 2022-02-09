@@ -45,18 +45,18 @@ create_genes_gtrack = function(genes = c(),
 #'
 #' wrapper function to prep input for SlickR
 #' @param complex.fname (character)
-#' @param cvgt.fname
-#' @param gngt.fname
-#' @param agt.fname allele gTrack path
-#' @param background.fname
-#' @param server
-#' @param pair
-#' @param ev.types
-#' @param pad
-#' @param height
-#' @param width
-#' @param outdir
-#'
+#' @param cvgt.fname (character) coverage gTrack file path
+#' @param gngt.fname (character) gencode gTrack file path
+#' @param cgcgt.fname (character) CGC gTrack file path
+#' @param agt.fname (character) allele gTrack file name
+#' @param background.fname (character) text file with event burdens (default sv.burden.txt)
+#' @param server (character) path to gGnome.js server url
+#' @param pair (character) pair id
+#' @param ev.types (character) complex event types
+#' @param pad (numeric) window padding in bp default 5e5
+#' @param height (numeric) plot height default 1000
+#' @param width (numeric) plot width default 1000
+#' @param outdir (character) where to save plots
 #' @return data.table with columns from complex and additionally plot.fname and plot.link
 gallery.wrapper = function(complex.fname = NULL,
                            background.fname = "/data/sv.burden.txt",
@@ -247,7 +247,7 @@ grab.window = function(gr, complex.fname,
 #' @param cvgt.fname (character) coverage gTrack file path
 #' @param gngt.fname (character) gencode gTrack file path
 #' @param agt.fname (character) allele gTrack file name
-#' @param server (character) server url
+#' @param server (character) path to gGnome.js server url
 #' @param pair (character) pair id
 #' @param ev.types (character) complex event types
 #' @param amp.thresh (default 2) amplicon CN threshold for plotting ## possibly compute and save separately?

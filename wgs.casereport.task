@@ -16,9 +16,9 @@ input	tpm_cohort	tpm_cohort	path	/dev/null
 input	hrd_results	hrd_results	path	/dev/null	## HRdetect module output
 input	ot_results	oneness_twoness	path	/dev/null	## oneness twoness results
 input	snpeff_snv_bcf	snpeff_snv_bcf	path	/dev/null	## snpeff annotated bcf
-input	snpeff_indel_bcf	snpeff_indel_bcf	path	/dev/null	## snpEff annotated_bcf
+input	snpeff_indel_bcf	snpeff_indel_bcf	path	/dev/null	## if snpeff_snv_bcf already includes indels then no need to provide anything here
 input	snv_vcf		snv_vcf		path	/dev/null	## strelka2 SNVs vcf
-input	indel_vcf	indel_vcf	path	/dev/null	## strelka2 indels vcf
+input	indel_vcf	indel_vcf	path	/dev/null	## if snv_vcf already includes indels then no need to supply anything here
 input	amp_thresh	amp_thresh	value	4
 input	del_thresh	del_thresh	value	0.5
 input	snpeff_config	snpeff_config	path	~/modules/SnpEff/snpEff.config
@@ -27,7 +27,7 @@ input	tumor_type	tumor_type	value	"unknown"
 input	cohort_metadata	cohort_metadata	path	/dev/null
 input	ref		ref	value	"hg19"	## one of hg19, hg38
 input	flags	flags	value	""
-input	drivers	"~/git/casereport/data/ddr_pearl2015.tsv"	path
+input	drivers	"~/git/casereport/inst/extdata/ddr_pearl2015.tsv"	path
 input	condaenv	path_to_condaenv	path	"/gpfs/commons/groups/imielinski_lab/Software/anaconda3/envs/casereport"
 input	deconv	deconv	value	"epic"
 output	wgs_casereport	*wgs.report.html$

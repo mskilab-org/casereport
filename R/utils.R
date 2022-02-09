@@ -323,10 +323,12 @@ get_oncokb_gene_entry_url = function(oncokb.response){
             }
             alteration = alterations[[1]]
             if (is.character(alteration) & length(alteration) > 0){
-                library(RCurl)
-                                        # if a URL exists for the specific alteration then let's go there
+                if (!requireNamespace("RCurl", quietly = TRUE)) {
+                      stop("Package RCurl needed.")
+                }
+                # if a URL exists for the specific alteration then let's go there
                 url_alteration = paste0(baseurl, '/', gene, '/', alteration, '/')
-                if (url.exists(url_alteration)){
+                if (RCurl::url.exists(url_alteration)){
                     return(url_alteration)
                 }
             }
@@ -772,16 +774,6 @@ get_oncogenes_with_amp = function(oncotable){
     if (amplified_oncogenes[, .N] > 0){
                                         # TODO: we can later add the CN for each of these genes
         strout = paste0(paste(unique(amplified_oncogenes$gene), collapse = ', '), '.')
-    }
-    return(strout)
-}
-
-get_TSG_with_homdels = function(oncotable){
-    homdel_tsgs = oncotable[grepl('TSG', role)][type == 'homdel']
-    strout = 'There are no tumor suppressor genes with homozygous deletions.'
-    if (homdel_tsgs[, .N] > 0){
-                                        # TODO: we can later add the CN for each of these genes
-        strout = paste0(paste(unique(homdel_tsgs$gene), collapse = ', '), '.')
     }
     return(strout)
 }
@@ -1904,7 +1896,6 @@ grab.gene.ranges = function(gngt.fname, genes = as.character()) {
 #' 
 #' @param vcf (character) vcf file name
 #' @param gngt.fname (character) gencode gTrack file name
-#' @param cgc.fname (character) cgc.tsv with columns "Gene Symbol" and "Tier"
 #' @param onc (character) path to .rds file with character vector of oncogenes
 #' @param tsg (character) path to .rds file with character vector of TSGs
 #' @param ref.name (character) one of hg19 or hg38
@@ -1913,7 +1904,7 @@ grab.gene.ranges = function(gngt.fname, genes = as.character()) {
 #' @return data.table with columns gene, seqnames, pos, REF, ALT, variant.p, vartype, annotation
 filter.snpeff = function(vcf,
                          gngt.fname,
-                         cgc.fname, onc, tsg, drivers.fname, ref.name = "hg19", verbose = FALSE,
+                         onc, tsg, drivers.fname, ref.name = "hg19", verbose = FALSE,
                          type = NULL) {
 
     if (NROW(type) == 0) {
@@ -2018,20 +2009,7 @@ filter.snpeff = function(vcf,
         return (dummy.out)
     }
 
-    if (verbose) {
-        message("Grabbing relevant isoforms..")
-    }
-
-    if (ref.name == "hg19") {
-        isoforms = fread(cgc.fname)[["GRCh37 RefSeq"]]
-    } else {
-        isoforms = fread(cgc.fname)[["GRCh38 RefSeq"]]
-    }
-
-    ## vcf.gr = vcf.gr %Q% (feature_id %in% isoforms)
-    ## deduplicate variants, preferably keeping documented isoforms
     vcf.gr = vcf.gr %Q%
-        ## (order(!feature_id %in% isoforms, decreasing = FALSE)) %Q%
         (!duplicated(paste(CHROM, POS)))
 
     ## if (length(vcf.gr) == 0) {
@@ -2045,7 +2023,6 @@ filter.snpeff = function(vcf,
         message("Found ", length(vcf.gr), " variants, overlapping with genes")
     }
 
-    ## genes = fread(cgc.fname)[["Hugo Symbol"]]
     genes = c(readRDS(onc), readRDS(tsg), drivers)
 
     if (length(genes) == 0) {
@@ -2097,6 +2074,7 @@ filter.snpeff = function(vcf,
 #' - cna_frac
 #' - mut_count
 #' - mut_per_mbp
+#' @export
 create.summary = function(jabba_rds,
                           snv_vcf,
                           indel_vcf,
@@ -2230,9 +2208,12 @@ grab.hets = function(agt.fname = NULL,
 #' @param height (numeric) plot height
 #' @param width (numeric) plot width
 #' @param output.fname (character) path of output directory
+#' @param purity (numeric) if not provided then the value is read from the input JaBbA
+#' @param ploidy (numeric) if not provided then the value is read from the input JaBbA
 #' @param verbose (logical)
 #'
 #' @return output.fname
+#' @export
 pp_plot = function(jabba_rds = NULL,
                    cov.fname = NULL,
                    hets.fname = NULL,
@@ -2245,12 +2226,16 @@ pp_plot = function(jabba_rds = NULL,
                    height = 800,
                    width = 800,
                    output.fname = "./plot.png",
+                   purity = NA,
+                   ploidy = NA,
                    verbose = FALSE) {
 
     if (is.null(jabba_rds) || !file.exists(jabba_rds)) {
         stop("jabba_rds does not exist")
     }
     jab = readRDS(jabba_rds)
+    purity = ifelse(!is.na(purity) && is.numeric(purity), purity, jab$purity)
+    ploidy = ifelse(!is.na(ploidy) && is.numeric(ploidy), ploidy, jab$ploidy)
     if (!allele) {
         if (is.null(cov.fname) || !file.exists(cov.fname)) {
             stop("cov.fname not supplied and allele = TRUE")
@@ -2274,7 +2259,7 @@ pp_plot = function(jabba_rds = NULL,
         if (verbose) {
             message("Grabbing coverage and converting rel2abs")
         }
-        cov$cn = rel2abs(cov, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = FALSE)
+        cov$cn = rel2abs(cov, field = field, purity = purity, ploidy = ploidy, allele = FALSE)
         ## get mean CN over JaBbA segments
         if (verbose) {
             message("computing mean over jabba segments")
@@ -2289,7 +2274,7 @@ pp_plot = function(jabba_rds = NULL,
         if (verbose) {
             message("Grabbing transformation slope and intercept")
         }
-        eqn = rel2abs(cov, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = FALSE, return.params = TRUE)
+        eqn = rel2abs(cov, field = field, purity = purity, ploidy = ploidy, allele = FALSE, return.params = TRUE)
         dt = as.data.table(tiles)
     } else {
         if (is.null(hets.fname) || !file.exists(hets.fname)) {
@@ -2305,8 +2290,8 @@ pp_plot = function(jabba_rds = NULL,
         if (verbose) {
             message("Grabbing hets and converting rel2abs")
         }
-        hets$cn = rel2abs(hets, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = TRUE)
-        eqn = rel2abs(hets, field = field, purity = jab$purity, ploidy = jab$ploidy, allele = TRUE, return.params = TRUE)
+        hets$cn = rel2abs(hets, field = field, purity = purity, ploidy = ploidy, allele = TRUE)
+        eqn = rel2abs(hets, field = field, purity = purity, ploidy = ploidy, allele = TRUE, return.params = TRUE)
         if (verbose) {
             message("computing mean over jabba segments")
         }
@@ -2323,7 +2308,7 @@ pp_plot = function(jabba_rds = NULL,
                    as.data.table(minor.tiles)[, .(seqnames, start, end, allele = "minor", cn)])
     }
 
-    maxval = plot.max * jab$ploidy # max dosage
+    maxval = plot.max * ploidy # max dosage
     minval = plot.min ## min dosage
 
     ## remove things with weird ploidy
@@ -2401,9 +2386,6 @@ pp_plot = function(jabba_rds = NULL,
 
     }
 
-    if (verbose) {
-        message("Saving results to: ", normalizePath(output.fname))
-    }
     return(pt) ##ppng(print(pt), filename = normalizePath(output.fname), height = height, width = width)
 }
 
@@ -2452,7 +2434,7 @@ pp_plot = function(jabba_rds = NULL,
 #' @param mc.cores number of cores for multithreading
 #' @param verbose logical flag 
 #' @author Marcin Imielinski
-
+#' @export
 oncotable = function(tumors, gencode = NULL, verbose = TRUE,
                      amp.thresh = 4,
                      filter = 'PASS',
@@ -2600,7 +2582,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
             out = rbind(out, data.table(id = x, type = NA, source = 'jabba_rds', track = "variants"), fill = TRUE, use.names = TRUE)
         }
 
-        if (file.good(dat[x, proximity]) && nrow(readRDS(dat[x, proximity])$dt)) {
+        if ('proximity' %in% names(dat) && file.good(dat[x, proximity]) && nrow(readRDS(dat[x, proximity])$dt)) {
             if (verbose)
                 message('Processing proximity results.')
             proximity.dt = readRDS(opt$proximity)$dt[reldist < max.reldist & refdist > min.refdist,]
@@ -3013,7 +2995,7 @@ oncoprint = function(tumors = NULL,
 
   packed_legends = list()
   bottomtracks = list()
-  if (signature & any(oncotab$track == 'signature'))
+  if (isTRUE(signature) && any(oncotab$track == 'signature') && 'frac' %in% names(oncotab))
   {
     sigd = oncotab[track == 'signature', ][type != 'Residual', ]
 
@@ -3411,6 +3393,7 @@ plot_expression_histograms = function(rna.change.fn = NULL,
 #' @param agt.fname (character) allele gtrack
 #'
 #' @return gTrack object with nice formatting
+#' @export
 wgs_gtrack = function(jabba_rds, cvgt.fname, agt.fname = NULL) {
 
     gg = gG(jabba = jabba_rds)
@@ -3464,7 +3447,7 @@ wgs_gtrack = function(jabba_rds, cvgt.fname, agt.fname = NULL) {
 #' @param onco_table file path to casereport oncotable
 #' @param the directory of casereport
 #' @return summary table of driver genes.
-makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_table,onco_table,cs_libdir){
+makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_table,onco_table){
 	genelist=vector()
 	if(file.good(cnv_table)){
 		genelist=c(genelist,fread(cnv_table)$gene_name)
@@ -3482,6 +3465,11 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
     oncotable=readRDS(onco_table)
     summaryTable=NA
     pmkbTier=get_pmkb_tier_table(NA)
+    if (length(genelist) == 0){
+        return(data.table(gene = character(), role = character(),
+             type = character(), tier = character(),
+             source = character()))
+    }
     for(i in 1:length(genelist)){
         thisGene=oncotable[oncotable$gene==genelist[i] & !is.na(oncotable$gene),]
         if(genelist[i] %in% pmkbTier$gene){
@@ -3538,6 +3526,7 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 #' @param html_dir path to the directory in which to put the html version of the table
 #' @param metadata data.frame or data.table with additional metadata for the samples in jb. The metadata table must contain a header. The first column of the metadata should contain sample names that match the sample names in the Job object and should only contain unique values, otherwise this table is ignored and no metadata is added.
 #' @return data.table
+#' @export
 summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', html_dir = NULL, metadata = NULL){
     if (is.character(jb) && grepl('rds$', jb)){
         jb = readRDS(jb)
@@ -3597,7 +3586,7 @@ summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', 
             fwrite(dt, output_file)
         }
         rmarkdown::render(
-            input = normalizePath(paste0(libdir, "/wgs.report.table.rmd")),
+            input = normalizePath(system.file('extdata', 'case_report_module/wgs.report.table.rmd', package = 'casereport')),
             output_format = "html_document",
             output_file = html_path,
             knit_root_dir = normalizePath(html_dir),
@@ -3606,4 +3595,22 @@ summarize_cases = function(jb, output_file = NULL, libdir = '~/git/casereport', 
             quiet = FALSE)
     }
     return(dt)
+}
+
+
+#' @name set_param
+#' @title set_param
+#' @description
+#' 
+#' check if a field exists in a list and if not then set it
+#'
+#' @param l input list
+#' @param name the name of the field
+#' @param value the value to assign if the field is NULL (by default NA_character_)
+#' @return list
+set_param = function(l = list(), name = '', value = NA_character_){
+    if (!(name %in% names(l))){
+        l[name] = value
+    }
+    return(l)
 }
