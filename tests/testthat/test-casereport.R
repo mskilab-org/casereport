@@ -2,6 +2,7 @@ test_that("Run case report for G32831", {
 
     nm = 'G32831'
     case.dir = paste0(tempdir(), '/casereport')
+    system(paste('rm -rf', case.dir))
     dir.create(case.dir, showWarnings = FALSE, recursive = TRUE, mode = "0777")
     opt = list(
              pair = nm,
