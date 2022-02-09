@@ -1317,14 +1317,13 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
     thisMet=sigMet[sigMet$Signature %in% allsig$Signature,]
     
     
-	
     allsig=merge(allsig,thisMet,by='Signature')
-    print(allsig)
     allsig$Signature_Description=paste(allsig$MP.Summary,"\n (",as.character(allsig$Signature),")")
-    allsig$Signature_Description=str_replace(allsig$Signature_Description,"@","\n")
-    allsig$Signature_Description=str_replace(allsig$Signature_Description,"@temozolomide","\ntemozolomide")
-    allsig=allsig[order(-allsig$sig_count),]
-    print(allsig)
+    #allsig$Signature_Description=str_replace(allsig$Signature_Description,"@","\n")
+    #allsig$Signature_Description=str_replace(allsig$Signature_Description,"@temozolomide","\ntemozolomide")
+    #allsig=allsig[order(-allsig$sig_count),]
+    sigMet=sigMet[, Signature := factor(Signature, levels = new.slevels)]
+    fwrite(allsig,"~//gpfs/commons/home/jandrademartínez")
 	
     sigbar = ggplot(allsig, aes(y = Signature_Description, x = sig_count, fill = Signature)) +
         geom_density_ridges(bandwidth = 0.1,
