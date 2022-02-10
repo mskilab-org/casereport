@@ -1,30 +1,30 @@
-Signature	Mutational.process
-1	Spontaneous deamination of 5-methylcytosine
-2	APOBEC activity
-3	HR deficiency
-4	Tobacco smoking
-5	Aging / Tobacco smoking / NER deficiency
-6	MMR deficiency
-7	UV light exposure
-8	HR deficiency / NER deficiency
-9	Polymerase eta somatic hypermutation
-10	POLE exonuclease domain mutation/Defective POLD1 proofreading
-11	Temozolomide chemotherapy / MMR deficiency + temozolomide
-12	Unknown
-13	APOBEC activity
-14	MMR deficiency + POLE mutation
-15	MMR deficiency
-16	Unknown
-17	Damage by ROS/ 5FU chemotherapy
-18	Damage by ROS
-19	Unknown
-20	MMR deficiency + POLD1 mutation
-21	MMR deficiency
-22	Aristolochic acid exposure
-23	Unknown
-24	Aflatoxin exposure
-25	Unknown chemotherapy
-26	MMR deficiency
-28	POLE exonuclease domain mutation
-29	Tobacco chewing
-30	BER deficiency
+Signature	Mutational.process	MP.Summary
+1	Spontaneous deamination of 5-methylcytosine	"deamination of 5mC"
+2	APOBEC activity	"APOBEC activity"
+3	HR deficiency	"HR def."
+4	Tobacco smoking	"Tobacco smoking"
+5	Aging / Tobacco smoking / NER deficiency	"Aging/Tobacco smoking@/NER def."
+6	MMR deficiency	"MMR def."
+7	UV light exposure	"UV exp."
+8	HR deficiency / NER deficiency	"HR def./@NER def."
+9	Polymerase eta somatic hypermutation	"Polymerase eta@ som. hypermut."
+10	POLE exonuclease domain mutation/Defective POLD1 proofreading	"POLE exonucl. dom. mut./@Def. POLD1 proofreading"
+11	Temozolomide chemotherapy / MMR deficiency + temozolomide	"Temozolomide chemo./@MMR def. +@temozolomide"
+12	Unknown	"Unknown"
+13	APOBEC activity	"APOBEC activity"
+14	MMR deficiency + POLE mutation	"MMR def.+@POLE mut."
+15	MMR deficiency	"MMR def."
+16	Unknown	"Unknown"
+17	Damage by ROS/ 5FU chemotherapy	"Damage by ROS/@5FU chemo."
+18	Damage by ROS	"Damage by ROS"
+19	Unknown	"Unknown"
+20	MMR deficiency + POLD1 mutation	"MMR def.+@POLD1 mut."
+21	MMR deficiency	"MMR def."
+22	Aristolochic acid exposure	"Aristolochic acid@exp."
+23	Unknown	"Unknown"
+24	Aflatoxin exposure	"Aflatoxin exp."
+25	Unknown chemotherapy	"Unknown chemo."
+26	MMR deficiency	"MMR def."
+28	POLE exonuclease domain mutation	"POLE exonucl.@dom. mut."
+29	Tobacco chewing	"Tobacco chewing"
+30	BER deficiency	"BER def."

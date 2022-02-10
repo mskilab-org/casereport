@@ -1310,14 +1310,19 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
     allsig[, Signature := factor(Signature, levels = new.slevels)]
 	
     fwrite(allsig[pair== id,],file.path(outdir,"Sig.csv"))
-
-	
+    
     thisMet=sigMet[sigMet$Signature %in% allsig$Signature,]
     thisMet=thisMet[, Signature := factor(Signature, levels = new.slevels)]
-
+    
+    
     allsig=merge(allsig,thisMet,by='Signature')
-    allsig$Signature_Description=paste(allsig$Mutational.process," (",allsig$Signature,")")
-
+    allsig$Signature_Description=paste0(allsig$MP.Summary,"\n (",as.character(allsig$Signature),")")
+    allsig$Signature_Description=str_replace(allsig$Signature_Description,"@","\n")
+    allsig$Signature_Description=str_replace(allsig$Signature_Description,"@temozolomide","\ntemozolomide")
+    
+    new.sdlevels = allsig[pair == id,][order(sig_count), Signature_Description]
+    allsig[, Signature_Description := factor(Signature_Description, levels = new.sdlevels)]
+	
     sigbar = ggplot(allsig, aes(y = Signature_Description, x = sig_count, fill = Signature)) +
         geom_density_ridges(bandwidth = 0.1,
                             alpha = 0.5,
