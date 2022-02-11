@@ -2,6 +2,7 @@
 
 export(circos)
 export(create.summary)
+export(create_genes_gtrack)
 export(get_gene_copy_numbers)
 export(get_oncokb_annotations)
 export(get_oncokb_gene_entry_url)

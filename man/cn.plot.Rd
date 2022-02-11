@@ -9,7 +9,6 @@ cn.plot(
   complex.fname = NULL,
   cvgt.fname = "./coverage.gtrack.rds",
   gngt.fname = "./data/gt.ge.hg19.rds",
-  cgcgt.fname = NULL,
   agt.fname = NULL,
   server = "",
   pair = "",
@@ -21,6 +20,7 @@ cn.plot(
   height = 1000,
   width = 1000,
   outdir = "./",
+  overwrite = TRUE,
   verbose = TRUE
 )
 }
@@ -32,8 +32,6 @@ cn.plot(
 \item{cvgt.fname}{(character) coverage gTrack file path}
 
 \item{gngt.fname}{(character) gencode gTrack file path}
-
-\item{cgcgt.fname}{(character) CGC gTrack file path}
 
 \item{agt.fname}{(character) allele gTrack file name}
 

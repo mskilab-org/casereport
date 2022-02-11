@@ -12,21 +12,22 @@
 #' @param verbose (logical)
 #'
 #' @return file name of gencode gTrack
+#' @export
 create_genes_gtrack = function(genes = c(),
                                gencode.fname = NULL,
                                coding.only = TRUE,
                                level.thresh = 2,
                                cached.dir = Sys.getenv('GENCODE_DIR')) {
-    if (is.null(gencode.fname) || !file.exists(gencode.fname)) {
-        stop("gencode does not exist")
+    if (is.null(gencode.fname) || (!file.exists(gencode.fname) && !RCurl::url.exists(gencode.fname))) {
+        stop('gencode does not exist at: "', gencode.fname,' "')
     }
 
     message('Generating genes gTrack')
     gencode = rtracklayer::import(gencode.fname)
-    # adding label column (see https://github.com/mskilab/gTrack/pull/18 for details)
+    # adding gene_label column (see https://github.com/mskilab/gTrack/pull/18 for details)
     gene_names = gencode$gene_name
     gene_names[which(!(gene_names %in% genes))] = NA
-    gencode$label = gene_names
+    gencode$gene_label = gene_names
     if (isTRUE(coding.only)){
         genode = gencode %Q% (gene_type == 'protein_coding')
         if ('level' %in% names(mcols(gencode))){
@@ -34,7 +35,7 @@ create_genes_gtrack = function(genes = c(),
         }
     }
     genes.gt = gTrack::track.gencode(gencode = gencode,
-                                     chached.dir = cached.dir)
+                                     cached.dir = cached.dir)
     return(genes.gt)
 }
 
@@ -192,7 +193,8 @@ grab.window = function(gr, complex.fname,
 
             ## get footprint of the whole cluster of easier querying later on
             amp.dt = gr2dt(amp.gr)
-            amp.dt[, footprint := paste(unique(gr.string(amp.gr)), collapse = ","), by = "cluster"]
+            amp.dt$grstr = gr.string(amp.gr)
+            amp.dt[, footprint := paste(unique(grstr), collapse = ","), by = "cluster"]
             amp.gr$footprint = amp.dt$footprint
 
             ## get overlaps with genes
@@ -275,6 +277,7 @@ cn.plot = function(drivers.fname = NULL,
                    height = 1000,
                    width = 1000,
                    outdir = "./",
+                   overwrite  = TRUE,
                    verbose = TRUE) {
     if (!file.exists(drivers.fname)) {
         stop("drivers.fname does not exist")
@@ -356,6 +359,7 @@ cn.plot = function(drivers.fname = NULL,
         this.complex.gt$y0 = 0
 
         gngt$xaxis.chronly = TRUE
+        gngt$labels.suppress.grl = TRUE
         gngt$name = "genes"
         gngt$ywid = 0.1
         gngt$height = 4
@@ -394,56 +398,58 @@ cn.plot = function(drivers.fname = NULL,
         ## make one plot per range in drivers gr
         pts = lapply(1:length(drivers.gr),
                      function(ix) {
-                         ## prepare window
-                         if (is.null(drivers.gr$win) || is.na(drivers.gr$win[ix])) {
-                             win = drivers.gr[ix]
-                         } else {
-                             win = parse.grl(drivers.gr$win[ix]) %>% stack %>% gr.stripstrand
-                         }
-                         if (pad > 0 & pad <= 1) {
-                             adjust = pmax(5e5, pad * width(win))
-                             message(gr.string(win))
-                             message("adjust size: ", adjust)
-                             win = GenomicRanges::trim(win + adjust)
-                             message(gr.string(win))
-                         } else {
-                             win = GenomicRanges::trim(win + pad)
-                         }
+                         if (!file.good(drivers.dt$plot.fname[ix]) | overwrite){
+                             ## prepare window
+                             if (is.null(drivers.gr$win) || is.na(drivers.gr$win[ix])) {
+                                 win = drivers.gr[ix]
+                             } else {
+                                 win = parse.grl(drivers.gr$win[ix]) %>% stack %>% gr.stripstrand
+                             }
+                             if (pad > 0 & pad <= 1) {
+                                 adjust = pmax(5e5, pad * width(win))
+                                 message(gr.string(win))
+                                 message("adjust size: ", adjust)
+                                 win = GenomicRanges::trim(win + adjust)
+                                 message(gr.string(win))
+                             } else {
+                                 win = GenomicRanges::trim(win + pad)
+                             }
 
-                         # assigning greater cex value to the driver gene in order to highlight it 
-                         drivers.df = values(drivers.gt@data[[1]])
-                         win_width = sum(width(win))
-                         cex.val = 0.3 # if the window is very wide then we will only show the highlight driver
-                         cex.vals = rep(cex.val, length(values(drivers.gt@data[[1]])$id))
-                         cex.val = ifelse(win_width > 100e6, 0.4, 0.3) # if the window is very wide then we will only show the highlight driver
-                         if (win_width > 20e9){
-                             # if the window is really wide then we remove the labels from other drivers
-                             # we could do this in a smarter way where only in cases in which labels overlap then we remove them, but it doesn't seem worth the effort
-                             driver.labels = rep('', length(values(drivers.gt@data[[1]])$id))
-                             names(driver.labels) = values(drivers.gt@data[[1]])$id
-                             driver.labels[as.character(drivers.gr$gene_name[ix])] = as.character(drivers.gr$gene_name[ix])
-                             drivers.df$driver.label = driver.labels
-                             values(drivers.gt@data[[1]]) = drivers.df
-                             drivers.gt$grl.labelfield = 'driver.label'
-                         } else {
-                             drivers.gt$grl.labelfield = 'id'
+                             # assigning greater cex value to the driver gene in order to highlight it 
+                             drivers.df = values(drivers.gt@data[[1]])
+                             win_width = sum(width(win))
+                             cex.val = 0.3 # if the window is very wide then we will only show the highlight driver
+                             cex.vals = rep(cex.val, length(values(drivers.gt@data[[1]])$id))
+                             cex.val = ifelse(win_width > 100e6, 0.4, 0.3) # if the window is very wide then we will only show the highlight driver
+                             if (win_width > 20e9){
+                                 # if the window is really wide then we remove the labels from other drivers
+                                 # we could do this in a smarter way where only in cases in which labels overlap then we remove them, but it doesn't seem worth the effort
+                                 driver.labels = rep('', length(values(drivers.gt@data[[1]])$id))
+                                 names(driver.labels) = values(drivers.gt@data[[1]])$id
+                                 driver.labels[as.character(drivers.gr$gene_name[ix])] = as.character(drivers.gr$gene_name[ix])
+                                 drivers.df$driver.label = driver.labels
+                                 values(drivers.gt@data[[1]]) = drivers.df
+                                 drivers.gt$grl.labelfield = 'driver.label'
+                             } else {
+                                 drivers.gt$grl.labelfield = 'id'
+                             }
+                             names(cex.vals) = values(drivers.gt@data[[1]])$id
+                             cex.vals[as.character(drivers.gr$gene_name[ix])] = 0.6
+                             values(drivers.gt@data[[1]])$cex.label = cex.vals
+                             drivers.gt$grl.cexfield = 'cex.label'
+                             
+                             # TODO: print only the specific driver gene if the window larger than win.thresh
+                             gt = c(gngt, drivers.gt, cvgt, this.complex.gt)
+                             if (!is.null(agt)){
+                                gt = c(agt, gt)
+                             }
+                             gt$stack.gap = win_width / 10
+                             ppng(plot(gt, win, legend.params = list(plot = FALSE)),
+                                  title = drivers.gr$gene_name[ix], ## title is the gene name
+                                  filename = drivers.dt$plot.fname[ix],
+                                  height = height,
+                                  width = width)
                          }
-                         names(cex.vals) = values(drivers.gt@data[[1]])$id
-                         cex.vals[as.character(drivers.gr$gene_name[ix])] = 0.6
-                         values(drivers.gt@data[[1]])$cex.label = cex.vals
-                         drivers.gt$grl.cexfield = 'cex.label'
-                         
-                         # TODO: print only the specific driver gene if the window larger than win.thresh
-                         gt = c(gngt, drivers.gt, cvgt, this.complex.gt)
-                         if (!is.null(agt)){
-                            gt = c(agt, gt)
-                         }
-                         gt$stack.gap = win_width / 10
-                         ppng(plot(gt, win, legend.params = list(plot = FALSE)),
-                              title = drivers.gr$gene_name[ix], ## title is the gene name
-                              filename = drivers.dt$plot.fname[ix],
-                              height = height,
-                              width = width)
                      })
 
         return(drivers.dt[, .(gene_name, plot.fname, plot.link)])

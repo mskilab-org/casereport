@@ -9,7 +9,6 @@ gallery.wrapper(
   background.fname = "/data/sv.burden.txt",
   cvgt.fname = "./coverage.gtrack.rds",
   gngt.fname = "./data/gt.ge.hg19.rds",
-  cgcgt.fname = NULL,
   agt.fname = NULL,
   server = "",
   pair = "",
@@ -30,8 +29,6 @@ gallery.wrapper(
 
 \item{gngt.fname}{(character) gencode gTrack file path}
 
-\item{cgcgt.fname}{(character) CGC gTrack file path}
-
 \item{agt.fname}{(character) allele gTrack file name}
 
 \item{server}{(character) path to gGnome.js server url}
@@ -47,6 +44,8 @@ gallery.wrapper(
 \item{width}{(numeric) plot width default 1000}
 
 \item{outdir}{(character) where to save plots}
+
+\item{cgcgt.fname}{(character) CGC gTrack file path}
 }
 \value{
 data.table with columns from complex and additionally plot.fname and plot.link

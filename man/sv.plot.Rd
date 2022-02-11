@@ -8,7 +8,7 @@ sv.plot(
   complex.fname = NULL,
   cvgt.fname = "./coverage.gtrack.rds",
   gngt.fname = "./data/gt.ge.hg19.rds",
-  cgcgt.fname = NULL,
+  genes.gt.fname = NULL,
   agt.fname = NULL,
   server = "",
   pair = "",
@@ -27,7 +27,7 @@ sv.plot(
 
 \item{gngt.fname}{(character) gencode gTrack file path}
 
-\item{cgcgt.fname}{(character) CGC gTrack file path}
+\item{genes.gt.fname}{(character) CGC gTrack file path}
 
 \item{agt.fname}{(character) allele gTrack file name}
 

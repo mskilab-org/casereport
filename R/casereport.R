@@ -38,6 +38,10 @@ wgs.report = function(opt){
         })
     })
 
+    if (inherits(opt, 'data.frame')){
+        opt = as.list(opt)
+    }
+
     ##################
     ## Initialize a report config
     ##################
@@ -94,7 +98,7 @@ wgs.report = function(opt){
         opt$genes = "~/DB/GENCODE/gencode.v19.genes.gtf"
         Sys.setenv(DEFAULT_GENOME = "BSgenome.Hsapiens.UCSC.hg19::Hsapiens")
         opt$cytoband = system.file("extdata",  "hg19.cytoband.txt", package = "casereport")
-        opt$gencode_gtrack = file.path(opt$libdir, "data", "gt.ge.hg19.rds") ## this is provided
+        opt$gencode_gtrack = system.file("extdata", "gt.ge.hg19.rds", package = "casereport") ## this is provided
         opt$chrom_sizes = system.file('extdata', 'hg19.broad.chrom.sizes', package = "casereport")
     } else {
         stop("Invalid entry for $ref provided: ", opt$ref)
@@ -119,10 +123,10 @@ wgs.report = function(opt){
         ## add gTrack file names to report config
         report.config$coverage_gtrack = paste0(report.config$outdir, "/coverage.gtrack.rds")
         report.config$allele_gtrack = paste0(report.config$outdir, "/agtrack.rds")
-        report.config$cgc_gtrack = paste0(report.config$outdir, "/", "cgc.gtrack.rds")
-        if (is.na(report.config$gencode_gtrack) || !file.good(report.config$gencode_gtrack)){
+        report.config$gencode_gtrack = opt$gencode_gtrack
+        if (is.na(report.config$gencode_gtrack)){
             # this gtrack will be produced by create_genes_gtrack
-            report.config$gencode_gtrack = paste0(report.config$outdir, "/", "gencode.composite.collapsed.rds")
+            report.config$gencode_gtrack = paste0(report.config$outdir, "/", "gencode.gtrack.rds")
         }
 
         if (check_file(opt$drivers))
@@ -162,7 +166,7 @@ wgs.report = function(opt){
         report.config$other_fusions = file.path(report.config$outdir, "fusions.other.txt")
 
         ## RNA expression analyses
-        report.config$tpm_quantiles = paste0(report.config$outdir, "/", "tmp.quantiles.txt")
+        report.config$tpm_quantiles = paste0(report.config$outdir, "/", "tpm.quantiles.txt")
         report.config$rna_change = paste0(report.config$outdir, "/", "rna.change.txt")
         report.config$rna_change_all = paste0(report.config$outdir, "/", "rna.change.all.txt")
         report.config$expression_histograms = paste0(report.config$outdir, "/", "expr.histograms.txt")
@@ -238,13 +242,6 @@ wgs.report = function(opt){
         }
 
         
-        if (check_file(report.config$cgc_gtrack, opt$overwrite, opt$verbose)) {
-            message("CGC gTrack exists")
-        } else {
-            cgc.gt = create_cgc_gtrack(cgc.fname = report.config$cgc,
-                                       gencode.fname = opt$gencode)
-            saveRDS(cgc.gt, report.config$cgc_gtrack)
-        } 
        if (check_file(report.config$gencode_gtrack, opt$overwrite, opt$verbose)) {
            message("Genes gTrack exists")
        } else {
@@ -875,7 +872,6 @@ wgs.report = function(opt){
                                            background.fname = system.file("extdata", "sv.burden.txt", package = "casereport"),
                                            cvgt.fname = report.config$coverage_gtrack,
                                            gngt.fname = report.config$gencode_gtrack,
-                                           cgcgt.fname = report.config$cgc_gtrack,
                                            agt.fname = report.config$allele_gtrack,
                                            server = opt$server,
                                            pair = opt$pair,
@@ -908,6 +904,7 @@ wgs.report = function(opt){
                                    pad = 0.5,
                                    height = 900,
                                    width = 1000,
+                                   overwrite = opt$overwrite,
                                    outdir = cn.gallery.dir)
             fwrite(cn.slickr.dt, report.config$scna_gtracks)
         } else {
@@ -945,6 +942,7 @@ wgs.report = function(opt){
                                      pad = 0.5,
                                      height = 1600,
                                      width = 1000,
+                                     overwrite = opt$overwrite,
                                      outdir = expr.gallery.dir)
             fwrite(expr.slickr.dt, report.config$expression_gtracks)
         }
