@@ -15,6 +15,8 @@ test_that("Run case report for G32831", {
              deconstruct_sigs = system.file('extdata', 'G32831/deconstructSigs.out.rds', package = "casereport"),
              deconstruct_variants = system.file('extdata', 'G32831/variants.out.txt.gz', package = "casereport"),
              tpm = system.file('extdata', 'G32831/tpm.txt.gz', package = "casereport"),
+             gencode = system.file('extdata', 'mock.gencode.gtf', package = 'casereport'),
+             gencode_gtrack = system.file('extdata', 'gt.ge.hg19.rds', package = 'casereport'),
              snv_vcf = system.file('extdata', 'G32831/G32831.Detroit_562.vcf', package = "casereport"),
              snpeff_snv_bcf = system.file('extdata', 'G32831/annotated.bcf', package = "casereport"))
 
