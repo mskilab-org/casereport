@@ -3619,3 +3619,31 @@ set_param = function(l = list(), name = '', value = NA_character_){
     }
     return(l)
 }
+
+#' @name get_server_url
+#' @title get_server_url
+#' @description
+#' 
+#' get the url to the gGnoms.js or PGV server
+#'
+#' @param url (character) the base URL of the gGnome.js/PGV server
+#' @param name (character) the name of the pair (gGnome.js) or dataset (PGV)
+#' @param win (GRanges) the window for display
+#' @param js.type (character) either "gGnome.js" or "PGV"
+#' @return list
+get_server_url = function(url = '', name = '', win = GRanges(),
+                          js.type = 'gGnome.js'){
+    if (!(js.type %in% c('gGnome.js', 'PGV'))){
+        warning('Unknown server type provided: ', js.type, '. No links will be produced.')
+        return('')
+    }
+    if (js.type == 'gGnome.js'){
+        plot.link = paste0(server, "index.html?file=", name, ".json&location=",
+                           gr.string(win), "&view=")
+    }
+    if (js.type == 'PGV'){
+        plot.link = paste0(server, "index.html?file=", name, ".json&location=",
+                           gr.string(win), "&view=")
+    }
+    return(l)
+}

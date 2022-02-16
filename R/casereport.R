@@ -49,6 +49,10 @@ wgs.report = function(opt){
         opt$outdir = './'
     }
 
+    if (is.null(opt$dataset_name)){
+        opt$dataset_name = opt$pair
+    }
+
     NA_default_params = c('cbs_cov_rds', 'cbs_nseg_rds', 'het_pileups_wgs',
                           "deconstruct_sigs", "deconstruct_variants",
                           "sigs_cohort", "tpm", "hrd_results",
