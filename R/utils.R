@@ -1801,7 +1801,7 @@ rna_reformat = function(kallisto.fname,
     }
 
     ## grab correct gene for target id
-    if (file.good(gngt.fname)){
+    if (is.character(gngt.fname) && file.good(gngt.fname)){
         ge.data = stack(readRDS(gngt.fname)@data[[1]])
     } else if (inherits(gngt.fname, "GRanges")){
         ge.data = gngt.fname
