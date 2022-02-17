@@ -106,95 +106,91 @@ wgs.report = function(opt){
 
     saveRDS(opt, paste0(opt$outdir, '/cmd.args.rds'))
 
-    if (file.good(paste0(opt$outdir, "/", "report.config.rds"))) {
-        report.config = readRDS(paste0(opt$outdir, "/", "report.config.rds"))
-    } else {
+    ## copy report.config from opt
+    report.config = opt
 
-        ## copy report.config from opt
-        report.config = opt
+    ## extra params for knitting
+    report.config$set_title = opt$pair
 
-        ## extra params for knitting
-        report.config$set_title = opt$pair
+    ## normalize paths for knitting
+    report.config$jabba_rds = normalizePath(report.config$jabba_rds)
+    report.config$outdir = normalizePath(report.config$outdir)
 
-        ## normalize paths for knitting
-        report.config$jabba_rds = normalizePath(report.config$jabba_rds)
-        report.config$outdir = normalizePath(report.config$outdir)
-
-        ## add gTrack file names to report config
-        report.config$coverage_gtrack = paste0(report.config$outdir, "/coverage.gtrack.rds")
-        report.config$allele_gtrack = paste0(report.config$outdir, "/agtrack.rds")
-        report.config$gencode_gtrack = opt$gencode_gtrack
-        if (is.na(report.config$gencode_gtrack)){
-            # this gtrack will be produced by create_genes_gtrack
-            report.config$gencode_gtrack = paste0(report.config$outdir, "/", "gencode.gtrack.rds")
-        }
-
-        if (check_file(opt$drivers))
-            report.config$drivers = opt$drivers
-        else
-            report.config$drivers = NA_character_
-
-        ## add CGC genes file
-        report.config$cgc = cgc.fname = system.file("extdata", "cgc.tsv", package = "casereport")
-        
-        ## add oncogenes, etc. to report config
-        report.config$onc = system.file("extdata", "onc.rds", package = "casereport")
-        report.config$tsg = system.file("extdata", "tsg.rds", package = "casereport")
-        report.config$surface = system.file("extdata", "surface.rds", package = "casereport")
-
-        ## purity/ploidy plots
-        report.config$cn_plot = paste0(report.config$outdir, "/", "cn.pp.png")
-        report.config$allele_plot = paste0(report.config$outdir, "/", "allele.scatter.png")
-
-        ## SCNA
-        report.config$gene_cn = paste0(report.config$outdir, "/", "genes_cn.rds")
-        report.config$driver_scna = paste0(report.config$outdir, '/driver.genes.cnv.txt')
-        report.config$scna_gtracks = paste0(report.config$outdir, "/", "cn.gallery.txt")
-
-        ## SNVS
-        report.config$driver_mutations = paste0(report.config$outdir, "/", "driver.mutations.txt")
-
-        ## SV
-        report.config$sv_gtracks = paste0(report.config$outdir, "/", "sv.gallery.txt")
-
-        ## whole genome vis
-        report.config$wgs_gtrack_plot = file.path(report.config$outdir, "wgs.gtrack.png")
-        report.config$wgs_circos_plot = file.path(report.config$outdir, "wgs.circos.png")
-
-        ## fusions
-        report.config$driver_fusions = file.path(report.config$outdir, "fusions.driver.txt")
-        report.config$other_fusions = file.path(report.config$outdir, "fusions.other.txt")
-
-        ## RNA expression analyses
-        report.config$tpm_quantiles = paste0(report.config$outdir, "/", "tpm.quantiles.txt")
-        report.config$rna_change = paste0(report.config$outdir, "/", "rna.change.txt")
-        report.config$rna_change_all = paste0(report.config$outdir, "/", "rna.change.all.txt")
-        report.config$expression_histograms = paste0(report.config$outdir, "/", "expr.histograms.txt")
-        report.config$expression_gtracks = paste0(report.config$outdir, "/", "expr.gallery.txt")
-        report.config$waterfall_plot = paste0(report.config$outdir, "/", "waterfall.png")
-        report.config$rna_change_with_cn = paste0(report.config$outdir, "/", "driver.genes.expr.txt")
-
-        ## HRD
-        report.config$ot = paste0(report.config$outdir, "/ot.rds")
-        report.config$ot_log = paste0(report.config$outdir, "/onenesstwoness.log.dat.png")
-        report.config$ot_prob = paste0(report.config$outdir, "/onenesstwoness.prop.dat.png")
-        report.config$oneness = paste0(report.config$outdir, "/Oneness.png")
-        report.config$twoness = paste0(report.config$outdir, "/Twoness.png")
-
-        ## deconstructSigs
-        report.config$sig_composition = paste0(report.config$outdir, "/deconstruct_sigs.png")
-        report.config$sig_histogram = paste0(report.config$outdir, "/sig.composition.png")
-        
-        ## Deconvolution
-        report.config$deconv = paste0(report.config$outdir, "/", "deconv_results.txt")
-        
-        ## summary
-        report.config$summary_stats = paste0(report.config$outdir, "/summary.rds")
-        report.config$oncotable = paste0(report.config$outdir, "/oncotable.rds")
-        report.config$summaryTable = paste0(report.config$outdir, "/summaryTable.txt")
-
-        saveRDS(report.config, paste0(report.config$outdir, "/", "report.config.rds"))
+    ## add gTrack file names to report config
+    report.config$coverage_gtrack = paste0(report.config$outdir, "/coverage.gtrack.rds")
+    report.config$allele_gtrack = paste0(report.config$outdir, "/agtrack.rds")
+    report.config$gencode_gtrack = opt$gencode_gtrack
+    if (is.na(report.config$gencode_gtrack)){
+        # this gtrack will be produced by create_genes_gtrack
+        report.config$gencode_gtrack = paste0(report.config$outdir, "/", "gencode.gtrack.rds")
     }
+
+    if (check_file(opt$drivers))
+        report.config$drivers = opt$drivers
+    else
+        report.config$drivers = NA_character_
+
+    ## add CGC genes file
+    report.config$cgc = cgc.fname = system.file("extdata", "cgc.tsv", package = "casereport")
+
+    ## add oncogenes, etc. to report config
+    report.config$onc = system.file("extdata", "onc.rds", package = "casereport")
+    report.config$tsg = system.file("extdata", "tsg.rds", package = "casereport")
+    report.config$surface = system.file("extdata", "surface.rds", package = "casereport")
+
+    ## purity/ploidy plots
+    report.config$cn_plot = paste0(report.config$outdir, "/", "cn.pp.png")
+    report.config$allele_plot = paste0(report.config$outdir, "/", "allele.scatter.png")
+
+    ## SCNA
+    report.config$gene_cn = paste0(report.config$outdir, "/", "genes_cn.rds")
+    report.config$driver_scna = paste0(report.config$outdir, '/driver.genes.cnv.txt')
+    report.config$surface_scna = paste0(report.config$outdir, '/surface.genes.cnv.txt')
+    report.config$scna_gtracks = paste0(report.config$outdir, "/", "cn.gallery.txt")
+
+    ## SNVS
+    report.config$driver_mutations = paste0(report.config$outdir, "/", "driver.mutations.txt")
+
+    ## SV
+    report.config$sv_gtracks = paste0(report.config$outdir, "/", "sv.gallery.txt")
+
+    ## whole genome vis
+    report.config$wgs_gtrack_plot = file.path(report.config$outdir, "wgs.gtrack.png")
+    report.config$wgs_circos_plot = file.path(report.config$outdir, "wgs.circos.png")
+
+    ## fusions
+    report.config$driver_fusions = file.path(report.config$outdir, "fusions.driver.txt")
+    report.config$other_fusions = file.path(report.config$outdir, "fusions.other.txt")
+
+    ## RNA expression analyses
+    report.config$tpm_quantiles = paste0(report.config$outdir, "/", "tpm.quantiles.txt")
+    report.config$rna_change = paste0(report.config$outdir, "/", "rna.change.txt")
+    report.config$rna_change_all = paste0(report.config$outdir, "/", "rna.change.all.txt")
+    report.config$expression_histograms = paste0(report.config$outdir, "/", "expr.histograms.txt")
+    report.config$expression_gtracks = paste0(report.config$outdir, "/", "expr.gallery.txt")
+    report.config$waterfall_plot = paste0(report.config$outdir, "/", "waterfall.png")
+    report.config$rna_change_with_cn = paste0(report.config$outdir, "/", "driver.genes.expr.txt")
+
+    ## HRD
+    report.config$ot = paste0(report.config$outdir, "/ot.rds")
+    report.config$ot_log = paste0(report.config$outdir, "/onenesstwoness.log.dat.png")
+    report.config$ot_prob = paste0(report.config$outdir, "/onenesstwoness.prop.dat.png")
+    report.config$oneness = paste0(report.config$outdir, "/Oneness.png")
+    report.config$twoness = paste0(report.config$outdir, "/Twoness.png")
+
+    ## deconstructSigs
+    report.config$sig_composition = paste0(report.config$outdir, "/deconstruct_sigs.png")
+    report.config$sig_histogram = paste0(report.config$outdir, "/sig.composition.png")
+
+    ## Deconvolution
+    report.config$deconv = paste0(report.config$outdir, "/", "deconv_results.txt")
+
+    ## summary
+    report.config$summary_stats = paste0(report.config$outdir, "/summary.rds")
+    report.config$oncotable = paste0(report.config$outdir, "/oncotable.rds")
+    report.config$summaryTable = paste0(report.config$outdir, "/summaryTable.txt")
+
+    saveRDS(report.config, paste0(report.config$outdir, "/", "report.config.rds"))
 
     ##################
     ## Start producing some analyses
