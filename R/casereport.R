@@ -1524,9 +1524,13 @@ wgs.report = function(opt){
             message("Running Deconvolution algorithm")
             tpm_raw = as.character(opt$tpm)
             tpm_read <- data.table::fread(tpm_raw, header = TRUE)
+            # make sure gene name columns is deduped and take the top count per gene
+            names(tpm_read)[1:2] = c('gene', 'count')
+            tpm_read[, count_deduped := max(count), by = gene]
+            tpm_read = tpm_read[!duplicated(gene), .(gene, count_deduped)]
             tpm_read_new <- tpm_read[,-1]
             tpm_read_new_name <- as.matrix(tpm_read[,1])
-            rownames(tpm_read_new) <- tpm_read_new_name[,1] 
+            rownames(tpm_read_new) <- tpm_read_new_name[,1]
             deconv_results = immunedeconv::deconvolute(tpm_read_new, opt$deconv)
             data.table::fwrite(deconv_results, file.path(opt$outdir,"deconv_results.txt"), sep = '\t', quote = F, row.names = F)
           }
