@@ -165,11 +165,16 @@ wgs.report = function(opt){
     ## RNA expression analyses
     report.config$tpm_quantiles = paste0(report.config$outdir, "/", "tpm.quantiles.txt")
     report.config$rna_change = paste0(report.config$outdir, "/", "rna.change.txt")
+    report.config$surface_rna_change = paste0(report.config$outdir, "/", "surface.rna.change.txt")
     report.config$rna_change_all = paste0(report.config$outdir, "/", "rna.change.all.txt")
     report.config$expression_histograms = paste0(report.config$outdir, "/", "expr.histograms.txt")
+    report.config$surface_expression_histograms = paste0(report.config$outdir, "/", "surface.expr.histograms.txt")
     report.config$expression_gtracks = paste0(report.config$outdir, "/", "expr.gallery.txt")
     report.config$waterfall_plot = paste0(report.config$outdir, "/", "waterfall.png")
     report.config$rna_change_with_cn = paste0(report.config$outdir, "/", "driver.genes.expr.txt")
+    report.config$surface_rna_change_with_cn = paste0(report.config$outdir, "/", "surface.genes.expr.txt")
+    report.config$surface_expression_gtracks = paste0(report.config$outdir, "/", "surface.expr.gallery.txt")
+    report.config$surface_waterfall_plot = paste0(report.config$outdir, "/", "surface.waterfall.png")
 
     ## HRD
     report.config$ot = paste0(report.config$outdir, "/ot.rds")
@@ -353,7 +358,7 @@ wgs.report = function(opt){
                                          role = as.character(),
                                          direction = as.character(),
                          zscore = as.numeric())
-                        
+
             }
             fwrite(melted.expr, report.config$tpm_quantiles)
         }
@@ -371,7 +376,8 @@ wgs.report = function(opt){
                 rna.change.dt = melted.expr
                 rna.change.all.dt = melted.expr
             }
-            fwrite(rna.change.dt, report.config$rna_change)
+            fwrite(rna.change.dt[role != 'SURF'], report.config$rna_change)
+            fwrite(rna.change.dt[role %like% 'SURF'], report.config$surface_rna_change)
             fwrite(rna.change.all.dt, report.config$rna_change_all)
         }
 
@@ -411,7 +417,7 @@ wgs.report = function(opt){
                                              ploidy = pl,
                                              simplify_seqnames = (opt$ref == "hg19"),
                                              complex.fname = report.config$complex)
-            
+
             genes_cn_annotated = get_gene_ampdel_annotations(genes_cn,
                                                              amp.thresh = opt$amp_thresh,
                                                              del.thresh = pmax(opt$del_thresh, 1))
@@ -419,7 +425,7 @@ wgs.report = function(opt){
             if (file.good(report.config$tpm_quantiles)) {
 
                 message ("Merging SCNAs with RNA expression")
-                
+
                 melted.expr = data.table::fread(report.config$tpm_quantiles, header = TRUE)
 
                 if (nrow(melted.expr)) {
@@ -430,7 +436,7 @@ wgs.report = function(opt){
                                                                         expr.value = value)],
                                                           by = "gene_name",
                                                           all.x = TRUE)
-                    
+
                     genes_cn_annotated[expr.quantile < opt$quantile_thresh, expr := "under"]
                     genes_cn_annotated[expr.quantile > (1 - opt$quantile_thresh), expr := "over"]
                 } else {
@@ -439,7 +445,7 @@ wgs.report = function(opt){
             } else {
                 genes_cn_annotated[, ":="(expr.quantile = NA, expr.value = NA, expr = NA)]
             }
-            
+
             ## save annotated genes
             saveRDS(genes_cn_annotated, report.config$gene_cn)
         }
@@ -490,9 +496,14 @@ wgs.report = function(opt){
                            "expr.value", "expr.quantile",
                            "seqnames", "start", "end", "width", "ev.id", "ev.type")
                 }
-                
+
                 cn.fields = intersect(fields, names(driver.genes_cn))
-                fwrite(driver.genes_cn[, ..cn.fields], report.config$driver_scna)
+                if (!is.null(opt$include_surface) && opt$include_surface) {
+                    fwrite(driver.genes_cn[surface != TRUE, ..cn.fields], report.config$driver_scna)
+                    fwrite(driver.genes_cn[surface == TRUE, ..cn.fields], report.config$surface_scna)
+                } else {
+                    fwrite(driver.genes_cn[, ..cn.fields], report.config$driver_scna)
+                }
             }
         }
 
@@ -500,8 +511,8 @@ wgs.report = function(opt){
             message("Driver gene expression changes already identified")
         } else {
 
-            if (file.good(report.config$rna_change)) {
-                rna.change.dt = fread(report.config$rna_change, header = TRUE)
+            if (file.good(report.config$rna_change_all)) {
+                rna.change.dt = fread(report.config$rna_change_all, header = TRUE)
             } else {
                 stop("RNA expression analysis failed")
             }
@@ -512,11 +523,11 @@ wgs.report = function(opt){
                 stop("SCNA analysis failed")
             }
 
-            fields = c("gene_name", "annot", "surface", "min_cn",
+            fields = c("gene_name", "annot", "min_cn",
                        "max_cn", "min_normalized_cn", "max_normalized_cn",
                        "seqnames", "start", "end", "width", "ev.id", "ev.type")
             cn.fields = intersect(fields, colnames(genes_cn_annotated))
-            
+
             driver.genes.expr.dt = merge.data.table(rna.change.dt[, .(gene, expr = direction,
                                                                       expr.value = value,
                                                                       expr.quantile = qt, role, zscore)],
@@ -524,7 +535,8 @@ wgs.report = function(opt){
                                                     by.x = "gene",
                                                     by.y = "gene_name",
                                                     all.x = TRUE)
-            fwrite(driver.genes.expr.dt, report.config$rna_change_with_cn)
+            fwrite(driver.genes.expr.dt[role != 'SURF'], report.config$rna_change_with_cn)
+            fwrite(driver.genes.expr.dt[role %like% 'SURF'], report.config$surface_rna_change_with_cn)
         }
 
 
@@ -918,7 +930,17 @@ wgs.report = function(opt){
                                                             res = 150)
             fwrite(expr.histograms.dt, report.config$expression_histograms)
         }
-        
+        if (check_file(report.config$surface_expression_histograms, opt$overwrite, opt$verbose)) {
+            message("expression histograms already exist for surface genes")
+        } else {
+            surface.expr.histograms.dt = plot_expression_histograms(report.config$surface_rna_change,
+                                                            report.config$tpm_quantiles,
+                                                            pair = opt$pair,
+                                                            outdir = opt$outdir,
+                                                            res = 150)
+            fwrite(surface.expr.histograms.dt, report.config$surface_expression_histograms)
+        }
+
         ## gTrack of over and under-expressed genes
         if (check_file(report.config$expression_gtracks, overwrite = opt$overwrite, verbose = opt$verbose)) {
             message("gTracks of over/underexpressed genes already exist")
@@ -942,6 +964,29 @@ wgs.report = function(opt){
                                      outdir = expr.gallery.dir)
             fwrite(expr.slickr.dt, report.config$expression_gtracks)
         }
+        ## gTrack of over and under-expressed surface genes
+        if (check_file(report.config$surface_expression_gtracks, overwrite = opt$overwrite, verbose = opt$verbose)) {
+            message("gTracks of over/underexpressed surface genes already exist")
+        } else {
+            message("preparing expression gallery for surface genes")
+            expr.gallery.dir = paste0(opt$outdir, '/expr_gallery')
+            dir.create(expr.gallery.dir)
+            surface.expr.slickr.dt = cn.plot(drivers.fname = report.config$surface_rna_change,
+                                     complex.fname = report.config$complex,
+                                     cvgt.fname = report.config$coverage_gtrack,
+                                     gngt.fname = report.config$gencode_gtrack,
+                                     agt.fname = report.config$allele_gtrack,
+                                     server = opt$server,
+                                     pair = opt$pair,
+                                     amp.thresh = opt$amp_thresh,
+                                     ploidy = report.config$ploidy,
+                                     pad = 0.5,
+                                     height = 1600,
+                                     width = 1000,
+                                     overwrite = opt$overwrite,
+                                     outdir = expr.gallery.dir)
+            fwrite(surface.expr.slickr.dt, report.config$surface_expression_gtracks)
+        }
 
         ## expression waterfall plot
         if (check_file(report.config$waterfall_plot, overwrite = opt$overwrite, verbose = opt$verbose)) {
@@ -957,8 +1002,22 @@ wgs.report = function(opt){
             } else {
                 message("Skipping waterfall plot - RNA expression not supplied")
             }
-        } 
-
+        }
+        ## surface genes expression waterfall plot
+        if (check_file(report.config$surface_waterfall_plot, overwrite = opt$overwrite, verbose = opt$verbose)) {
+            message("Waterfall plot for surface genes already exists")
+        } else {
+            if (file.good(opt$tpm) & file.good(opt$tpm_cohort)) {
+                message("Generating waterfall plot for surface genes")
+                pt = rna.waterfall.plot(melted.expr.fn = report.config$tpm_quantiles,
+                                        rna.change.fn = report.config$surface_rna_change,
+                                        pair = opt$pair)
+                ppng(print(pt), filename = report.config$surface_waterfall_plot,
+                     width = 1600, height = 1200, res = 150)
+            } else {
+                message("Skipping waterfall plot for surface genes - RNA expression not supplied")
+            }
+        }
 
         ## ##################
         ## deconstructSigs composition plot
