@@ -75,7 +75,7 @@ wgs.report = function(opt){
                        overwrite = FALSE,
                        verbose = TRUE,
                        quantile_thresh = 0.05,
-                       include_surface = FALSE)
+                       include_surface = TRUE)
     missing_params = setdiff(names(default_opt), names(opt))
     if (length(missing_params) > 0){
         for (param in missing_params){
