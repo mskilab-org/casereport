@@ -1287,7 +1287,7 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
     allsig[, Signature := as.character(Signature)]
     sct[, Signature := as.character(Signature)]
 
-    if (opt$pair %in% allsig[, pair]){
+    if (id %in% allsig[, pair]){
         ## remove existing record from the cohort first
         allsig = allsig[pair != id]
     }
@@ -2590,7 +2590,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
         if ('proximity' %in% names(dat) && file.good(dat[x, proximity]) && nrow(readRDS(dat[x, proximity])$dt)) {
             if (verbose)
                 message('Processing proximity results.')
-            proximity.dt = readRDS(opt$proximity)$dt[reldist < max.reldist & refdist > min.refdist,]
+            proximity.dt = readRDS(dat[x, proximity])$dt[reldist < max.reldist & refdist > min.refdist,]
             if (proximity.dt[,.N] > 0){
                 out = rbind(out, proximity.dt[, .(gene = gene_name, value = reldist,
                                                   reldist, altdist, refdist, walk.id,
