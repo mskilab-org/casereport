@@ -92,6 +92,29 @@ function collapseAll() {
 }
 </script>
 
+<script>
+function showImg() {
+    var thisimg = arguments[0];
+    console.log(thisimg);
+      if(document.getElementById(thisimg).style.display == ""){
+            document.getElementById(thisimg).style.display = "none";
+      }else{
+            document.getElementById(thisimg).style.display = "";
+        }
+      }
+</script>
+
+<script>
+function showVIM() {
+              if(document.getElementById("vim_img").style.display == ""){
+            document.getElementById("vim_img").style.display = "none";
+      }else{
+            document.getElementById("vim_img").style.display = "";
+        }
+        }
+</script>
+
+
 <style type="text/css">
 table {
   margin: auto;
@@ -229,6 +252,49 @@ Tumor Mutation Burden (TMB): `r format(round(summary.list$mut_per_mbp, 2), 2)` p
 ```{r, summ-driver, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE}
 summary.dt = fread(file.path(params$outdir, "summaryTable.txt"))
 DT::datatable(summary.dt, escape=FALSE, options = list(scrollX = TRUE))
+```
+
+```{r, expr-driver, dropAboveExp=TRUE, dropBelow=TRUE, results = "hide", echo = FALSE}
+expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
+cool.exp = fread(paste0(params$outdir, "/", "rna.change.txt"))
+expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
+cat("\n")
+valid.genes = intersect(expr.hist.dt[, gene], expr.slickr.dt[, gene_name])
+for (g in valid.genes) {
+    expr.png.fn = expr.hist.dt[gene == g, expr.hist.fname][1]
+    gg.png.fn = expr.slickr.dt[gene_name == g, plot.fname][1]
+    if (file.exists(expr.png.fn) & file.exists(gg.png.fn)) {
+         cat(
+            paste0(
+                '<p float="left">',
+                '<img ', 'id="', expr.png.fn,'expr"',
+                'src="',
+            expr.png.fn,
+                '" style="display:none;" width="45%" />',
+                '<img', 'id="', gg.png.fn,'gg"', 'src="',
+                gg.png.fn,
+                '" style="display:none;" width="45%" />',
+                '</p>'
+            )
+        )
+    	}	
+    }
+```
+
+```{r, cn-driver, dropAboveExp=TRUE, dropBelow=TRUE, results = "hide", echo = FALSE}
+cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
+if (nrow(cn.gallery.dt) > 0) {
+    for (g in cn.gallery.dt[, gene_name]) {
+        cat(
+            paste0('<p>',
+                    '<img','id="', cn.gallery.dt[gene_name == g, plot.fname],'cnv"','src="',
+                    cn.gallery.dt[gene_name == g, plot.fname],
+                    '" style="display:none;" width="100%" />',
+                    '</p>'
+            )
+        )   
+    }
+}
 ```
 
 ***
