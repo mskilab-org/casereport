@@ -254,7 +254,7 @@ summary.dt = fread(file.path(params$outdir, "summaryTable.txt"))
 DT::datatable(summary.dt, escape=FALSE, options = list(scrollX = TRUE))
 ```
 
-```{r, expr-driver, dropAboveExp=TRUE, dropBelow=TRUE, results = "hide", echo = FALSE}
+```{r, expr-driver, results = "asis", echo = FALSE}
 expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
 cool.exp = fread(paste0(params$outdir, "/", "rna.change.txt"))
 expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
@@ -281,7 +281,7 @@ for (g in valid.genes) {
     }
 ```
 
-```{r, cn-driver, dropAboveExp=TRUE, dropBelow=TRUE, results = "hide", echo = FALSE}
+```{r, cn-driver, results = "asis", echo = FALSE}
 cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
 if (nrow(cn.gallery.dt) > 0) {
     for (g in cn.gallery.dt[, gene_name]) {
