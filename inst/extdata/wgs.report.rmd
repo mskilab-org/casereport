@@ -1,0 +1,1003 @@
+---
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float: true
+    theme: flatly
+params:
+  set_title: "My Title!"
+  pair: "pair.id"
+  jabba_rds: "./jabba.simple.rds"
+  outdir: "./"
+  tumor_type: "UNKNOWN"
+  server: "https://mskilab.com/gGraph/"
+---
+
+<style>
+.aligncenter{
+	text-align:  center;
+}
+</style>
+
+<style>
+  .superbigimage{
+  overflow-x:scroll;
+  white-space: nowrap;
+  }
+  
+  .superbigimage img{
+  max-width: none;
+  margin: 0 -250px -250px 0;
+  }
+</style>
+
+<input type="button" style="height: 25px; width: 100px" value="Expand All" id="primaryButton" />
+<input type="button" style="height: 25px; width: 100px" value="Collapse All" id="2Button"  />
+
+<script>
+// Get the button, and when the user clicks on it, execute myFunction
+document.getElementById("primaryButton").onclick = function() {expandAll()};
+
+function expandAll() {
+  var buttons= document.getElementsByClassName("btn btn-primary collapsed");
+  for(var i = 0; i < buttons.length; i++) { 
+  	console.log(buttons[i].getAttribute('aria-expanded'))
+ 	if((buttons[i].getAttribute('aria-expanded')=="false") || (buttons[i].getAttribute('aria-expanded')==null)){
+     buttons[i].click();
+  		}
+	}
+
+	var buttons= document.getElementsByClassName("btn btn-primary");
+  for(var i = 0; i < buttons.length; i++) { 
+  	console.log(buttons[i].getAttribute('aria-expanded'))
+ 	if((buttons[i].getAttribute('aria-expanded')=="false") || (buttons[i].getAttribute('aria-expanded')==null)){
+     buttons[i].click();
+  		}
+	}
+	
+   var slides= document.getElementsByClassName("slick-slide slick-current slick-active");
+  for(var i = 0; i < slides.length; i++) { 
+     slides[i].style.width = "100%";
+     console.log(i)
+     console.log(slides[i].getAttribute("style.width"));
+    }
+
+  var slickTracks= document.getElementsByClassName("slick-track");
+  for(var i = 0; i < slickTracks.length; i++) { 
+     slickTracks[i].style.width = "100%";
+    }
+    
+}
+</script>
+
+<script>
+// Get the button, and when the user clicks on it, execute myFunction
+document.getElementById("2Button").onclick = function() {collapseAll()};
+
+function collapseAll() {
+  var buttons= document.getElementsByClassName("btn btn-primary collapsed");
+  for(var i = 0; i < buttons.length; i++) { 
+ 	if(buttons[i].getAttribute('aria-expanded')=="true"){
+     buttons[i].click();
+  		}
+	}
+
+	var buttons= document.getElementsByClassName("btn btn-primary");
+  for(var i = 0; i < buttons.length; i++) { 
+ 	if(buttons[i].getAttribute('aria-expanded')=="true"){
+     buttons[i].click();
+  		}
+	}
+}
+</script>
+
+<script>
+function showImg() {
+    var thisimg = arguments[0];
+    console.log(thisimg);
+      if(document.getElementById(thisimg).style.display == ""){
+            document.getElementById(thisimg).style.display = "none";
+      }else{
+            document.getElementById(thisimg).style.display = "";
+        }
+      }
+</script>
+
+<script>
+function showVIM() {
+              if(document.getElementById("vim_img").style.display == ""){
+            document.getElementById("vim_img").style.display = "none";
+      }else{
+            document.getElementById("vim_img").style.display = "";
+        }
+        }
+</script>
+
+
+<style type="text/css">
+table {
+  margin: auto;
+  border-top: 1px solid #666;
+  border-bottom: 1px solid #666;
+}
+table thead th { border-bottom: 1px solid #ddd; }
+th, td { padding: 5px; }
+thead, tfoot, tr:nth-child(even) { background: #eee; }
+</style>
+
+---
+title: Whole genome/transcriptome sequencing of `r params$pair`, `r
+paste(ifelse(grepl("^[aeiou]", params$tumor_type, ignore.case = T),
+"an", "a"), params$tumor_type)`
+---
+
+```{r, setup, include = FALSE, echo = FALSE, message = TRUE}
+## global code chunk option
+knitr::opts_chunk$set(
+    collapse = TRUE,
+    fig.width = 8,
+    fig.height = 8,
+    message = FALSE,
+    warning = FALSE,
+    echo = FALSE)
+
+## hopefully make skidb standard asap
+library(gGnome)
+library(gTrack)
+library(skidb)
+library(ggplot2)
+library(ggforce)
+library(kableExtra)
+library(hwriter)
+library(htmlwidgets)
+library(svglite)
+library(slickR)
+library(plotly)
+library(shiny)
+message("Loaded Packages")
+
+summary.list = readRDS(normalizePath(file.path(params$outdir, "summary.rds")))
+message("Loaded gGraph")
+```
+
+```{css,echo=FALSE}
+button.btn.collapsed:before
+{
+    content:'+' ;
+    display:block;
+    width:15px;
+}
+button.btn:before
+{
+    content:'-' ;
+    display:block;
+    width:15px;
+}
+```
+
+```{r,echo=FALSE,results='hide'}
+
+knitr::knit_hooks$set(dropAboveCol=function(before, options, envir) {
+    if (before) {
+        paste(
+            '<p>',
+paste('<button class="btn btn-primary collapsed" id="BT-', options$label,'" data-toggle="collapse" data-target="#',options$label,'">',sep=""),
+'</button>',
+'</p>',
+paste('<div class="collapse" id="',options$label,'">',sep=""), sep = "\n")
+    }
+})
+
+#For sections to be expanded by default, use this one. 
+knitr::knit_hooks$set(dropAboveExp=function(before, options, envir) {
+    if (before) {
+        paste(
+            '<p>',
+paste('<button class="btn btn-primary" data-toggle="collapse" data-target="#',options$label,'"aria-expanded="true">',sep=""),
+'</button>',
+'</p>',
+paste('<div class="collapse in" id="',options$label,'">',sep=""),sep = "\n")
+    }
+})
+
+knitr::knit_hooks$set(dropBelow=function(before, options, envir) {
+    if (!before) {
+      paste("</div>", sep="\n")
+    }
+})
+```
+
+***
+# `r paste(params$pair, params$tumor_type, sep = ", ")`
+
+```{r, param-lead, dropAboveExp=TRUE, results = "asis", echo = FALSE}
+```
+
+## Purity/ploidy
+
+Estimated purity: **`r format(summary.list$purity, digits = 2)`** 
+
+Estimated ploidy: **`r format(summary.list$ploidy, digits = 2)`**
+
+## SCNA
+
+Copy number alterations (CNA) are defined as CN at most 0.5 times ploidy (deletions) or at least 1.5 times ploidy (amplifications). 
+
+Percent of genome with CNA: `r format(round(summary.list$cna_frac * 100, 2), nsmall = 2)`%
+
+Total amplifications (Mbp): `r format(round(summary.list$amp_mbp, 2), nsmall = 2)`
+
+Total deletions (Mbp): `r format(round(summary.list$del_mbp, 2), nsmall = 2)`
+
+Total CNA (Mbp): `r format(round(summary.list$cna_mbp, 2), nsmall = 2)`
+
+## Junction burden
+
+The total **junction burden** is **`r summary.list$junction_burden`**.
+
+## SNV
+
+Total number of somatic SNV/INDELs: `r format(round(summary.list$mut_count, 0), nsmall = 0)`
+
+Tumor Mutation Burden (TMB): `r format(round(summary.list$mut_per_mbp, 2), 2)` per Mbp 
+
+```{r, param-close, dropBelow=TRUE, results = "hide", echo = FALSE}
+```
+
+***
+
+# Summary Driver Table
+
+```{r, summ-driver, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE}
+summary.dt = fread(file.path(params$outdir, "summaryTable.txt"))
+DT::datatable(summary.dt, escape=FALSE, options = list(scrollX = TRUE))
+```
+
+```{r, expr-driver, results = "asis", echo = FALSE}
+expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
+cool.exp = fread(paste0(params$outdir, "/", "rna.change.txt"))
+expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
+cat("\n")
+valid.genes = intersect(expr.hist.dt[, gene], expr.slickr.dt[, gene_name])
+for (g in valid.genes) {
+    expr.png.fn = expr.hist.dt[gene == g, expr.hist.fname][1]
+    gg.png.fn = expr.slickr.dt[gene_name == g, plot.fname][1]
+    if (file.exists(expr.png.fn) & file.exists(gg.png.fn)) {
+         cat(
+            paste0(
+                '<p float="left">',
+                '<img ', 'id="', expr.png.fn,'expr"',
+                'src="',
+            expr.png.fn,
+                '" style="display:none;" width="45%" />',
+                '<img', 'id="', gg.png.fn,'gg"', 'src="',
+                gg.png.fn,
+                '" style="display:none;" width="45%" />',
+                '</p>'
+            )
+        )
+    	}	
+    }
+```
+
+```{r, cn-driver, results = "asis", echo = FALSE}
+cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
+if (nrow(cn.gallery.dt) > 0) {
+    for (g in cn.gallery.dt[, gene_name]) {
+        cat(
+            paste0('<p>',
+                    '<img','id="', cn.gallery.dt[gene_name == g, plot.fname],'cnv"','src="',
+                    cn.gallery.dt[gene_name == g, plot.fname],
+                    '" style="display:none;" width="100%" />',
+                    '</p>'
+            )
+        )   
+    }
+}
+```
+
+***
+
+
+# Whole genome view {.tabset .tabset-fade .tabset-pills}
+
+```{r, wgs-lead, dropAboveExp=TRUE, results = "asis", echo = FALSE}
+cat('<div id="gtrack" class="section level2">')
+```
+
+## gTrack
+
+<div class="superbigimage">
+```{r, wgs-gtrack, max.width = "95%", results = "asis", echo = FALSE, fig.align = "center"}
+knitr::include_graphics(file.path(params$outdir, "wgs.gtrack.png"))
+```
+</div>
+</div>
+
+`r paste('<div id="lead-circos" class="section level2">')`
+## circos
+```{r, wgs-circos, dropBelow=TRUE, out.width = "95%", results = "asis", echo = FALSE, fig.align = "center"}
+knitr::include_graphics(file.path(params$outdir, "wgs.circos.png"))
+```
+</div>
+
+<br>
+
+***
+
+# Copy number variants
+Copy number variations (CNVs) in oncogenes and tumor suppressor genes.
+
+
+```{r, driver-cnv-table, dropAboveExp=TRUE, results = "asis", max.width= "100%"}
+driver.genes.cnv = fread(file.path(params$outdir, "driver.genes.cnv.txt"))
+driver.genes.cnv$min_normalized_cn=unlist(lapply(driver.genes.cnv$min_normalized_cn,FUN=signif,digits=4))
+driver.genes.cnv$max_normalized_cn=unlist(lapply(driver.genes.cnv$max_normalized_cn,FUN=signif,digits=4))
+driver.genes.cnv$expr.quantile=unlist(lapply(driver.genes.cnv$expr.quantile,FUN=signif,digits=4))
+
+## driver.genes.cnv[cnv != ''] %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
+DT::datatable(driver.genes.cnv, options = list(scrollX = TRUE))
+```
+
+
+`r paste('<div id="driver-cnv-gallery" class="section level2 tabset tabset-fade tabset-pills">')`
+## Driver CNV gallery {.tabset .tabset-fade .tabset-pills}
+
+```{r cn-tabset, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
+cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
+if (nrow(cn.gallery.dt) > 0) {
+    cat("\n")
+    for (g in cn.gallery.dt[, gene_name]) {
+        cat("\n")
+        cat('<div id="',paste0(g,"-dcnv"),'" class="section level3">')
+        cat("\n")
+        cat("###", paste0(g, "<br>","\n"))
+        cat(
+            paste0('<p>',
+                    '<a href="',
+                    cn.gallery.dt[gene_name == g, plot.link],
+                    '">',
+                    '<img src="',
+                    cn.gallery.dt[gene_name == g, plot.fname],
+                    '" width="100%" />',
+                    '</a>',
+                    '</p>'
+            )
+        )   
+        cat("</div>")
+    }
+    cat('\n', '<br>', '\n\n')
+}
+```
+</div>
+
+***
+
+# Fusions
+
+```{r, fus-lead, dropAboveExp=TRUE, results = "hide", echo = FALSE}
+```
+
+## Known fusions
+
+```{r, driver-fusions-table, results = "asis", out.width= "100%", max.height = 800}
+driver.fusions.fname = file.path(params$outdir, "fusions.driver.txt")
+if (file.exists(driver.fusions.fname)) {
+   driver.fusions.dt = fread(driver.fusions.fname)
+   if (nrow(driver.fusions.dt)) {
+      driver.fusions.cols = intersect(c("genes", "walk.id", "driver.name", "chroms", "maxcn", "total.aa", "gene.pc", "ev.id", "ev.type"), colnames(driver.fusions.dt))
+      dat = driver.fusions.dt[, ..driver.fusions.cols]
+      DT::datatable(dat, options = list(scrollX = TRUE), caption = "Fusions in which at least one involved gene is an oncogene or tumor suppressor.")
+   } else {
+     cat("No known driver fusions")
+   }     
+}
+```
+
+`r paste('<div id="known-fusions-gallery" class="section level2 tabset tabset-fade tabset-pills">')`
+## Known fusions gallery {.tabset .tabset-fade .tabset-pills}
+
+```{r fusion-tabset, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+if (file.good(file.path(params$outdir, "fusions.driver.txt"))){
+    fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
+    if (nrow(fusions.gallery.dt) > 0) {
+        cat("\n")
+        for (g in fusions.gallery.dt[, genes]) {
+             cat("\n")
+            cat('<div id="',paste0(g,"-fus"),'" class="section level3">')
+            cat("\n")
+            cat("###", paste0(g, "<br>","\n"))
+            cat(
+                paste0('<p>',
+                       '<a href="',
+                       fusions.gallery.dt[genes == g, plot.link],
+                       '">',
+                       '<img src="',
+                       fusions.gallery.dt[genes == g, plot.fname],
+                       '" width="75%" />',
+                       '</a>',
+                       '</p>'
+                       )
+            )
+            cat("</div>")
+            cat('\n', '<br>', '\n\n')
+        }
+    } else {
+        cat("\n", "No fusions to show", "\n")
+    }
+} else {
+    cat("\n", "Fusion results not available.", "<br>\n\n")
+}
+```
+</div>
+
+## Other fusions
+
+```{r, other-fusions-table, results = "asis", max.width= "100%"}
+other.fusions.fname = file.path(params$outdir, "fusions.other.txt")
+if (file.exists(other.fusions.fname)) {
+   other.fusions.dt = fread(other.fusions.fname)
+   if (nrow(other.fusions.dt)) {
+   other.fusions.cols = intersect(c("genes", "walk.id", "driver.name", "chroms", "maxcn", "total.aa", "gene.pc", "ev.id", "ev.type"), colnames(driver.fusions.dt))
+   dat = other.fusions.dt[, ..other.fusions.cols]
+   DT::datatable(dat, options = list(scrollX = TRUE), caption = "Other in-frame non-silent gene fusions")
+} else {
+cat("\n", "No other fusions to show.")
+}
+} else {
+cat("\n", "No other fusions available", "\n")
+}
+```
+
+## Other fusions gallery
+
+```{r, other-fusions-gallery, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+
+if (file.exists(other.fusions.fname)) {
+   other.fusions.dt = fread(other.fusions.fname)
+   if (nrow(other.fusions.dt) > 0) {
+      slick_up = slickR(obj = other.fusions.dt$plot.fname, height = 800, width = "95%", objLinks = other.fusions.dt$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+slick_up
+	}
+}
+```
+
+## Altered transcripts
+
+```{r, altered-transcripts, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+  cat("Under construction")
+  cat("\n")
+```
+
+
+***
+
+# Over/under-expression of oncogenes/TSGs 
+
+```{r, driver-expr-table,  dropAboveExp=TRUE, results = "asis", max.width= "100%"}
+driver.genes.expr = fread(file.path(params$outdir, "driver.genes.expr.txt"))
+driver.genes.expr$min_normalized_cn=unlist(lapply(driver.genes.expr$min_normalized_cn,FUN=signif,digits=4))
+driver.genes.expr$max_normalized_cn=unlist(lapply(driver.genes.expr$max_normalized_cn,FUN=signif,digits=4))
+driver.genes.expr$expr.quantile=unlist(lapply(driver.genes.expr$expr.quantile,FUN=signif,digits=4))
+driver.genes.expr$zscore=unlist(lapply(driver.genes.expr$zscore,FUN=signif,digits=4))
+
+if (nrow(driver.genes.expr)) {
+    DT::datatable(driver.genes.expr, options = list(scrollX = TRUE))
+} else {
+    cat("\n", "No overexpressed/underexpressed drivers", "\n")
+}
+```
+
+## Waterfall plot
+```{r, driver-waterfall, results = "asis", max.width = "100%"}
+waterfall.fn = file.path(params$outdir, "waterfall.png")
+## cat(waterfall.fn)
+if (file.exists(waterfall.fn)) {
+   cat(paste0("![](", waterfall.fn, ")"), "\n")
+   ##knitr::include_graphics(waterfall.fn)
+   cat(paste0("\n", "Waterfall plot showing relative gene expression of drivers.", "\n"))
+} else {
+   cat("Waterfall plot with relative gene expression of drivers is not available")
+}
+```
+
+`r paste('<div id="expression-gallery" class="section level2 tabset tabset-fade tabset-pills">')`
+## Expression gallery {.tabset .tabset-fade .tabset-pills}
+
+```{r expression, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
+ if (file.good(paste0(params$outdir, "/", "rna.change.txt"))) {
+     expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
+     cool.exp = fread(paste0(params$outdir, "/", "rna.change.txt"))
+     expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
+     cat("\n")
+     valid.genes = intersect(expr.hist.dt[, gene], expr.slickr.dt[, gene_name])
+     for (g in valid.genes) {
+        expr.png.fn = expr.hist.dt[gene == g, expr.hist.fname][1]
+	gg.png.fn = expr.slickr.dt[gene_name == g, plot.fname][1]
+        cat("\n")
+
+	if (file.exists(expr.png.fn) & file.exists(gg.png.fn)) {
+	      cat("\n")
+        cat('<div id="',paste0(g,"-eg"),'" class="section level3">')
+        cat("\n")
+         cat("###", cool.exp[gene == g, paste0(gene, " (", direction, ")", "<br>", "\n")])
+       	 cat("Z-Score:",signif(cool.exp[cool.exp$gene==g,]$zscore,digits=4))
+
+         cat(
+       		paste0(
+       			'<p float="left">',
+       			'<img src="',
+			expr.png.fn,
+       			'" width="45%" />',
+       			'<img src="',
+       			gg.png.fn,
+        		'" width="45%" />',
+       			'</p>'
+        	)
+        )
+	}
+        cat("</div>")
+    } 
+       	cat('\n', '<br>', '\n\n')
+	} else {
+    cat("\n", "Gene expression not available", "\n")
+	}
+```
+</div>
+
+***
+# SV event classifications
+
+```{r, SV-lead, dropAboveExp=TRUE, results = "hide", echo = FALSE}
+```
+
+## Burdens of event types
+Count of complex events against background distribution from Cell cohort.
+
+```{r, sv-burden, fig.align = "center", out.width = "80%"}
+knitr::include_graphics(file.path(params$outdir, "ridgeplot.png"))
+```
+
+`r paste('<div id="complex-sv-gallery" class="section level2 tabset tabset-fade tabset-pills">')`
+## Complex SV gallery {.tabset .tabset-fade .tabset-pills}
+
+```{r, qrp-SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## read data table with plot png/URL
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+}
+events=unique(sv.slickr.dt$type)
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+    if (nrow(sv.slickr.dt)) {
+      if("qrp" %in% sv.slickr.dt$type){
+      cat('<div id="qrp-sec" class="section level3">')
+      cat("\n")
+      cat("### qrp")
+      cat("\n")
+      
+    slick_up = slickR(obj = sv.slickr.dt[type=="qrp",]$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt[type=="qrp",]$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+    slick_up
+    } 
+}  else {
+   cat("\n", "No complex SVs", "\n")
+}} else {
+   cat("\n", "Complex SVs not available", "\n")
+}
+
+if(file.good(file.path(params$outdir, "sv.gallery.txt")) && nrow(sv.slickr.dt) && "qrp" %in% sv.slickr.dt$type){ cat("\n","</div>","\n")}
+```
+
+```{r, tic-SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## read data table with plot png/URL
+events=unique(sv.slickr.dt$type)
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+    if (nrow(sv.slickr.dt) && "tic" %in% sv.slickr.dt$type) {
+      cat('<div id="tic-sec" class="section level3">')
+      cat("\n")
+      cat("### tic")
+      cat("\n")
+    slick_up = slickR(obj = sv.slickr.dt[type=="tic",]$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt[type=="tic",]$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+    slick_up
+    }}
+
+if(file.good(file.path(params$outdir, "sv.gallery.txt")) && nrow(sv.slickr.dt) && "tic" %in% sv.slickr.dt$type){ cat("\n","</div>","\n")}
+```
+
+```{r, qpdup-SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## read data table with plot png/URL
+events=unique(sv.slickr.dt$type)
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+    if (nrow(sv.slickr.dt) && "qpdup" %in% sv.slickr.dt$type) {
+      cat('<div id="qpdup-sec" class="section level3">')
+      cat("\n")
+      cat("### qpdup")
+      cat("\n")
+    slick_up = slickR(obj = sv.slickr.dt[type=="qpdup",]$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt[type=="qpdup",]$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+    slick_up
+    }}
+
+if(file.good(file.path(params$outdir, "sv.gallery.txt")) && nrow(sv.slickr.dt) && "qpdup" %in% sv.slickr.dt$type){ cat("\n","</div>","\n")}
+```
+
+```{r, qrdel-SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## read data table with plot png/URL
+events=unique(sv.slickr.dt$type)
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+    if (nrow(sv.slickr.dt) && "qrdel" %in% sv.slickr.dt$type) {
+      cat('<div id="qrdel-sec" class="section level3">')
+      cat("\n")
+      cat("### qrdel")
+      cat("\n")
+    slick_up = slickR(obj = sv.slickr.dt[type=="qrdel",]$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt[type=="qrdel",]$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+    slick_up
+    }}
+
+if(file.good(file.path(params$outdir, "sv.gallery.txt")) && nrow(sv.slickr.dt) && "qrdel" %in% sv.slickr.dt$type){ cat("\n","</div>","\n")}
+```
+
+
+
+```{r, bfb-SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## read data table with plot png/URL
+events=unique(sv.slickr.dt$type)
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+    if (nrow(sv.slickr.dt) && "bfb" %in% sv.slickr.dt$type) {
+      cat('<div id="bfb-sec" class="section level3">')
+      cat("\n")
+      cat("### bfb")
+      cat("\n")
+    slick_up = slickR(obj = sv.slickr.dt[type=="bfb",]$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt[type=="bfb",]$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+    slick_up
+    }}
+if(file.good(file.path(params$outdir, "sv.gallery.txt")) && nrow(sv.slickr.dt) && "bfb" %in% sv.slickr.dt$type){ cat("\n","</div>","\n")}
+```
+
+```{r, dm-SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## read data table with plot png/URL
+events=unique(sv.slickr.dt$type)
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+    if (nrow(sv.slickr.dt) && "dm" %in% sv.slickr.dt$type) {
+      cat('<div id="dm-sec" class="section level3">')
+      cat("\n")
+      cat("### dm")
+      cat("\n")
+    slick_up = slickR(obj = sv.slickr.dt[type=="dm",]$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt[type=="dm",]$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+    slick_up
+    }}
+if(file.good(file.path(params$outdir, "sv.gallery.txt")) && nrow(sv.slickr.dt) && "dm" %in% sv.slickr.dt$type){ cat("\n","</div>","\n")}
+```
+
+```{r, chromoplexy-SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## read data table with plot png/URL
+events=unique(sv.slickr.dt$type)
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+    if (nrow(sv.slickr.dt) && "chromoplexy" %in% sv.slickr.dt$type) {
+      cat('<div id="chromoplexy-sec" class="section level3">')
+      cat("\n")
+      cat("### chromoplexy")
+      cat("\n")
+    slick_up = slickR(obj = sv.slickr.dt[type=="chromoplexy",]$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt[type=="chromoplexy",]$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+    slick_up
+    }}
+
+if(file.good(file.path(params$outdir, "sv.gallery.txt")) && nrow(sv.slickr.dt) && "chromoplexy" %in% sv.slickr.dt$type){ cat("\n","</div>","\n")}
+```
+
+```{r, chromothripsis-SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## read data table with plot png/URL
+events=unique(sv.slickr.dt$type)
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+    if (nrow(sv.slickr.dt) && "chromothripsis" %in% sv.slickr.dt$type) {
+      cat('<div id="chromothripsis-sec" class="section level3">')
+      cat("\n")
+      cat("### chromothripsis")
+      cat("\n")
+    slick_up = slickR(obj = sv.slickr.dt[type=="chromothripsis",]$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt[type=="chromothripsis",]$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+    slick_up
+    }}
+if(file.good(file.path(params$outdir, "sv.gallery.txt")) && nrow(sv.slickr.dt) && "chromothripsis" %in% sv.slickr.dt$type){ cat("\n","</div>","\n")}
+```
+
+```{r, tyfonas-SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## read data table with plot png/URL
+events=unique(sv.slickr.dt$type)
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+    if (nrow(sv.slickr.dt) && "tyfonas" %in% sv.slickr.dt$type) {
+      cat('<div id="typhonas-sec" class="section level3">')
+      cat("\n")
+      cat("### tyfonas")
+      cat("\n")
+    slick_up = slickR(obj = sv.slickr.dt[type=="tyfonas",]$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt[type=="tyfonas",]$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+    slick_up
+    }}
+if(file.good(file.path(params$outdir, "sv.gallery.txt")) && nrow(sv.slickr.dt) && "typhonas" %in% sv.slickr.dt$type){ cat("\n","</div>","\n")}
+```
+
+```{r, rigma-SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## read data table with plot png/URL
+events=unique(sv.slickr.dt$type)
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+    if (nrow(sv.slickr.dt) && "rigma" %in% sv.slickr.dt$type) {
+      cat('<div id="rigms-sec" class="section level3">')
+      cat("\n")
+      cat("### rigma")
+      cat("\n")
+    slick_up = slickR(obj = sv.slickr.dt[type=="rigma",]$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt[type=="rigma",]$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+    slick_up
+    }}
+if(file.good(file.path(params$outdir, "sv.gallery.txt")) && nrow(sv.slickr.dt) && "rigma" %in% sv.slickr.dt$type){ cat("\n","</div>","\n")}
+```
+
+
+```{r, pyrgo-SV, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## read data table with plot png/URL
+events=unique(sv.slickr.dt$type)
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+    if (nrow(sv.slickr.dt) && "pyrgo" %in% sv.slickr.dt$type) {
+      cat('<div id="pyrgo-sec" class="section level3">')
+      cat("\n")
+      cat("### pyrgo")
+      cat("\n")
+    slick_up = slickR(obj = sv.slickr.dt[type=="pyrgo",]$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt[type=="pyrgo",]$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+    slick_up
+    }}
+if(file.good(file.path(params$outdir, "sv.gallery.txt")) && nrow(sv.slickr.dt) && "pyrgo" %in% sv.slickr.dt$type){ cat("\n","</div>","\n")}
+```
+
+```{r, cpxdm-SV, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center"}
+## read data table with plot png/URL
+events=unique(sv.slickr.dt$type)
+if (file.good(file.path(params$outdir, "sv.gallery.txt"))){
+    sv.slickr.dt = fread(file.path(params$outdir, "sv.gallery.txt"))[!is.na(plot.link),]
+    if (nrow(sv.slickr.dt) && "cpxdm" %in% sv.slickr.dt$type) {
+      cat('<div id="cpxdm-sec" class="section level3">')
+      cat("\n")
+      cat("### cpxdm")
+      cat("\n")
+    slick_up = slickR(obj = sv.slickr.dt[type=="cpxdm",]$plot.fname, height = 800, width = "95%", objLinks = sv.slickr.dt[type=="cpxdm",]$plot.link) + settings(slidesToShow = 1, slidesToScroll = 1) + settings(dots = TRUE)
+    slick_up
+    }}
+if(file.good(file.path(params$outdir, "sv.gallery.txt")) && nrow(sv.slickr.dt) && "cpxdm" %in% sv.slickr.dt$type){ cat("\n","</div>","\n")}
+```
+</div>
+
+# Driver SNVs/indels
+
+```{r, driver-snv-indel, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
+driver.mutations.dt = fread(file.path(params$outdir, "driver.mutations.txt"))
+driver.mutations.dt$Tier=as.character(driver.mutations.dt$Tier)
+driver.mutations.dt[is.na(driver.mutations.dt$Tier),]$Tier="Undefined"
+DT::datatable(driver.mutations.dt, options = list(scrollX = TRUE))
+```
+
+# SNV signatures {.tabset .tabset-fade .tabset-pills}
+Fitting <a href="https://cancer.sanger.ac.uk/signatures/sbs/">COSMIC signatures</a> to the whole genome mutation profiles of
+this sample we obtain the following active SNV mutation signatures:
+
+```{r, SNV-siginfo, dropAboveExp=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+if (file.exists(file.path(params$outdir,"signatureMetadata.csv")) && file.good(paste0(params$outdir, "/deconstruct_sigs.png"))){
+    cat('<div id="SNV-Meta" class="section level2">',"\n")
+    cat("## SNV signature information")
+    cat("\n")
+    sig.metadata=fread(file.path(params$outdir,"signatureMetadata.csv"))
+    sig.metadata=sig.metadata[order(sig.metadata$sig_count,decreasing = TRUE),]
+     print(kable(sig.metadata,digits=2, "simple"))
+    cat("\n")
+    cat("\n")
+    cat('Click <a href="https://cancer.sanger.ac.uk/signatures/sbs/">here</a> for a catalog of COSMIC single base substitution signatures.')
+     cat("\n")
+     cat ("</div>","\n")
+}else{
+  cat("No active mutation signatures.")
+  cat ("\n<br>\n")
+}
+
+```
+
+```{r, SNV-signature,  dropBelow=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+if (file.good(paste0(params$outdir, "/deconstruct_sigs.png"))){
+    cat("\n")
+    cat('<div id="deconstructsigs-first" class="section level2">')
+    cat("\n")
+    cat("## deconstructSigs: input profile, fitted, error")
+    cat("\n")
+    ## knitr::include_graphics(paste0(params$outdir, "/deconstruct_sigs.png"))
+
+    cat(
+        paste0("![](", paste0(params$outdir, "/deconstruct_sigs.png"),")"), "\n"
+    )
+    cat ("</div>","\n")
+    cat ("\n<br>\n")
+
+    cat('<div id="sigcomp" class="section level2">')
+    cat("\n")
+    cat("## SNV signature composition")
+    cat("\n")
+
+    if (file.exists(paste0(params$outdir, "/sig.composition.png"))) {
+        cat(
+            paste0("![](", paste0(params$outdir, "/sig.composition.png"),")"), "\n")
+    }	 
+    
+    cat ("</div>","\n")
+    cat ("\n<br>\n")
+    
+}
+```
+
+# Oneness/Twoness
+
+```{r, Oneness_twoness, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
+ot.plot = paste0(params$outdir, "/onenesstwoness.log.dat.png")
+ot.plot.2 = paste0(params$outdir, "/onenesstwoness.prop.dat.png")
+oneness.plot = paste0(params$outdir, "/Oneness.png")
+twoness.plot = paste0(params$outdir, "/Twoness.png")
+
+all.good = file.good(ot.plot) & file.good(ot.plot.2) & file.good(oneness.plot) & file.good(twoness.plot)
+
+if (all.good) {
+   #cat("# Oneness/Twoness\n")
+   cat("## Score distributions\n")
+   cat(paste0("![](", ot.plot,")"), "\n\n")
+   cat(paste0("![](", ot.plot.2,")"), "\n\n")
+   cat("## BRCA1\n")
+   cat(paste0("![](", oneness.plot,")"), "\n\n")
+   cat("## BRCA2\n")
+   cat(paste0("![](", twoness.plot,")"), "\n\n")
+}
+```
+
+# HRDetect prediction (homologous recombination deficiency)
+
+```{r, HRDetect, dropAboveExp=TRUE,  dropBelow=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center", max.height = 800}
+if (file.exists(paste0(params$outdir, "/hrdetect.rds"))){
+    cat("Applying the [HRDetect](https://doi.org/10.1038/nm.4292) model, we
+predict homologous recombination deficiency status of this sample
+based on its SNV/INDEL/SV signatures.\n\n")
+
+    hrd = readRDS(file.path(params$outdir, "hrdetect.rds"))
+    hrd.yes = hrd[variable=="Probability", value>0.7]
+    cat("This sample is classified as", ifelse(hrd.yes, "**HR deficient**", "**NOT** HR deficient"), ".\n")
+    
+    hrdetect.dims = setNames(        
+        c('intercept',
+          'Proportion of DELs\nwith microhomology',
+          'SBS3',
+          'SV signature 3',
+          'SV signature 5',
+          'HRD index (LOH)',
+          'SBS8',
+          'Probability of HR Deficiency'),
+        c('Intercept', 'del.mh.prop', 'SNV3', 'SV3', 'SV5', 'hrd', 'SNV8', 'Probability')
+    )
+    
+    cat(kbl(hrd[, .(Variable = hrdetect.dims[variable], value = sprintf("%f", value))]) %>%
+        kable_classic(full_width = FALSE) %>%
+        row_spec(8, bold = T, color = "white", background = ifelse(hrd.yes, "#D7261E", "#1f78b4")))
+
+    cat("\n<br>\n")
+    ## insert the plots of input data
+    cat(
+        paste0("![](", file.path(params$outdir, "hrdetect.log.dat.png"),")"), "\n\n"
+    )
+    cat(
+        paste0("![](", file.path(params$outdir, "hrdetect.prop.dat.png"),")"), "\n\n"
+    )
+}
+```
+
+***
+
+# Enhancer hijacking candidates {.tabset .tabset-fade .tabset-pills}
+
+```{r, enhancer-hijacking, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width="100%", fig.align = "center"}
+proximity.gallery.dt = fread(paste0(params$outdir, "/", "proximity.gallery.txt"))
+expr.histograms.dt = fread(paste0(params$outdir, "/", "expr.histograms.txt"))
+
+if (nrow(proximity.gallery.dt) & nrow(expr.histograms.dt)) {
+   gns = intersect(proximity.gallery.dt$gene, expr.histograms.dt$gene)
+   for (g in gns) {
+        cat("\n")
+        cat('<div id="',paste0(g,"-ehc"),'" class="section level2">')
+        cat("\n")
+        cat("## ", g, "\n<br>\n")
+	    cat('<div class="superbigimage">',"\n",
+	    paste0(
+	    	'<p float="center">',
+		'<img src="',
+		proximity.gallery.dt[gene == g, plot.fname],
+		'" width="125%" />','</p>'),
+		"\n",'</div>',"<br>","<br>","<br>","<br>","<br>","<br>",
+		paste0('<p class="aligncenter">','<img src="',
+		expr.histograms.dt[gene == g, expr.hist.fname],
+		'" width="60%" alt="centered image"/>',
+		'</p>')
+            )
+	    cat ("</div>","\n")
+    }
+} else {
+  cat("No enhancer hijacking candidates are available")
+}
+cat('\n', '<br>', '\n\n')
+```
+
+***
+# Loose ends
+There are xx high quality loose ends in this sample.
+
+***
+
+# Purity and ploidy estimation
+Here is the fitting of purity and ploidy values to the distribution of
+a random sample of primary segment coverage intensities with
+replacement. A good fit should have the red vertical lines (integer CN
+grid) align well with the peaks in the raw intensity distribution
+(black histogram).
+
+```{r, purploidy-lead, dropAboveExp=TRUE, results = "hide", echo = FALSE}
+```
+
+## Total CN
+
+```{r, total-cn, results = "asis", out.width = "45%", fig.align = "center"}
+knitr::include_graphics(file.path(params$outdir, "cn.pp.png"))
+```
+
+## Allelic CN
+
+```{r, allelic-cn, dropBelow=TRUE, echo = FALSE, out.width = "45%", out.height = "45%", fig.show = "hold", fig.align = "center"}
+if (file.good(file.path(params$outdir, "allele.scatter.png"))){
+    knitr::include_graphics(file.path(params$outdir, "allele.scatter.png"))
+}
+```
+
+
+***
+# Deconvolution
+
+```{r, deconv-results, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
+if (file.good(file.path(params$outdir, "deconv_results.txt"))){
+    cat(paste0("This is a deconvolution of this sample's TPM Transcriptome using the ",readRDS(file.path(params$outdir, "cmd.args.rds"))$deconv," algorithm."))
+    deconv_results.dt = fread(file.path(params$outdir, "deconv_results.txt"))
+    #colnames(deconv_results.dt)=c("Cell_Type","Deconv_Value")
+    #deconv_results.dt$Deconv_Value=unlist(lapply(deconv_results.dt$Deconv_Value,FUN=signif,digits=4))
+    DT::datatable(deconv_results.dt, options = list(scrollX = TRUE))
+}
+```
+
+</div>
+
+
+<script>
+// Get the button, and when the user clicks on it, execute myFunction
+document.getElementById("BT-SV-lead").onclick = function() {expandSlick()};
+
+document.getElementById("BT-fus-lead").onclick = function() {expandSlick()};
+
+function expandSlick() {
+  var slides= document.getElementsByClassName("slick-slide slick-current slick-active");
+  for(var i = 0; i < slides.length; i++) { 
+     slides[i].style.width = "100%";
+     console.log(i)
+     console.log(slides[i].getAttribute("style.width"));
+    }
+
+  var slickTracks= document.getElementsByClassName("slick-track");
+  for(var i = 0; i < slickTracks.length; i++) { 
+     slickTracks[i].style.width = "100%";
+    }
+}
+</script>
+
