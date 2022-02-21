@@ -267,11 +267,11 @@ for (g in valid.genes) {
          cat(
             paste0(
                 '<p float="left">',
-                '<img ', 'id="', expr.png.fn,'.expr"',
+                '<img ', 'id="', g,'.expr"',
                 ' src="',
             expr.png.fn,
                 '" style="display:none;" width="45%" />',
-                '<img', 'id="', gg.png.fn,'gg"', ' src="',
+                '<img', ' id="', g,'.gg"', ' src="',
                 gg.png.fn,
                 '" style="display:none;" width="45%" />',
                 '</p>'
@@ -287,7 +287,7 @@ if (nrow(cn.gallery.dt) > 0) {
     for (g in cn.gallery.dt[, gene_name]) {
         cat(
             paste0('<p>',
-                    '<img',' id="', cn.gallery.dt[gene_name == g, plot.fname],'cnv"',' src="',
+                    '<img',' id="', g,'.cnv"',' src="',
                     cn.gallery.dt[gene_name == g, plot.fname],
                     '" style="display:none;" width="100%" />',
                     '</p>'
