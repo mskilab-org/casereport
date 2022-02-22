@@ -254,6 +254,7 @@ summary.dt = fread(file.path(params$outdir, "summaryTable.txt"))
 expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
 expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
 cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
+
 basebutton=paste('<input type="button" onclick="openTabset()"',';" value="thisValue" />',sep="'")
 ExpSequences=c("overexpression","underexpression")
 CnvSequences=c("amp","hetdel")
@@ -263,30 +264,23 @@ for(i in 1:nrow(summary.dt)){
   if(grepl("expression",summary.dt$type[i])){
     for(val in ExpSequences){
       if(grepl(val,summary.dt$type[i])){
-        summary.dt$type[i]=str_replace(val,basebutton,summary.dt$type[i])
-        summary.dt$type[i]=str_replace("thisValue",val,summary.dt$type[i])
-      }
-    }
-  }else if(grepl("amp|hetdel",summary.dt$type[i])){
-    for(val in CnvSequences){
-      if(grepl(val,summary.dt$type[i])){
-        summary.dt$type[i]=str_replace(val,basebutton,summary.dt$type[i])
-        summary.dt$type[i]=str_replace("thisValue",val,summary.dt$type[i])
+        summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
+        summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
       }
     }
   }
+  if(grepl("amp|hetdel",summary.dt$type[i])){
+    for(val in CnvSequences){
+      if(grepl(val,summary.dt$type[i])){
+        summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
+        summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
+      }
+    }
+  }
+  summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
 }
+
 DT::datatable(summary.dt, escape=FALSE, options = list(scrollX = TRUE))
-```
-
-
-```{r}
-wol=c("underexpression","overexpression")
-grepl("hover|hunder",wol)
-
-library(stringr)
-sample="wololo/gene/name"
-gsub(".*gene/","",sample)
 ```
 
 
