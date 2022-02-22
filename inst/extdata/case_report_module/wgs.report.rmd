@@ -267,7 +267,7 @@ for(i in 1:nrow(summary.dt)){
         summary.dt$type[i]=str_replace("thisValue",val,summary.dt$type[i])
       }
     }
-  }elif(grepl("amp|hetdel",summary.dt$type[i])){
+  }else if(grepl("amp|hetdel",summary.dt$type[i])){
     for(val in CnvSequences){
       if(grepl(val,summary.dt$type[i])){
         summary.dt$type[i]=str_replace(val,basebutton,summary.dt$type[i])
