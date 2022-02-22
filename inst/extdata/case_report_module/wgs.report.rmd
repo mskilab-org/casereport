@@ -251,8 +251,44 @@ Tumor Mutation Burden (TMB): `r format(round(summary.list$mut_per_mbp, 2), 2)` p
 
 ```{r, summ-driver, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE}
 summary.dt = fread(file.path(params$outdir, "summaryTable.txt"))
+expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
+expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
+cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
+basebutton=paste('<input type="button" onclick="openTabset()"',';" value="thisValue" />',sep="'")
+ExpSequences=c("overexpression","underexpression")
+CnvSequences=c("amp","hetdel")
+
+for(i in 1:nrow(summary.dt)){
+  g=gsub(".*/gene/","",summary.dt$gene[i])
+  if(grepl("expression",summary.dt$type[i])){
+    for(val in ExpSequences){
+      if(grepl(val,summary.dt$type[i])){
+        summary.dt$type[i]=str_replace(val,basebutton,summary.dt$type[i])
+        summary.dt$type[i]=str_replace("thisValue",val,summary.dt$type[i])
+      }
+    }
+  }elif(grepl("amp|hetdel",summary.dt$type[i])){
+    for(val in CnvSequences){
+      if(grepl(val,summary.dt$type[i])){
+        summary.dt$type[i]=str_replace(val,basebutton,summary.dt$type[i])
+        summary.dt$type[i]=str_replace("thisValue",val,summary.dt$type[i])
+      }
+    }
+  }
+}
 DT::datatable(summary.dt, escape=FALSE, options = list(scrollX = TRUE))
 ```
+
+
+```{r}
+wol=c("underexpression","overexpression")
+grepl("hover|hunder",wol)
+
+library(stringr)
+sample="wololo/gene/name"
+gsub(".*gene/","",sample)
+```
+
 
 ```{r, expr-driver, results = "asis", echo = FALSE}
 expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
