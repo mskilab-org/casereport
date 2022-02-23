@@ -255,10 +255,6 @@ expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
 expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
 cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
 
-basebutton=paste('<input type="button" onclick="openTabset()"',';" value="thisValue" />',sep="'")
-ExpSequences=c("overexpression","underexpression")
-CnvSequences=c("amp","hetdel")
-
 basebutton=paste('<input type="button" onclick="openTabset"',';" value="thisValue" />',sep="'")
 ExpSequences=c("overexpression","underexpression")
 CnvSequences=c("amp","hetdel")
@@ -289,6 +285,8 @@ for(i in 1:nrow(summary.dt)){
   if(grepl("fusion",summary.dt$type[i])){
         summary.dt$type[i]=gsub("fusion",basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue","fusion",summary.dt$type[i])
+        
+        forAction=paste0("showImg('",fusions.gallery.dt[genes == g, plot.fname],"_id')")
   }
   summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
 }
@@ -338,6 +336,25 @@ if (nrow(cn.gallery.dt) > 0) {
         )   
     }
 }
+```
+
+```{r, fus-driver, results = "asis", echo = FALSE}
+fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
+    if (nrow(fusions.gallery.dt) > 0) {
+        for (g in fusions.gallery.dt[, genes]) {
+            cat('<div id="',paste0(g,"-fus"),'" class="section level3">')
+            cat("###", paste0(g, "<br>","\n"))
+            cat(
+                paste0('<p>',
+                       '<img', 'id="','"', paste0(fusions.gallery.dt[genes == g, plot.fname],'_id'),'" src="',
+                       fusions.gallery.dt[genes == g, plot.fname],
+                       '" width="75%" />',
+                       '</a>',
+                       '</p>'
+                       )
+            )
+        }
+    }
 ```
 
 ***
