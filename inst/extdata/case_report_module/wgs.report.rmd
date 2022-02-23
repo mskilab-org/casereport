@@ -259,15 +259,20 @@ basebutton=paste('<input type="button" onclick="openTabset()"',';" value="thisVa
 ExpSequences=c("overexpression","underexpression")
 CnvSequences=c("amp","hetdel")
 
+basebutton=paste('<input type="button" onclick="openTabset"',';" value="thisValue" />',sep="'")
+ExpSequences=c("overexpression","underexpression")
+CnvSequences=c("amp","hetdel")
+
 for(i in 1:nrow(summary.dt)){
   g=gsub(".*/gene/","",summary.dt$gene[i])
+  g=gsub(" target.*$","",g)
   if(grepl("expression",summary.dt$type[i])){
     for(val in ExpSequences){
       if(grepl(val,summary.dt$type[i])){
         summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
         forAction=paste0("showImg('",g,".expr');showImg('",g,".gg')")
-        summary.dt$type[i]=gsub('openTabset()',forAction,summary.dt$type[i])
+        summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
       }
     }
   }
@@ -277,13 +282,13 @@ for(i in 1:nrow(summary.dt)){
         summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
         forAction=paste0("showImg('",g,".cnv')")
-        summary.dt$type[i]=gsub('openTabset()',forAction,summary.dt$type[i])
+        summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
       }
     }
   }
-  if(grepl("fusions",summary.dt$type[i])){
-        summary.dt$type[i]=gsub("fusions",basebutton,summary.dt$type[i])
-        summary.dt$type[i]=gsub("thisValue","fusions",summary.dt$type[i])
+  if(grepl("fusion",summary.dt$type[i])){
+        summary.dt$type[i]=gsub("fusion",basebutton,summary.dt$type[i])
+        summary.dt$type[i]=gsub("thisValue","fusion",summary.dt$type[i])
   }
   summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
 }
