@@ -254,6 +254,7 @@ summary.dt = fread(file.path(params$outdir, "summaryTable.txt"))
 expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
 expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
 cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
+fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
 
 basebutton=paste('<input type="button" onclick="openTabset"',';" value="thisValue" />',sep="'")
 ExpSequences=c("overexpression","underexpression")
