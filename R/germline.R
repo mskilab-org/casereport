@@ -29,6 +29,7 @@ process_germline_muts = function(germline_coding, driver_germline_mutations, ger
 
     germline_dt = readRDS(germline_coding)
 
+    germline_dt_dedup = germline_dt
     germline_dt_dedup[, uid := paste(gene, variant.c)]
 
     # in case the AA variation is different in different transcripts we will take all versions
