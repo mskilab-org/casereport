@@ -414,8 +414,10 @@ driver.genes.expr = fread(file.path(params$outdir, "driver.genes.expr.txt"))
 driver.genes.expr$min_normalized_cn=unlist(lapply(driver.genes.expr$min_normalized_cn,FUN=signif,digits=4))
 driver.genes.expr$max_normalized_cn=unlist(lapply(driver.genes.expr$max_normalized_cn,FUN=signif,digits=4))
 driver.genes.expr$expr.quantile=unlist(lapply(driver.genes.expr$expr.quantile,FUN=signif,digits=4))
-driver.genes.expr$zscore=unlist(lapply(driver.genes.expr$zscore,FUN=signif,digits=4))
-driver.genes.expr = driver.genes.expr[order(-abs(zscore))] #  sort by Z-score
+if (driver.genes.expr[,.N] > 0){
+    driver.genes.expr$zscore=unlist(lapply(driver.genes.expr$zscore,FUN=signif,digits=4))
+    driver.genes.expr = driver.genes.expr[order(-abs(zscore))] #  sort by Z-score
+}
 
 if (nrow(driver.genes.expr)) {
     DT::datatable(driver.genes.expr, options = list(scrollX = TRUE))
@@ -486,12 +488,15 @@ if (file.exists(waterfall.fn)) {
 
 ```{r, surface-expr-table,  dropAboveExp=TRUE, results = "asis", max.width= "100%"}
 surface.genes.expr = fread(file.path(params$outdir, "surface.genes.expr.txt"))
-surface.genes.expr$min_normalized_cn=unlist(lapply(surface.genes.expr$min_normalized_cn,FUN=signif,digits=4))
-surface.genes.expr$max_normalized_cn=unlist(lapply(surface.genes.expr$max_normalized_cn,FUN=signif,digits=4))
-surface.genes.expr$expr.quantile=unlist(lapply(surface.genes.expr$expr.quantile,FUN=signif,digits=4))
-surface.genes.expr$zscore=unlist(lapply(surface.genes.expr$zscore,FUN=signif,digits=4))
-surface.genes.expr$expr = factor(surface.genes.expr$expr, c('over', 'under', ''))
-surface.genes.expr = surface.genes.expr[order(expr, -min_cn, -abs(zscore))] # sort to show over expressed, and then underexpressed. Whithin over-expressed we show highest CN first and for each CN we sort by Z-score
+if (surface.genes.expr[,.N] > 0){
+    surface.genes.expr$min_normalized_cn=unlist(lapply(surface.genes.expr$min_normalized_cn,FUN=signif,digits=4))
+    surface.genes.expr$max_normalized_cn=unlist(lapply(surface.genes.expr$max_normalized_cn,FUN=signif,digits=4))
+    surface.genes.expr$expr.quantile=unlist(lapply(surface.genes.expr$expr.quantile,FUN=signif,digits=4))
+    surface.genes.expr$expr = factor(surface.genes.expr$expr, c('over', 'under', ''))
+    surface.genes.expr$zscore=unlist(lapply(surface.genes.expr$zscore,FUN=signif,digits=4))
+    surface.genes.expr = surface.genes.expr[order(-abs(zscore))] #  sort by Z-score
+    surface.genes.expr = surface.genes.expr[order(expr, -min_cn, -abs(zscore))] # sort to show over expressed, and then underexpressed. Whithin over-expressed we show highest CN first and for each CN we sort by Z-score
+}
 
 if (nrow(surface.genes.expr)) {
     DT::datatable(surface.genes.expr, options = list(scrollX = TRUE))
