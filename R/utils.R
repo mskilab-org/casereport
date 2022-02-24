@@ -801,7 +801,7 @@ check_file = function(fn, overwrite = FALSE, verbose = TRUE){
 
 
 file.good = function(f){
-    if (is.null(f)){
+    if (is.null(f) || !is.character(f)){
         return(FALSE)
     }
     file.exists(f) & (file.size(f)>0)
