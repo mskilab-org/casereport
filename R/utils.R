@@ -188,96 +188,94 @@ ppng = function (expr, filename = "plot.png", height = 1000, width = 1000,
 
 
 
-grok_vcf = function (x, snpeff.ontology = NULL, label = NA, keep.modifier = TRUE, long = FALSE, 
-                     oneliner = FALSE, verbose = FALSE) 
+#' @name grok_vcf
+#' @title modded grok_vcf
+#'
+#'
+#' @param x path to vcf
+#' @param label
+#' @param keep.modifier
+#' @param long
+#' @param oneliner
+#' @param verbose
+#' @param geno
+#' @param tmp.dir
+#' @param gr
+#' @return GRanges
+#' @author Marcin Imielinski
+#' @export
+grok_vcf = function(x, label = NA, keep.modifier = TRUE, long = FALSE,
+                    oneliner = FALSE, verbose = FALSE, geno = NULL,
+                    tmp.dir = tempdir(), gr = NULL)
 {
-    fn = c("allele", "annotation", "impact", "gene", "gene_id", 
-           "feature_type", "feature_id", "transcript_type", "rank", 
-           "variant.c", "variant.p", "cdna_pos", "cds_pos", "protein_pos", 
-           "distance")
-    if (is.character(x)) {
-        out = suppressWarnings(skidb::read_vcf(x))
-        if (is.na(label)) 
-            label = x
+  fn = c('allele', 'annotation', 'impact', 'gene', 'gene_id', 'feature_type', 'feature_id', 'transcript_type', 'rank', 'variant.c', 'variant.p', 'cdna_pos', 'cds_pos', 'protein_pos', 'distance')
+
+  if (is.character(x))
+    {
+        out = suppressWarnings(read_vcf(x, tmp.dir = tmp.dir, geno = geno, gr = gr))
+        if (length(out) == 0) {
+            return(out)
+        }
+      if (is.na(label))
+        label = x
     }
-    else out = x
-    if (is.na(label)) 
-        label = ""
-    if (verbose) 
-        message("Grokking vcf ", label)
-    if (!long) {
+  else
+    out = x
+
+  if (is.na(label))
+    label = ''
+
+  if (verbose)
+    message('Grokking vcf ', label)
+
+  if (!long)
+  {
         vcf = out
-        if (length(vcf) > 0) {
-            if (!is.null(vcf$ANN)) {
-                vcf$eff = unstrsplit(vcf$ANN)
-                vcf$modifier = !grepl("(HIGH)|(LOW)|(MODERATE)", 
-                                      vcf$eff)
-                if (!keep.modifier) 
-                    vcf = vcf[!vcf$modifier]
-            }
-            vcf$ref = as.character(vcf$REF)
-            vcf$alt = as.character(unstrsplit(vcf$ALT))
-            vcf = vcf[, sapply(values(vcf), class) %in% c("factor", 
-                                                          "numeric", "integer", "logical", "character")]
-            vcf$var.id = 1:length(vcf)
-            vcf$type = ifelse(nchar(vcf$ref) == nchar(vcf$alt), 
-                              "SNV", ifelse(nchar(vcf$ref) < nchar(vcf$alt), 
-                                            "INS", "DEL"))
-            vcf$label = label
+        if (length(vcf)>0)
+        {
+          if (!is.null(vcf$ANN))
+          {
+            vcf$eff = unstrsplit(vcf$ANN)
+            vcf$modifier = !grepl('(HIGH)|(LOW)|(MODERATE)', vcf$eff)
+            if (!keep.modifier)
+              vcf = vcf[!vcf$modifier]
+          }
+          vcf$ref = as.character(vcf$REF)
+          vcf$alt = as.character(unstrsplit(vcf$ALT))
+          vcf = vcf[, sapply(values(vcf), class) %in% c('factor', 'numeric', 'integer', 'logical', 'character')]
+          vcf$var.id = 1:length(vcf)
+          vcf$type = ifelse(nchar(vcf$ref)==nchar(vcf$alt), 'SNV',
+                     ifelse(nchar(vcf$ref)<nchar(vcf$alt),
+                            'INS', 'DEL'))
+          vcf$label = label
         }
         return(vcf)
-    }
-    else if (length(out) > 0) {
+  }
+  else if (length(out)>0)
+    {
         out$REF = as.character(out$REF)
         out$ALT = as.character(unstrsplit(out$ALT))
-        out$vartype = ifelse(nchar(out$REF) == nchar(out$ALT), 
-                             "SNV", ifelse(nchar(out$REF) < nchar(out$ALT), "INS", 
-                                           "DEL"))
-        if (is.null(out$ANN)) 
-            stop("no $ANN column, check to see if annotated VCF is formatted in the SnpEff style")
-        else out$eff = unstrsplit(out$ANN)
-        out$modifier = !grepl("(HIGH)|(LOW)|(MODERATE)", out$eff)
-        if (!keep.modifier) 
-            out = out[!out$modifier]
-        if (inherits(out$ANN, "character")) 
-            annlist = strsplit(out$ANN, ",")
-        else annlist = out$ANN %>% as.list
-        tmp = lapply(annlist, function(y) do.call(rbind, lapply(strsplit(y, 
-                                                                         "\\|"), "[", 1:15)))
-        tmpix = rep(1:length(out), elementNROWS(tmp))
+        out$vartype = ifelse(nchar(out$REF) == nchar(out$ALT), 'SNV',
+                      ifelse(nchar(out$REF) < nchar(out$ALT), 'INS', 'DEL'))
+        tmp = lapply(out$ANN, function(y) do.call(rbind, lapply(strsplit(y, '\\|'), '[', 1:15)))
+        tmpix = rep(1:length(out), sapply(tmp, NROW))
         meta = as.data.frame(do.call(rbind, tmp))
         colnames(meta) = fn
         meta$varid = tmpix
-        meta$file = label
+        meta$file = x
         out2 = out[tmpix]
         rownames(meta) = NULL
         values(out2) = cbind(values(out2), meta)
         names(out2) = NULL
         out2$ANN = NULL
-        precedence = c("trunc", "cnadel", "cnadup", "complexsv", 
-                       "splice", "inframe_indel", "fusion", "missense", 
-                       "promoter", "regulatory", "noncoding", "inv", "synonymous", 
-                       "")
-        ## eff = readRDS(system.file("extdata", "snpeff_ontology.rds", 
-        ##     package = "skitools"))[, `:=`(short, factor(short, 
-        ##                                                 precedence))][!is.na(short), ]
-        if (!is.null(snpeff.ontology)){
-            eff = readRDS(snpeff.ontology)
-        }
-        .short = function(vcf) {
-            tmp = strsplit(as.character(vcf$annotation), "\\&")
-            dtl = data.table(eff = unlist(tmp), id = rep(1:length(tmp), 
-                                                         lengths(tmp))) %>% merge(eff, by = "eff", allow.cartesian = TRUE) %>% 
-                unique(by = "id")
-            setkey(dtl, id)
-            vcf$short = dtl[.(1:length(vcf)), short]
-            return(vcf)
-        }
-        out2 = .short(out2)
-        if (oneliner) 
-            out2$oneliner = paste(ifelse(!is.na(out2$gene), as.character(out2$gene), 
-                                         as.character(out2$annotation)), ifelse(nchar(as.character(out2$variant.p)) > 
-                                                                                0, as.character(out2$variant.p), as.character(out2$variant.c)))
+        if (oneliner)
+          out2$oneliner = paste(
+            ifelse(!is.na(out2$gene),
+                   as.character(out2$gene),
+                   as.character(out2$annotation)),
+            ifelse(nchar(as.character(out2$variant.p))>0,
+                   as.character(out2$variant.p),
+                   as.character(out2$variant.c)))
     }
     return(out2)
 }
@@ -1983,7 +1981,6 @@ filter.snpeff = function(vcf,
         stop("invalid ref.name")
     }
 
-    require(skitools)
     if (verbose) {
         message("Reading VCF/BCF input")
     }
@@ -3618,4 +3615,41 @@ set_param = function(l = list(), name = '', value = NA_character_){
         l[name] = value
     }
     return(l)
+}
+
+#' @name try2
+#' @title wrapper around tryCatch - robust to parallel:: functions
+#'
+#' A slightly more robust version of try that works within the parallel:: set of functions
+#' that pre-deploy a cluster.
+#'
+#' @param expr an R expression to try.
+#' @param finally expression to be evaluated before returning or exiting.
+try2 = function(expr, ..., finally) {
+    tryCatch(expr,
+             error = function(e) {
+                 msg = structure(paste(conditionMessage(e), conditionCall(e), sep = "\n"), class = "err")
+                 cat("Error: ", msg, "\n\n")
+                 return(msg)
+             },
+             finally = finally,
+             ... = ...)
+}
+
+#' @name rand.string
+#' @title make a random string
+#'
+#' @return random string
+#' @author Someone from Stackoverflow
+#' @export rand.string
+rand.string <- function(n=1, length=12)
+{
+    randomString <- c(1:n)                  # initialize vector
+    for (i in 1:n)
+    {
+        randomString[i] <- paste(sample(c(0:9, letters, LETTERS),
+                                        length, replace=TRUE),
+                                 collapse="")
+    }
+    return(randomString)
 }

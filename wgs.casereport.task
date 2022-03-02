@@ -18,6 +18,8 @@ input	ot_results	oneness_twoness	path	/dev/null	## oneness twoness results
 input	snpeff_snv_bcf	snpeff_snv_bcf	path	/dev/null	## snpeff annotated bcf
 input	snpeff_indel_bcf	snpeff_indel_bcf	path	/dev/null	## if snpeff_snv_bcf already includes indels then no need to provide anything here
 input	germline_coding	germline_coding	path	/dev/null	## this is the "annotated.germline.coding.rds" output from the Alterations module
+input	germline_snpeff_snv_bcf	germline_snpeff_snv_bcf	path	/dev/null	## snpeff annotated germline bcf
+input	germline_snpeff_indel_bcf	germline_snpeff_indel_bcf	path	/dev/null	## if germline_snpeff_snv_bcf already includes indels then no need to provide anything here
 input	snv_vcf		snv_vcf		path	/dev/null	## strelka2 SNVs vcf
 input	indel_vcf	indel_vcf	path	/dev/null	## if snv_vcf already includes indels then no need to supply anything here
 input	amp_thresh	amp_thresh	value	4
