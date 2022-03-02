@@ -114,6 +114,19 @@ function showVIM() {
         }
 </script>
 
+<script>
+function hideImgs() {
+          var DivId = document.getElementById("summary-driver-table");
+          var images = DivId.getElementsByTagName("img");
+          for(var i=0, iLen=images.length; i<iLen; i++) {
+            if(images[i].style.display != "none"){
+              images[i].style.display = "none";
+            }
+          }
+        }
+</script>
+
+
 
 <style type="text/css">
 table {
@@ -295,7 +308,7 @@ for(i in 1:nrow(summary.dt)){
 
 DT::datatable(summary.dt, escape=FALSE, options = list(scrollX = TRUE))
 ```
-
+<input type="button" value="Clear All" id="CLBut" onclick="hideImgs()" />
 
 ```{r, expr-driver, results = "asis", echo = FALSE}
 expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
