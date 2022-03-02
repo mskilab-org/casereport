@@ -1287,7 +1287,7 @@ deconstructsigs_histogram = function(sigs.fn = NULL,
     allsig[, Signature := as.character(Signature)]
     sct[, Signature := as.character(Signature)]
 
-    if (opt$pair %in% allsig[, pair]){
+    if (id %in% allsig[, pair]){
         ## remove existing record from the cohort first
         allsig = allsig[pair != id]
     }
@@ -1801,7 +1801,7 @@ rna_reformat = function(kallisto.fname,
     }
 
     ## grab correct gene for target id
-    if (file.good(gngt.fname)){
+    if (is.character(gngt.fname) && file.good(gngt.fname)){
         ge.data = stack(readRDS(gngt.fname)@data[[1]])
     } else if (inherits(gngt.fname, "GRanges")){
         ge.data = gngt.fname
@@ -2590,7 +2590,7 @@ oncotable = function(tumors, gencode = NULL, verbose = TRUE,
         if ('proximity' %in% names(dat) && file.good(dat[x, proximity]) && nrow(readRDS(dat[x, proximity])$dt)) {
             if (verbose)
                 message('Processing proximity results.')
-            proximity.dt = readRDS(opt$proximity)$dt[reldist < max.reldist & refdist > min.refdist,]
+            proximity.dt = readRDS(dat[x, proximity])$dt[reldist < max.reldist & refdist > min.refdist,]
             if (proximity.dt[,.N] > 0){
                 out = rbind(out, proximity.dt[, .(gene = gene_name, value = reldist,
                                                   reldist, altdist, refdist, walk.id,
