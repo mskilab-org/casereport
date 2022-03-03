@@ -798,6 +798,13 @@ driver.mutations.dt[is.na(driver.mutations.dt$Tier),]$Tier="Undefined"
 DT::datatable(driver.mutations.dt, options = list(scrollX = TRUE))
 ```
 
+# Driver Germline SNVs/indels
+
+```{r, driver-germline-snv-indel, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
+driver.germline.mutations.dt = fread(file.path(params$outdir, "driver.germline.mutations.txt"))
+DT::datatable(driver.germline.mutations.dt, options = list(scrollX = TRUE))
+```
+
 # SNV signatures {.tabset .tabset-fade .tabset-pills}
 Fitting <a href="https://cancer.sanger.ac.uk/signatures/sbs/">COSMIC signatures</a> to the whole genome mutation profiles of
 this sample we obtain the following active SNV mutation signatures:

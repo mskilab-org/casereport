@@ -18,6 +18,7 @@ test_that("Run case report for G32831", {
              gencode = system.file('extdata', 'mock.gencode.gtf', package = 'casereport'),
              gencode_gtrack = system.file('extdata', 'gt.ge.hg19.rds', package = 'casereport'),
              snv_vcf = system.file('extdata', 'G32831/G32831.Detroit_562.vcf', package = "casereport"),
+             germline_snpeff_snv_bcf = system.file('extdata', 'G32831/germline-annotated.bcf', package = "casereport"),
              snpeff_snv_bcf = system.file('extdata', 'G32831/annotated.bcf', package = "casereport"))
 
     wgs.report(opt)

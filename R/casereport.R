@@ -49,11 +49,14 @@ wgs.report = function(opt){
         opt$outdir = './'
     }
 
+    ##################
+    ##Setting a bunch of default values
+    ##################
     NA_default_params = c('cbs_cov_rds', 'cbs_nseg_rds', 'het_pileups_wgs',
                           "deconstruct_sigs", "deconstruct_variants",
                           "sigs_cohort", "tpm", "hrd_results",
                           "ot_results", "snv_vcf", "indel_vcf", "snpeff_snv_bcf",
-                          "snpeff_indel_bcf", "drivers", "cohort_metadata"
+                          "snpeff_indel_bcf", "drivers", "cohort_metadata", "germline_coding"
                           )
     for (param in NA_default_params){
         opt = set_param(opt, param, NA_character_)
@@ -150,6 +153,10 @@ wgs.report = function(opt){
 
     ## SNVS
     report.config$driver_mutations = paste0(report.config$outdir, "/", "driver.mutations.txt")
+
+    ## Germline SNVS/INDELS
+    report.config$driver_germline_mutations = paste0(report.config$outdir, "/", "driver.germline.mutations.txt")
+    report.config$germline_coding = paste0(report.config$outdir, "/annotated.germline.coding.rds")
 
     ## SV
     report.config$sv_gtracks = paste0(report.config$outdir, "/", "sv.gallery.txt")
@@ -808,6 +815,19 @@ wgs.report = function(opt){
             
 
             fwrite(driver.mutations.dt, report.config$driver_mutations)
+        }
+
+        ## ##################
+        ## Driver gene germline mutations
+        ## ##################
+        if (check_file(report.config$driver_germline_mutations, opt$overwrite, opt$verbose)) {
+            message("Driver germline mutation analysis already exists.")
+        } else {
+            germline_dt = process_germline_muts(report.config$germline_coding,
+                                                driver_germline_mutations = report.config$driver_germline_mutations,
+                                                name = report.config$pair,
+                                                germline_snpeff_snv_bcf = report.config$germline_snpeff_snv_bcf)
+            message('Done proccessing germline mutations')
         }
 
         ## ##################
