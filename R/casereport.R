@@ -34,6 +34,7 @@ wgs.report = function(opt){
             library(readr)
             library(data.table)
             library(casereport)
+            library(skitools)
             data.table::setDTthreads(1)
         })
     })
