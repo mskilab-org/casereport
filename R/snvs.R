@@ -30,8 +30,8 @@ process_germline_muts = function(germline_coding, driver_germline_mutations, nam
                                      CLNVC = as.character(),
                                      annotation = as.character(),
                                      impact = as.character())
-            fwrite(empty_empty_germline_dt, driver_germline_mutations)
-            return(empty_empty_germline_dt)
+            fwrite(empty_germline_dt, driver_germline_mutations)
+            return(empty_germline_dt)
         }
     }
 
