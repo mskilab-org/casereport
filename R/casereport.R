@@ -1596,6 +1596,7 @@ wgs.report = function(opt){
         wol=makeSummaryTable(report.config$driver_scna,report.config$driver_fusions, report.config$rna_change_with_cn,report.config$driver_mutations,report.config$oncotable)
         wol$tier=as.character(wol$tier)
         wol[is.na(wol$tier),]$tier="Undefined"
+        wol=wol[!is.na(wol$type),]
         fwrite(wol,report.config$summaryTable)
         }
 
