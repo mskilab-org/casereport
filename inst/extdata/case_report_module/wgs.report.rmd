@@ -293,7 +293,6 @@ for(i in 1:nrow(summary.dt)){
   }
   summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
 }
-summary.dt=summary.dt[!is.na(summary.dt$type),]
 DT::datatable(summary.dt, escape=FALSE, options = list(scrollX = TRUE))
 ```
 
