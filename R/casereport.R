@@ -1597,6 +1597,7 @@ wgs.report = function(opt){
         wol$tier=as.character(wol$tier)
         wol[is.na(wol$tier),]$tier="Undefined"
         wol=wol[!is.na(wol$type),]
+        wol=wol[wol$type!="",]
         fwrite(wol,report.config$summaryTable)
         }
 
