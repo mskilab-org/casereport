@@ -451,7 +451,7 @@ DT::datatable(surface.genes.cnv, options = list(scrollX = TRUE))
 `r paste('<div id="surface-cnv-gallery" class="section level2 tabset tabset-fade tabset-pills">')`
 ## Surface CNV gallery {.tabset .tabset-fade .tabset-pills}
 
-```{r cn-tabset, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
+```{r, surface-cn-tabset, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
 cn.gallery.dt = fread(file.path(params$outdir, "surface.cn.gallery.txt"))
 if (nrow(cn.gallery.dt) > 0) {
     cat("\n")
