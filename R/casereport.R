@@ -940,6 +940,31 @@ wgs.report = function(opt){
         } else {
             message("CN gallery files already exist")
         }
+        
+        if (!check_file(report.config$surface_scna_gtracks, overwrite = opt$overwrite)) {
+            message("preparing Surface CN gallery")
+            ## grab ploidy
+            pl = readRDS(opt$jabba_rds)$ploidy
+            surface.cn.gallery.dir = paste0(opt$outdir, '/surface_cn_gallery')
+            dir.create(surface.cn.gallery.dir)
+            surface.cn.slickr.dt = cn.plot(drivers.fname = report.config$surface_scna,
+                                   report.config$complex,
+                                   cvgt.fname = report.config$coverage_gtrack,
+                                   gngt.fname = report.config$gencode_gtrack,
+                                   agt.fname = report.config$allele_gtrack,
+                                   server = opt$server,
+                                   pair = opt$pair,
+                                   amp.thresh = opt$amp_thresh,
+                                   ploidy = pl,
+                                   pad = 0.5,
+                                   height = 900,
+                                   width = 1000,
+                                   overwrite = opt$overwrite,
+                                   outdir = surface.cn.gallery.dir)
+            fwrite(surface.cn.slickr.dt, report.config$surface_scna_gtracks)
+        } else {
+            message("CN gallery files already exist")
+        }
 
         ## histograms of over and under-expressed genes
         if (check_file(report.config$expression_histograms, opt$overwrite, opt$verbose)) {
