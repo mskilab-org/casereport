@@ -151,6 +151,7 @@ wgs.report = function(opt){
     report.config$driver_scna = paste0(report.config$outdir, '/driver.genes.cnv.txt')
     report.config$surface_scna = paste0(report.config$outdir, '/surface.genes.cnv.txt')
     report.config$scna_gtracks = paste0(report.config$outdir, "/", "cn.gallery.txt")
+    report.config$surface_scna_gtracks = paste0(report.config$outdir, "/", "surface.cn.gallery.txt")
 
     ## SNVS
     report.config$driver_mutations = paste0(report.config$outdir, "/", "driver.mutations.txt")
