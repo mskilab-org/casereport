@@ -544,8 +544,8 @@ wgs.report = function(opt){
                                                     by.x = "gene",
                                                     by.y = "gene_name",
                                                     all.x = TRUE)
-            fwrite(driver.genes.expr.dt[role != 'SURF'], report.config$rna_change_with_cn)
-            fwrite(driver.genes.expr.dt[role %like% 'SURF'], report.config$surface_rna_change_with_cn)
+            fwrite(driver.genes.expr.dt[role != 'SURF' & ((role %like% 'ONC' & expr.quantile>0.95) | (role %like% 'TSG' & expr.quantile<0.05))], report.config$rna_change_with_cn)
+            fwrite(driver.genes.expr.dt[role %like% 'SURF' & (expr.quantile>0.95 | expr.quantile<0.05)], report.config$surface_rna_change_with_cn)
         }
 
 
