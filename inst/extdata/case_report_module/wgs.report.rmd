@@ -117,6 +117,28 @@ function hideImgs() {
 </script>
 
 
+<script>
+function showHeader() {
+    var DivId = document.getElementById("sample-table");
+    var thisheader = arguments[0];
+    var rows = DivId.getElementsByTagName("tr");
+    var one = 0;
+    for(var i=0, iLen=rows.length; i<iLen; i++) {
+            if(rows[i].id != arguments[0] && rows[i].id.length!=0 && rows[i].style.display != "none"){
+              console.log(rows[i].id)
+              one=1;
+            }
+      }
+      if(one==1) {
+        document.getElementById(thisheader).style.display = "";
+      }else{
+      document.getElementById(thisheader).style.display = "none";
+      }
+      }
+</script>
+
+
+
 <style type="text/css">
 table {
   margin: auto;
@@ -260,6 +282,7 @@ fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
 basebutton=paste('<input type="button" onclick="openTabset"',';" value="thisValue" />',sep="'")
 ExpSequences=c("overexpression","underexpression")
 CnvSequences=c("amp","hetdel")
+SnvSequences=c("missense")
 
 for(i in 1:nrow(summary.dt)){
   g=gsub(".*/gene/","",summary.dt$gene[i])
@@ -289,6 +312,14 @@ for(i in 1:nrow(summary.dt)){
         summary.dt$type[i]=gsub("thisValue","fusion",summary.dt$type[i])
         
         forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')")
+        summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+  }
+  summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
+  
+  if(grepl("missense",summary.dt$type[i])){
+        summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
+        
+        forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".snvt')",";showHeader(snvheader)")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
   }
   summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
@@ -341,6 +372,22 @@ if (nrow(cn.gallery.dt) > 0) {
 }
 ```
 
+```{r surface-cn-driver, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
+cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
+if (nrow(cn.gallery.dt) > 0) {
+    for (g in cn.gallery.dt[, gene_name]) {
+        cat(
+            paste0('<p>',
+                    '<img',' id="', g,'.cnv"',' src="',
+                    cn.gallery.dt[gene_name == g, plot.fname],
+                    '" style="display:none;" width="100%" />',
+                    '</p>'
+            )
+        )   
+    }
+}
+```
+
 ```{r, fus-driver, results = "asis", echo = FALSE}
 fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
     if (nrow(fusions.gallery.dt) > 0) {
@@ -357,6 +404,37 @@ fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
         }
     }
 ```
+
+```{r, SNV-driver, results = "asis", echo = FALSE}
+driver.mutations.dt = fread(file.path(params$outdir, "driver.mutations.txt"))
+driver.mutations.dt$Tier=as.character(driver.mutations.dt$Tier)
+driver.mutations.dt[is.na(driver.mutations.dt$Tier),]$Tier="Undefined"
+cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SNV_Table">')
+headerline='<tr id="snvheader" style="display:none">'
+for(i in colnames(driver.mutations.dt)){
+  thisH=paste0('<th>',i,'</th>')
+  headerline=paste0(headerline,thisH)
+}
+cat(paste0(headerline,'</tr>'))
+
+
+for(i in 1:nrow(driver.mutations.dt)){
+  rLine=paste0('<tr class="odd" id="',driver.mutations.dt$gene[i],'.snvt" style="display:none">')
+  for(j in 1:ncol(driver.mutations.dt)){
+    thisL=paste0('<td>',driver.mutations.dt[i,j],'</td>')
+    rLine=paste0(rLine,thisL)
+  }
+  cat(paste0(rLine,'</tr>'))
+}
+
+
+```
+
+ <table class="display dataTable no-footer table table-condensed" aria-describedby="DataTables_Table_0_info">
+  <tr id="sheader" style="display:none"><th>Species</th><th>Genre</th></tr>
+   <tr class="odd" id="tsetosa" style="display:none"><td>Setosa</td><td >Iris</td></tr>
+   <tr class="even" id="tversicolor" style="display:none"><td>Versicolor</td><td>Iris</td></tr>
+</table>
 
 ***
 
