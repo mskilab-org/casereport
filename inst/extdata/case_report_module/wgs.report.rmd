@@ -372,7 +372,7 @@ if (nrow(cn.gallery.dt) > 0) {
 }
 ```
 
-```{r surface-cn-driver, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
+```{r surface-cn-driver, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
 cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
 if (nrow(cn.gallery.dt) > 0) {
     for (g in cn.gallery.dt[, gene_name]) {
@@ -405,7 +405,7 @@ fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
     }
 ```
 
-```{r, SNV-driver, results = "asis", echo = FALSE}
+```{r, SNV-driver, dropBelow=TRUE, results = "asis", echo = FALSE}
 driver.mutations.dt = fread(file.path(params$outdir, "driver.mutations.txt"))
 driver.mutations.dt$Tier=as.character(driver.mutations.dt$Tier)
 driver.mutations.dt[is.na(driver.mutations.dt$Tier),]$Tier="Undefined"
