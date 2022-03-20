@@ -318,7 +318,7 @@ for(i in 1:nrow(summary.dt)){
   
   if(grepl("missense",summary.dt$type[i])){
         summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
-        
+        summary.dt$type[i]=gsub("thisValue","missense",summary.dt$type[i])
         forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".snvt')",";showHeader(snvheader)")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
   }
@@ -421,21 +421,14 @@ cat(paste0(headerline,'</tr>'))
 for(i in 1:nrow(driver.mutations.dt)){
   rLine=paste0('<tr class="odd" id="',driver.mutations.dt$gene[i],'.snvt" style="display:none">')
   for(j in 1:ncol(driver.mutations.dt)){
-    thisL=paste0('<td>',as.vector(unlist(as.vector(unlist(driver.mutations.dt[i,colnames(driver.mutations.dt)[j]])))),'</td>')
+    thisL=paste0('<td>',as.vector(as.matrix(driver.mutations.dt)[i,j]),'</td>')
     rLine=paste0(rLine,thisL)
   }
   cat(paste0(rLine,'</tr>'))
 }
 
-
+cat('</table>')
 ```
-
- <table class="display dataTable no-footer table table-condensed" aria-describedby="DataTables_Table_0_info">
-  <tr id="sheader" style="display:none"><th>Species</th><th>Genre</th></tr>
-   <tr class="odd" id="tsetosa" style="display:none"><td>Setosa</td><td >Iris</td></tr>
-   <tr class="even" id="tversicolor" style="display:none"><td>Versicolor</td><td>Iris</td></tr>
-</table>
-
 ***
 
 
