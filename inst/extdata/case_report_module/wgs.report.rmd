@@ -421,7 +421,7 @@ cat(paste0(headerline,'</tr>'))
 for(i in 1:nrow(driver.mutations.dt)){
   rLine=paste0('<tr class="odd" id="',driver.mutations.dt$gene[i],'.snvt" style="display:none">')
   for(j in 1:ncol(driver.mutations.dt)){
-    thisL=paste0('<td>',driver.mutations.dt[i,j],'</td>')
+    thisL=paste0('<td>',as.vector(unlist(driver.mutations.dt[i,j])),'</td>')
     rLine=paste0(rLine,thisL)
   }
   cat(paste0(rLine,'</tr>'))
