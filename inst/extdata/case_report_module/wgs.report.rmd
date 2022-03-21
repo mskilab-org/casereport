@@ -114,9 +114,9 @@ function hideImgs() {
             }
           }
           var rows = DivId.getElementsByTagName("tr");
-          for(var i=0, iLen=rows; i<iLen; i++) {
-            if(rows[i].style.display != "none"){
-              rows[i].style.display = "none";
+          for(var j=0, rLen=rows.length; j<rLen; j++) {
+            if(rows[j].id != "" && rows[j].style.display != "none"){
+              rows[j].style.display = "none";
             }
           }
         }
