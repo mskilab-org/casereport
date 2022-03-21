@@ -113,6 +113,12 @@ function hideImgs() {
               images[i].style.display = "none";
             }
           }
+          var rows = DivId.getElementsByTagName("tr");
+          for(var i=0, iLen=rows; i<iLen; i++) {
+            if(rows[i].style.display != "none"){
+              rows[i].style.display = "none";
+            }
+          }
         }
 </script>
 
