@@ -119,7 +119,7 @@ function hideImgs() {
 
 <script>
 function showHeader() {
-    var DivId = document.getElementById("summary-drive-table");
+    var DivId = document.getElementById("summary-driver-table");
     var thisheader = arguments[0];
     var rows = DivId.getElementsByTagName("tr");
     var one = 0;
@@ -319,7 +319,7 @@ for(i in 1:nrow(summary.dt)){
   if(grepl("missense",summary.dt$type[i])){
         summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue","missense",summary.dt$type[i])
-        forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeader(snvheader)")
+        forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeader('snvheader')")
         summary.dt$type[i]=gsub("openTabset",forAction,summary.dt$type[i])
   }
   summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
