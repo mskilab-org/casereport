@@ -508,7 +508,7 @@ wgs.report = function(opt){
 
                 cn.fields = intersect(fields, names(driver.genes_cn))
                 if (!is.null(opt$include_surface) && opt$include_surface) {
-                    fwrite(driver.genes_cn[surface != TRUE, ..cn.fields], report.config$driver_scna)
+                    fwrite(driver.genes_cn[is.na(surface) | !is.na(annot), ..cn.fields], report.config$driver_scna)
                     fwrite(driver.genes_cn[surface == TRUE, ..cn.fields], report.config$surface_scna)
                 } else {
                     fwrite(driver.genes_cn[, ..cn.fields], report.config$driver_scna)
