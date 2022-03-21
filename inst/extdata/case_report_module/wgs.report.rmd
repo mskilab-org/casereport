@@ -1244,8 +1244,8 @@ if (file.good(file.path(params$outdir, "allele.scatter.png"))){
 if (file.good(file.path(params$outdir, "deconv_results.txt"))){
     cat(paste0("This is a deconvolution of this sample's TPM Transcriptome using the ",readRDS(file.path(params$outdir, "cmd.args.rds"))$deconv," algorithm."))
     deconv_results.dt = fread(file.path(params$outdir, "deconv_results.txt"))
-    #colnames(deconv_results.dt)=c("Cell_Type","Deconv_Value")
-    #deconv_results.dt$Deconv_Value=unlist(lapply(deconv_results.dt$Deconv_Value,FUN=signif,digits=4))
+    colnames(deconv_results.dt)=c("Cell_Type","Deconv_Value")
+    deconv_results.dt$Deconv_Value=unlist(lapply(deconv_results.dt$Deconv_Value,FUN=signif,digits=4))
     DT::datatable(deconv_results.dt, options = list(scrollX = TRUE))
 }
 ```
