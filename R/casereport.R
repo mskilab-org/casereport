@@ -203,6 +203,7 @@ wgs.report = function(opt){
     report.config$summary_stats = paste0(report.config$outdir, "/summary.rds")
     report.config$oncotable = paste0(report.config$outdir, "/oncotable.rds")
     report.config$summaryTable = paste0(report.config$outdir, "/summaryTable.txt")
+    report.config$summarySurfaceTable = paste0(report.config$outdir, "/summarySurfaceTable.txt")
 
     saveRDS(report.config, paste0(report.config$outdir, "/", "report.config.rds"))
 
@@ -1621,11 +1622,17 @@ wgs.report = function(opt){
             message("Generating summary table")
         wol=makeSummaryTables(report.config$driver_scna,report.config$driver_fusions, report.config$rna_change_with_cn,report.config$driver_mutations,
                               report.config$oncotable,report.config$onc,report.config$tsg,report.config$surface)
-        wol$tier=as.character(wol$tier)
-        wol[is.na(wol$tier),]$tier="Undefined"
-        wol=wol[!is.na(wol$type),]
-        wol=wol[wol$type!="",]
-        fwrite(wol,report.config$summaryTable)
+        driverTable=wol[1]
+        surfaceTable=wol[1]
+        driverTable$tier=as.character(driverTable$tier)
+        driverTable[is.na(driverTable$tier),]$tier="Undefined"
+        surfaceTable$tier=as.character(surfaceTable$tier)
+        surfaceTable[is.na(surfaceTable$tier),]$tier="Undefined"
+        #wol=wol[!is.na(wol$type),]
+        #wol=wol[wol$type!="",]
+              
+        fwrite(driverTable,report.config$summaryTable)
+        fwrite(surfaceTable,report.config$summarySurfaceTable)
         }
 
 
