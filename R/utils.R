@@ -3436,18 +3436,17 @@ wgs_gtrack = function(jabba_rds, cvgt.fname, agt.fname = NULL) {
 }
 
 
-#' @name makeSummaryTable
-#' @title makeSummaryTable
+#' @name makeSummaryTables
+#' @title makeSummaryTables
 #' @description
 #' 
-#' Function for generating a summary table of interesting driver genes for casereport.
+#' Function for generating a summary table of interesting driver and surface genes for casereport.
 #'
 #' @param cnv_table file path to casereport copy number variants table
 #' @param fusions_table file path to casereport fusions table
 #' @param expression_table file path to casereport over/under expression table
 #' @param mutations_table file path to casereport driver mutations table
 #' @param onco_table file path to casereport oncotable
-#' @param the directory of casereport
 #' @return summary table of driver genes.
 makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_table,onco_table){
 	genelist=vector()
@@ -3463,7 +3462,8 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 	if(file.good(mutations_table)){
 		genelist=c(genelist,fread(mutations_table)$gene)
 	}
-
+	
+    genelist=unique(genelist)
     oncotable=readRDS(onco_table)
     summaryTable=NA
     pmkbTier=get_pmkb_tier_table(NA)
@@ -3489,7 +3489,7 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
     }
     
     summaryTable=summaryTable[!is.na(summaryTable$type) & summaryTable$type!=" ",]
-	summaryTable=summaryTable[summaryTable$type!="NA",]
+    summaryTable=summaryTable[summaryTable$type!="NA",]
 
     summaryTable$type=str_replace_all(summaryTable$type,"NA, ","")
     summaryTable$role=str_replace_all(summaryTable$role,"NA, ","")
@@ -3512,6 +3512,7 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 
     summaryTable$type=str_replace_all(summaryTable$type,"del"," loss")
   
+    
 	return(summaryTable)
 }
 
