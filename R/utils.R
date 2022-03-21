@@ -3488,7 +3488,6 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 		}
     }
     
-
     summaryTable$type=str_replace_all(summaryTable$type,"NA, ","")
     summaryTable$role=str_replace_all(summaryTable$role,"NA, ","")
     summaryTable$type=str_replace_all(summaryTable$type,", NA","")
