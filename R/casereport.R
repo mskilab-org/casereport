@@ -1619,7 +1619,8 @@ wgs.report = function(opt){
             message("Summary Table already exists. Skipping!")
         } else {
             message("Generating summary table")
-        wol=makeSummaryTable(report.config$driver_scna,report.config$driver_fusions, report.config$rna_change_with_cn,report.config$driver_mutations,report.config$oncotable)
+        wol=makeSummaryTables(report.config$driver_scna,report.config$driver_fusions, report.config$rna_change_with_cn,report.config$driver_mutations,
+                              report.config$oncotable,report.config$onc,report.config$tsg,report.config$surface)
         wol$tier=as.character(wol$tier)
         wol[is.na(wol$tier),]$tier="Undefined"
         wol=wol[!is.na(wol$type),]
