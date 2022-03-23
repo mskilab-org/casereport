@@ -1620,8 +1620,9 @@ wgs.report = function(opt){
             message("Summary Table already exists. Skipping!")
         } else {
             message("Generating summary table")
-        wol=makeSummaryTables(report.config$driver_scna,report.config$driver_fusions, report.config$rna_change_with_cn,report.config$driver_mutations,
-                              report.config$oncotable,report.config$onc,report.config$tsg,report.config$surface)
+        wol=makeSummaryTables(report.config$driver_scna,report.config$surface_scna, report.config$driver_fusions, report.config$rna_change_with_cn,
+                              report.config$surface_rna_change_with_cn, report.config$driver_mutations, report.config$oncotable,
+                              report.config$onc,report.config$tsg,report.config$surface)
         print(wol)
         driverTable=wol[[1]]
         surfaceTable=wol[[2]]
