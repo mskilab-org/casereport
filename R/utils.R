@@ -3442,32 +3442,44 @@ wgs_gtrack = function(jabba_rds, cvgt.fname, agt.fname = NULL) {
 #' 
 #' Function for generating summary tables of interesting driver and surface genes for casereport.
 #'
-#' @param cnv_table file path to casereport copy number variants table
+#' @param cnv_table file path to casereport driver copy number variants table
+#' @param surface_cnv file path to casereport surface copy number variants table
 #' @param fusions_table file path to casereport fusions table
-#' @param expression_table file path to casereport over/under expression table
+#' @param expression_table file path to casereport driver over/under expression table
+#' @param surface_expression file path to casereport surface over/under expression table
 #' @param mutations_table file path to casereport driver mutations table
 #' @param onco_table file path to casereport oncotable
 #' @param onc file path to list of oncogenes to consider in the table
 #' @param tsg file path to list of tsgs to consider in the table
 #' @param surface file path to list of surface genes to consider in the table
 #' @return summary table of driver genes.
-makeSummaryTables = function(cnv_table,fusions_table,expression_table,mutations_table,onco_table,onc,tsg,surface){
+makeSummaryTables = function(cnv_table,surface_cnv,fusions_table,expression_table,surface_expression,mutations_table,onco_table,onc,tsg,surface){
 	genelist=vector()
 	if(file.good(cnv_table)){
 		genelist=c(genelist,fread(cnv_table)$gene_name)
 	}
+    if(file.good(surface_cnv)){
+        genelist=c(genelist,fread(surface_cnv)$gene_name)
+    }
 	if(file.good(fusions_table)){
 		genelist=c(genelist,fread(fusions_table)$driver.name)
 	}
 	if(file.good(expression_table)){
 		genelist=c(genelist,fread(expression_table)$gene)
 	}
+    if(file.good(surface_expression)){
+        genelist=c(genelist,fread(surface_expression)$gene)
+    }
 	if(file.good(mutations_table)){
 		genelist=c(genelist,fread(mutations_table)$gene)
 	}
 	
     genelist=unique(genelist)
     oncotable=readRDS(onco_table)
+    onc=readRDS(onc)
+    tsg=readRDS(tsg)
+    surface=readRDS(surface)
+
     summaryTable=NA
     pmkbTier=get_pmkb_tier_table(NA)
     if (length(genelist) == 0){
@@ -3500,6 +3512,7 @@ makeSummaryTables = function(cnv_table,fusions_table,expression_table,mutations_
     summaryTable$role=str_replace_all(summaryTable$role,", NA","")
     summaryTable$type=str_replace_all(summaryTable$type,", $","")
     summaryTable$role=str_replace_all(summaryTable$role,", $","")
+       summaryTable$role=str_replace_all(summaryTable$role,", ,",",")
 
     summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),"True","False")    
 
@@ -3512,7 +3525,6 @@ makeSummaryTables = function(cnv_table,fusions_table,expression_table,mutations_
     summaryTable=summaryTable[!(grepl("overexpression",summaryTable$type,fixed=TRUE) & summaryTable$role=="TSG"),]
 
     summaryTable$type=str_replace_all(summaryTable$type,"del"," loss")
-  	
     driverTable=summaryTable[(gene %in% onc | gene %in% tsg) & !(gene %in% surface)]
     surfaceTable=summaryTable[!(gene %in% onc | gene %in% tsg) & (gene %in% surface)]
     driverTable$gene=paste0('<a href=https://www.oncokb.org/gene', driverTable$gene, ' target=_blank rel=noopener noreferrer >', driverTable$gene, '</a>')
