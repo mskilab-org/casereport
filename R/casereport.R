@@ -1622,8 +1622,9 @@ wgs.report = function(opt){
             message("Generating summary table")
         wol=makeSummaryTables(report.config$driver_scna,report.config$driver_fusions, report.config$rna_change_with_cn,report.config$driver_mutations,
                               report.config$oncotable,report.config$onc,report.config$tsg,report.config$surface)
-        driverTable=wol[1]
-        surfaceTable=wol[1]
+        print(wol)
+        driverTable=wol[[1]]
+        surfaceTable=wol[[2]]
         driverTable$tier=as.character(driverTable$tier)
         driverTable[is.na(driverTable$tier),]$tier="Undefined"
         surfaceTable$tier=as.character(surfaceTable$tier)
