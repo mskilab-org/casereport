@@ -3518,7 +3518,7 @@ makeSummaryTables = function(cnv_table,fusions_table,expression_table,mutations_
     driverTable$gene=paste0('<a href=https://www.oncokb.org/gene', driverTable$gene, ' target=_blank rel=noopener noreferrer >', driverTable$gene, '</a>')
     surfaceTable$gene=paste0('<a href=https://www.oncokb.org/gene', surfaceTable$gene, ' target=_blank rel=noopener noreferrer >', surfaceTable$gene, '</a>')
     
-	return(c(driverTable,surfaceTable))
+	return(list(driverTable,surfaceTable))
 }
 
 
