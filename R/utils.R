@@ -3451,7 +3451,7 @@ wgs_gtrack = function(jabba_rds, cvgt.fname, agt.fname = NULL) {
 #' @param tsg file path to list of tsgs to consider in the table
 #' @param surface file path to list of surface genes to consider in the table
 #' @return summary table of driver genes.
-makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_table,onco_table,onc,tsg,surface){
+makeSummaryTables = function(cnv_table,fusions_table,expression_table,mutations_table,onco_table,onc,tsg,surface){
 	genelist=vector()
 	if(file.good(cnv_table)){
 		genelist=c(genelist,fread(cnv_table)$gene_name)
