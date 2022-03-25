@@ -357,13 +357,18 @@ for(i in 1:nrow(summary.dt)){
         forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
   }
-  summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
   
   if(grepl("missense",summary.dt$type[i])){
         summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue","missense",summary.dt$type[i])
         forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeader('snvheader')")
         summary.dt$type[i]=gsub("openTabset",forAction,summary.dt$type[i])
+  }
+  if(grepl("proximity",summary.dt$type[i])){
+        summary.dt$type[i]=gsub("proximity",basebutton,summary.dt$type[i])
+        summary.dt$type[i]=gsub("thisValue","proximity",summary.dt$type[i])
+        forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".prox')")
+        summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
   }
   summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
 }
@@ -417,12 +422,37 @@ if (nrow(cn.gallery.dt) > 0) {
 
 ```{r, fus-driver, results = "asis", echo = FALSE}
 fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
-    if (nrow(fusions.gallery.dt) > 0) {
-        for (g in fusions.gallery.dt[, genes]) {
+summary.dt = fread(file.path(params$outdir, "summaryTable.txt"))
+driverGenes=summary.dt$gene
+driverGenes=sapply(driverGenes,function(x) gsub(".*/gene/","",x))
+driverGenes=sapply(driverGenes,function(x) sub(" target.*$","",x))
+  
+if (nrow(fusions.gallery.dt) > 0) {
+      for (g in fusions.gallery.dt[, genes]) {
+        if(g %in% driverGenes){
             cat(
                 paste0('<p>',
                        '<img', ' id="',paste0(fusions.gallery.dt[genes == g, driver.name],'.fus'),'" src="',
                        fusions.gallery.dt[genes == g, plot.fname],
+                       '" style="display:none;" width="75%" />',
+                       '</a>',
+                       '</p>'
+                       )
+            )
+        }
+        }
+    }
+```
+
+```{r, prox-driver, results = "asis", echo = FALSE}
+proximity.gallery.dt = fread(paste0(params$outdir, "/", "proximity.gallery.txt"))
+    if (nrow(proximity.gallery.dt) > 0) {
+      gns = intersect(proximity.gallery.dt$gene, expr.histograms.dt$gene)
+        for (g in gns) {
+            cat(
+                paste0('<p>',
+                       '<img', ' id="',paste0(g,'.prox'),'" src="',
+                       proximity.gallery.dt[gene == g, plot.fname],
                        '" style="display:none;" width="75%" />',
                        '</a>',
                        '</p>'
@@ -495,6 +525,14 @@ for(i in 1:nrow(summary.dt)){
       }
     }
   }
+    if(grepl("fusion",summary.dt$type[i])){
+        summary.dt$type[i]=gsub("fusion",basebutton,summary.dt$type[i])
+        summary.dt$type[i]=gsub("thisValue","fusion",summary.dt$type[i])
+        
+        forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')")
+        summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+  }
+  summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
   if(grepl("missense",summary.dt$type[i])){
         summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue","missense",summary.dt$type[i])
@@ -551,6 +589,28 @@ for (g in valid.genes) {
     }
 ```
 
+```{r, fus-driver, results = "asis", echo = FALSE}
+fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
+summary.dt = fread(file.path(params$outdir, "summaryTable.txt"))
+driverGenes=summary.dt$gene
+driverGenes=sapply(driverGenes,function(x) gsub(".*/gene/","",x))
+driverGenes=sapply(driverGenes,function(x) sub(" target.*$","",x))
+    if (nrow(fusions.gallery.dt) > 0) {
+        for (g in fusions.gallery.dt[, genes]) {
+          if(!(g %in% driverGenes)){
+            cat(
+                paste0('<p>',
+                       '<img', ' id="',paste0(fusions.gallery.dt[genes == g, driver.name],'.fus'),'" src="',
+                       fusions.gallery.dt[genes == g, plot.fname],
+                       '" style="display:none;" width="75%" />',
+                       '</a>',
+                       '</p>'
+                       )
+            )
+          }
+        }
+    }
+```
 ***
 
 # Whole genome view {.tabset .tabset-fade .tabset-pills}
