@@ -363,7 +363,7 @@ for(i in 1:nrow(summary.dt)){
   if(grepl("missense",summary.dt$type[i])){
         summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue","missense",summary.dt$type[i])
-        forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeader('snvheader')")
+        forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeader('cnvheader')")
         summary.dt$type[i]=gsub("openTabset",forAction,summary.dt$type[i])
   }
   if(grepl("proximity",summary.dt$type[i])){
@@ -386,7 +386,7 @@ driver.genes.cnv$min_normalized_cn=unlist(lapply(driver.genes.cnv$min_normalized
 driver.genes.cnv$max_normalized_cn=unlist(lapply(driver.genes.cnv$max_normalized_cn,FUN=signif,digits=4))
 driver.genes.cnv$expr.quantile=unlist(lapply(driver.genes.cnv$expr.quantile,FUN=signif,digits=4))
 
-cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SNV_Table">')
+cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="CNV_Table">')
 headerline='<tr id="cnvheader" style="display:none">'
 for(i in colnames(driver.genes.cnv)){
   thisH=paste0('<th>',i,'</th>')
