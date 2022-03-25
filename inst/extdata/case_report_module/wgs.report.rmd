@@ -95,7 +95,6 @@ function collapseAll() {
 <script>
 function showImg() {
     var thisimg = arguments[0];
-    console.log(thisimg);
       if(document.getElementById(thisimg).style.display == ""){
             document.getElementById(thisimg).style.display = "none";
       }else{
@@ -337,7 +336,7 @@ for(i in 1:nrow(summary.dt)){
       if(grepl(val,summary.dt$type[i])){
         summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
-        forAction=paste0("showImg('",g,".expr');showImg('",g,".gg')",";showImg('",g,".cnvtt')",";showHeader('snvheader')")
+        forAction=paste0("showImg('",g,".expr');showImg('",g,".gg')")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
       }
     }
@@ -347,7 +346,7 @@ for(i in 1:nrow(summary.dt)){
       if(grepl(val,summary.dt$type[i])){
         summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
-        forAction=paste0("showImg('",g,".cnv')")
+        forAction=paste0("showImg('",g,".cnv')",";showImg('",g,".cnvtt')",";showHeader('cnvheader')")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
       }
     }
@@ -363,7 +362,7 @@ for(i in 1:nrow(summary.dt)){
   if(grepl("missense",summary.dt$type[i])){
         summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue","missense",summary.dt$type[i])
-        forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeader('cnvheader')")
+        forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeader('snvheader')")
         summary.dt$type[i]=gsub("openTabset",forAction,summary.dt$type[i])
   }
   if(grepl("proximity",summary.dt$type[i])){
