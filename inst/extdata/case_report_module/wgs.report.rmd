@@ -122,10 +122,47 @@ function hideImgs() {
         }
 </script>
 
+<script>
+function hideImgsSurface() {
+          var DivId = document.getElementById("summary-surface-table");
+          var images = DivId.getElementsByTagName("img");
+          for(var i=0, iLen=images.length; i<iLen; i++) {
+            if(images[i].style.display != "none"){
+              images[i].style.display = "none";
+            }
+          }
+          var rows = DivId.getElementsByTagName("tr");
+          for(var j=0, rLen=rows.length; j<rLen; j++) {
+            if(rows[j].id != "" && rows[j].style.display != "none"){
+              rows[j].style.display = "none";
+            }
+          }
+        }
+</script>
+
 
 <script>
 function showHeader() {
     var DivId = document.getElementById("summary-driver-table");
+    var thisheader = arguments[0];
+    var rows = DivId.getElementsByTagName("tr");
+    var one = 0;
+    for(var i=0, iLen=rows.length; i<iLen; i++) {
+            if(rows[i].id != arguments[0] && rows[i].id.length!=0 && rows[i].style.display != "none"){
+              console.log(rows[i].id)
+              one=1;
+            }
+      }
+      if(one==1) {
+        document.getElementById(thisheader).style.display = "";
+      }else{
+      document.getElementById(thisheader).style.display = "none";
+      }
+      }
+</script>
+
+function showHeaderSurface() {
+    var DivId = document.getElementById("summary-surface-table");
     var thisheader = arguments[0];
     var rows = DivId.getElementsByTagName("tr");
     var one = 0;
@@ -378,22 +415,6 @@ if (nrow(cn.gallery.dt) > 0) {
 }
 ```
 
-```{r surface-cn-driver, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
-cn.gallery.dt = fread(file.path(params$outdir, "surface.cn.gallery.txt"))
-if (nrow(cn.gallery.dt) > 0) {
-    for (g in cn.gallery.dt[, gene_name]) {
-        cat(
-            paste0('<p>',
-                    '<img',' id="', g,'.cnv"',' src="',
-                    cn.gallery.dt[gene_name == g, plot.fname],
-                    '" style="display:none;" width="100%" />',
-                    '</p>'
-            )
-        )   
-    }
-}
-```
-
 ```{r, fus-driver, results = "asis", echo = FALSE}
 fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
     if (nrow(fusions.gallery.dt) > 0) {
@@ -437,6 +458,100 @@ cat('</table>')
 ```
 ***
 
+
+# Summary Surface Table
+
+```{r, summ-surface, dropAboveExp=TRUE, results = "asis", echo = FALSE}
+summary.dt = fread(file.path(params$outdir, "summarySurfaceTable.txt"))
+expr.hist.dt = fread(file.path(params$outdir, "surface.expr.histograms.txt"))
+expr.slickr.dt = fread(file.path(params$outdir, "surface.expr.gallery.txt"))
+cn.gallery.dt = fread(file.path(params$outdir, "surface.cn.gallery.txt"))
+
+basebutton=paste('<input type="button" onclick="openTabset"',';" value="thisValue" />',sep="'")
+ExpSequences=c("overexpression","underexpression")
+CnvSequences=c("amp","hetdel")
+SnvSequences=c("missense")
+
+for(i in 1:nrow(summary.dt)){
+  g=gsub(".*/gene/","",summary.dt$gene[i])
+  g=gsub(" target.*$","",g)
+  if(grepl("expression",summary.dt$type[i])){
+    for(val in ExpSequences){
+      if(grepl(val,summary.dt$type[i])){
+        summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
+        summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
+        forAction=paste0("showImg('",g,".expr');showImg('",g,".gg')")
+        summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+      }
+    }
+  }
+  if(grepl("amp|hetdel",summary.dt$type[i])){
+    for(val in CnvSequences){
+      if(grepl(val,summary.dt$type[i])){
+        summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
+        summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
+        forAction=paste0("showImg('",g,".cnv')")
+        summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+      }
+    }
+  }
+  if(grepl("missense",summary.dt$type[i])){
+        summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
+        summary.dt$type[i]=gsub("thisValue","missense",summary.dt$type[i])
+        forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeaderSurface('snvheader')")
+        summary.dt$type[i]=gsub("openTabset",forAction,summary.dt$type[i])
+  }
+  summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
+}
+DT::datatable(summary.dt, escape=FALSE, options = list(scrollX = TRUE))
+```
+
+<input type="button" value="Clear All" id="SCLBut" onclick="hideImgsSurface()" />
+
+```{r surface-cn-driver, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
+cn.gallery.dt = fread(file.path(params$outdir, "surface.cn.gallery.txt"))
+if (nrow(cn.gallery.dt) > 0) {
+    for (g in cn.gallery.dt[, gene_name]) {
+        cat(
+            paste0('<p>',
+                    '<img',' id="', g,'.cnv"',' src="',
+                    cn.gallery.dt[gene_name == g, plot.fname],
+                    '" style="display:none;" width="100%" />',
+                    '</p>'
+            )
+        )   
+    }
+}
+```
+
+```{r, expr-surface, results = "asis", echo = FALSE}
+expr.hist.dt = fread(file.path(params$outdir, "surface.expr.histograms.txt"))
+cool.exp = fread(paste0(params$outdir, "/", "surface.rna.change.txt"))
+expr.slickr.dt = fread(file.path(params$outdir, "surface.expr.gallery.txt"))
+cat("\n")
+valid.genes = intersect(expr.hist.dt[, gene], expr.slickr.dt[, gene_name])
+for (g in valid.genes) {
+    expr.png.fn = expr.hist.dt[gene == g, expr.hist.fname][1]
+    gg.png.fn = expr.slickr.dt[gene_name == g, plot.fname][1]
+    if (file.exists(expr.png.fn) & file.exists(gg.png.fn)) {
+         cat(
+            paste0(
+                '<p float="left">',
+                '<img ', 'id="', g,'.expr"',
+                ' src="',
+            expr.png.fn,
+                '" style="display:none;" width="45%" />',
+                '<img', ' id="', g,'.gg"', ' src="',
+                gg.png.fn,
+                '" style="display:none;" width="45%" />',
+                '</p>'
+            )
+        )
+    	}	
+    }
+```
+
+***
 
 # Whole genome view {.tabset .tabset-fade .tabset-pills}
 
