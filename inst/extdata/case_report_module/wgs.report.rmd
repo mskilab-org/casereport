@@ -446,9 +446,12 @@ if (nrow(fusions.gallery.dt) > 0) {
 
 ```{r, prox-driver, results = "asis", echo = FALSE}
 proximity.gallery.dt = fread(paste0(params$outdir, "/", "proximity.gallery.txt"))
+expr.histograms.dt = fread(paste0(params$outdir, "/", "expr.histograms.txt"))
     if (nrow(proximity.gallery.dt) > 0) {
       gns = intersect(proximity.gallery.dt$gene, expr.histograms.dt$gene)
         for (g in gns) {
+          print(g)
+          print("Real SLim Shady")
             cat(
                 paste0('<p>',
                        '<img', ' id="',paste0(g,'.prox'),'" src="',
