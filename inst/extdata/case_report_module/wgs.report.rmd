@@ -589,7 +589,7 @@ for (g in valid.genes) {
     }
 ```
 
-```{r, fus-driver, results = "asis", echo = FALSE}
+```{r, fus-surface, results = "asis", echo = FALSE}
 fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
 summary.dt = fread(file.path(params$outdir, "summaryTable.txt"))
 driverGenes=summary.dt$gene
