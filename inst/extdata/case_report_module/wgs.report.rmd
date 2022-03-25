@@ -161,6 +161,7 @@ function showHeader() {
       }
 </script>
 
+<script>
 function showHeaderSurface() {
     var DivId = document.getElementById("summary-surface-table");
     var thisheader = arguments[0];
@@ -322,6 +323,7 @@ expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
 cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
 fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
 
+
 basebutton=paste('<input type="button" onclick="openTabset"',';" value="thisValue" />',sep="'")
 ExpSequences=c("overexpression","underexpression")
 CnvSequences=c("amp","hetdel")
@@ -367,7 +369,8 @@ for(i in 1:nrow(summary.dt)){
   if(grepl("proximity",summary.dt$type[i])){
         summary.dt$type[i]=gsub("proximity",basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue","proximity",summary.dt$type[i])
-        forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".prox')")
+        
+        forAction=paste0("showImg('",g,".prox')")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
   }
   summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
@@ -450,8 +453,6 @@ expr.histograms.dt = fread(paste0(params$outdir, "/", "expr.histograms.txt"))
     if (nrow(proximity.gallery.dt) > 0) {
       gns = intersect(proximity.gallery.dt$gene, expr.histograms.dt$gene)
         for (g in gns) {
-          print(g)
-          print("Real SLim Shady")
             cat(
                 paste0('<p>',
                        '<img', ' id="',paste0(g,'.prox'),'" src="',
