@@ -44,8 +44,8 @@ Overflow-x:scroll;
 <style>
 .divScroll {
 overflow:scroll;
-height:100px;
-width:200px;
+height:800px;
+width:800px;
 }
 </style>
 
@@ -419,7 +419,7 @@ cat(paste0(headerline,'</tr>'))
 
 for(i in 1:nrow(driver.genes.cnv)){
   rLine=paste0('<tr class="odd" id="',driver.genes.cnv$gene[i],'.cnvtt" style="display:none">')
-  for(j in 1:ncol(driver.mutations.dt)){
+  for(j in 1:ncol(driver.genes.cnv)){
     thisL=paste0('<td>',as.vector(as.matrix(driver.genes.cnv)[i,j]),'</td>')
     rLine=paste0(rLine,thisL)
   }
