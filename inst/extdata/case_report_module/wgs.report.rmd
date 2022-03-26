@@ -41,6 +41,19 @@ Overflow-x:scroll;
 }
 </style>
 
+<style>
+.divScroll {
+overflow:scroll;
+height:100px;
+width:200px;
+}
+</style>
+
+{
+Overflow-x:scroll;//add horizontal bar option in html
+Overflow-y:scroll; //add vertical bar option in html
+}
+
 <input type="button" style="height: 25px; width: 100px" value="Expand All" id="primaryButton" />
 <input type="button" style="height: 25px; width: 100px" value="Collapse All" id="2Button"  />
 
