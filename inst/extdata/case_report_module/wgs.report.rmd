@@ -32,6 +32,15 @@ params:
   }
 </style>
 
+<style>
+div.scroll
+{
+Width-5px;
+Height-10 px;
+Overflow-x:scroll;
+}
+</style>
+
 <input type="button" style="height: 25px; width: 100px" value="Expand All" id="primaryButton" />
 <input type="button" style="height: 25px; width: 100px" value="Collapse All" id="2Button"  />
 
@@ -385,6 +394,7 @@ driver.genes.cnv$min_normalized_cn=unlist(lapply(driver.genes.cnv$min_normalized
 driver.genes.cnv$max_normalized_cn=unlist(lapply(driver.genes.cnv$max_normalized_cn,FUN=signif,digits=4))
 driver.genes.cnv$expr.quantile=unlist(lapply(driver.genes.cnv$expr.quantile,FUN=signif,digits=4))
 
+cat('<div class="divScroll">')
 cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="CNV_Table">')
 headerline='<tr id="cnvheader" style="display:none">'
 for(i in colnames(driver.genes.cnv)){
@@ -404,6 +414,7 @@ for(i in 1:nrow(driver.genes.cnv)){
 }
 
 cat('</table>')
+cat('<\div>')
 ```
 
 ```{r, expr-driver, results = "asis", echo = FALSE}
