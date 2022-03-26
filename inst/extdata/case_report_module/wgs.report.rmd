@@ -414,7 +414,7 @@ for(i in 1:nrow(driver.genes.cnv)){
 }
 
 cat('</table>')
-cat('<\div>')
+cat('</div>')
 ```
 
 ```{r, expr-driver, results = "asis", echo = FALSE}
