@@ -785,17 +785,18 @@ if (file.exists(driver.fusions.fname)) {
    }
 }
 
-fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
-summary.dt = fread(file.path(params$outdir, "summaryTable.txt"))
+summary.dt = fread(file.path(params$outdir, "summarySurfaceTable.txt"))
 driverGenes=summary.dt$gene
 driverGenes=sapply(driverGenes,function(x) gsub(".*/gene/","",x))
 driverGenes=sapply(driverGenes,function(x) sub(" target.*$","",x))
 
-if(any(fusions.gallery.dt$genes %in% driverGenes)){
+print(fusions.gallery.dt$driver.name)
+print(driverGenes)
+if(any(fusions.gallery.dt$driver.name %in% driverGenes)){
   cat('<div class="divScroll">')
   cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SFUS_Table">')
   headerline='<tr id="sfusheader" style="display:none">'
-  for(i in colnames(driver.genes.expr)){
+  for(i in colnames(dat)){
    thisH=paste0('<th>',i,'</th>')
    headerline=paste0(headerline,thisH)
   }
@@ -803,9 +804,9 @@ if(any(fusions.gallery.dt$genes %in% driverGenes)){
 
 
   for(i in 1:nrow(driver.genes.expr)){
-   rLine=paste0('<tr class="odd" id="',driver.genes.expr$gene[i],'.fust" style="display:none">')
+   rLine=paste0('<tr class="odd" id="',driver.fusions.dt$driver.name[i],'.fust" style="display:none">')
     for(j in 1:ncol(driver.genes.expr)){
-     thisL=paste0('<td>',as.vector(as.matrix(driver.genes.expr)[i,j]),'</td>')
+     thisL=paste0('<td>',as.vector(as.matrix(dat)[i,j]),'</td>')
      rLine=paste0(rLine,thisL)
    }
    cat(paste0(rLine,'</tr>'))
