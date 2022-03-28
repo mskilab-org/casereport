@@ -136,7 +136,7 @@ function hideImgs() {
             }
           }
          var scrolls = DivId.getElementsByClassName("divScroll");
-         for(var z=0, sLen=scrolls; z<sLen; z++) {
+         for(var z=0, sLen=scrolls.length; z<sLen; z++) {
             if(scrolls[z].id != "" && scrolls[z].style.display != "none"){
               scrolls[z].style.display = "none";
             }
