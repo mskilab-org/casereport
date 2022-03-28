@@ -411,7 +411,7 @@ driver.genes.cnv$min_normalized_cn=unlist(lapply(driver.genes.cnv$min_normalized
 driver.genes.cnv$max_normalized_cn=unlist(lapply(driver.genes.cnv$max_normalized_cn,FUN=signif,digits=4))
 driver.genes.cnv$expr.quantile=unlist(lapply(driver.genes.cnv$expr.quantile,FUN=signif,digits=4))
 
-cat('<div class="divScroll" id="divCNV" style:"display:none>')
+cat('<div class="divScroll" id="divCNV" style:"display:none">')
 cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="CNV_Table">')
 headerline='<tr id="cnvheader" style="display:none">'
 for(i in colnames(driver.genes.cnv)){
@@ -460,7 +460,7 @@ if (driver.genes.expr[,.N] > 0){
     driver.genes.expr = driver.genes.expr[order(-abs(zscore))] #  sort by Z-score
 }
 
-cat('<div class="divScroll" id="divEXP" style:"display:none>')
+cat('<div class="divScroll" id="divEXP" style:"display:none">')
 cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="EXP_Table">')
 headerline='<tr id="expheader" style="display:none">'
 for(i in colnames(driver.genes.expr)){
@@ -527,7 +527,7 @@ driverGenes=sapply(driverGenes,function(x) gsub(".*/gene/","",x))
 driverGenes=sapply(driverGenes,function(x) sub(" target.*$","",x))
 
 if(any(fusions.gallery.dt$genes %in% driverGenes)){
-  cat('<div class="divScroll" id="divFUS" style:"display:none>')
+  cat('<div class="divScroll" id="divFUS" style:"display:none">')
   cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="FUS_Table">')
   headerline='<tr id="fusheader" style="display:none">'
   for(i in colnames(driver.genes.expr)){
@@ -594,7 +594,7 @@ driver.mutations.dt = fread(file.path(params$outdir, "driver.mutations.txt"))
 driver.mutations.dt$Tier=as.character(driver.mutations.dt$Tier)
 driver.mutations.dt[is.na(driver.mutations.dt$Tier),]$Tier="Undefined"
 
-cat('<div class="divScroll" id="divSNV" style:"display:none>')
+cat('<div class="divScroll" id="divSNV" style:"display:none">')
 cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SNV_Table">')
 headerline='<tr id="snvheader" style="display:none">'
 for(i in colnames(driver.mutations.dt)){
