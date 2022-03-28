@@ -135,10 +135,10 @@ function hideImgs() {
               rows[j].style.display = "none";
             }
           }
-         var scrolls = DivId.getElementsByTagName("divScroll");
-         for(var j=0, sLen=scrolls; j<sLen; j++) {
-            if(scrolls[j].id != "" && scrolls[j].style.display != "none"){
-              scrolls[j].style.display = "none";
+         var scrolls = DivId.getElementsByClassName("divScroll");
+         for(var z=0, sLen=scrolls; z<sLen; z++) {
+            if(scrolls[z].id != "" && scrolls[z].style.display != "none"){
+              scrolls[z].style.display = "none";
             }
           }
         }
@@ -372,7 +372,7 @@ for(i in 1:nrow(summary.dt)){
       if(grepl(val,summary.dt$type[i])){
         summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
-        forAction=paste0("showImg('",g,".cnv')",";showImg('",g,".cnvtt')",";showHeader('cnvheader','divCNV)")
+        forAction=paste0("showImg('",g,".cnv')",";showImg('",g,".cnvtt')",";showHeader('cnvheader','divCNV')")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
       }
     }
@@ -381,14 +381,14 @@ for(i in 1:nrow(summary.dt)){
         summary.dt$type[i]=gsub("fusion",basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue","fusion",summary.dt$type[i])
         
-        forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')",";showImg('",g,".fust')",";showHeader('fusheader','divFUS)")
+        forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')",";showImg('",g,".fust')",";showHeader('fusheader','divFUS')")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
   }
   
   if(grepl("missense",summary.dt$type[i])){
         summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue","missense",summary.dt$type[i])
-        forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeader('snvheader','divSNV)")
+        forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeader('snvheader','divSNV')")
         summary.dt$type[i]=gsub("openTabset",forAction,summary.dt$type[i])
   }
   if(grepl("proximity",summary.dt$type[i])){
