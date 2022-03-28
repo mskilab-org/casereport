@@ -790,8 +790,6 @@ driverGenes=summary.dt$gene
 driverGenes=sapply(driverGenes,function(x) gsub(".*/gene/","",x))
 driverGenes=sapply(driverGenes,function(x) sub(" target.*$","",x))
 
-print(fusions.gallery.dt$driver.name)
-print(driverGenes)
 if(any(fusions.gallery.dt$driver.name %in% driverGenes)){
   cat('<div class="divScroll">')
   cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SFUS_Table">')
@@ -805,7 +803,7 @@ if(any(fusions.gallery.dt$driver.name %in% driverGenes)){
 
   for(i in 1:nrow(driver.genes.expr)){
    rLine=paste0('<tr class="odd" id="',driver.fusions.dt$driver.name[i],'.fust" style="display:none">')
-    for(j in 1:ncol(driver.genes.expr)){
+    for(j in 1:ncol(dat)){
      thisL=paste0('<td>',as.vector(as.matrix(dat)[i,j]),'</td>')
      rLine=paste0(rLine,thisL)
    }
