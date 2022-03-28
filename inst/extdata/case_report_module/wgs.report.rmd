@@ -49,11 +49,6 @@ width:500px;
 }
 </style>
 
-{
-Overflow-x:scroll;//add horizontal bar option in html
-Overflow-y:scroll; //add vertical bar option in html
-}
-
 <input type="button" style="height: 25px; width: 100px" value="Expand All" id="primaryButton" />
 <input type="button" style="height: 25px; width: 100px" value="Collapse All" id="2Button"  />
 
@@ -140,6 +135,12 @@ function hideImgs() {
               rows[j].style.display = "none";
             }
           }
+         var scrolls = DivId.getElementsByTagName("divScroll");
+         for(var j=0, sLen=scrolls; j<sLen; j++) {
+            if(scrolls[j].id != "" && scrolls[j].style.display != "none"){
+              scrolls[j].style.display = "none";
+            }
+          }
         }
 </script>
 
@@ -166,6 +167,7 @@ function hideImgsSurface() {
 function showHeader() {
     var DivId = document.getElementById("summary-driver-table");
     var thisheader = arguments[0];
+    var thisDiv = arguments[1];
     var rows = DivId.getElementsByTagName("tr");
     var one = 0;
     for(var i=0, iLen=rows.length; i<iLen; i++) {
@@ -176,8 +178,10 @@ function showHeader() {
       }
       if(one==1) {
         document.getElementById(thisheader).style.display = "";
+        document.getElementById(thisDiv).style.display = "";
       }else{
       document.getElementById(thisheader).style.display = "none";
+      document.getElementById(thisDiv).style.display = "none";
       }
       }
 </script>
@@ -358,7 +362,7 @@ for(i in 1:nrow(summary.dt)){
       if(grepl(val,summary.dt$type[i])){
         summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
-        forAction=paste0("showImg('",g,".expr');showImg('",g,".gg')",";showImg('",g,".expt')",";showHeader('expheader')")
+        forAction=paste0("showImg('",g,".expr');showImg('",g,".gg')",";showImg('",g,".expt')",";showHeader('expheader','divEXP')")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
       }
     }
@@ -368,7 +372,7 @@ for(i in 1:nrow(summary.dt)){
       if(grepl(val,summary.dt$type[i])){
         summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
-        forAction=paste0("showImg('",g,".cnv')",";showImg('",g,".cnvtt')",";showHeader('cnvheader')")
+        forAction=paste0("showImg('",g,".cnv')",";showImg('",g,".cnvtt')",";showHeader('cnvheader','divCNV)")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
       }
     }
@@ -377,14 +381,14 @@ for(i in 1:nrow(summary.dt)){
         summary.dt$type[i]=gsub("fusion",basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue","fusion",summary.dt$type[i])
         
-        forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')",";showImg('",g,".fust')",";showHeader('fusheader')")
+        forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')",";showImg('",g,".fust')",";showHeader('fusheader','divFUS)")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
   }
   
   if(grepl("missense",summary.dt$type[i])){
         summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue","missense",summary.dt$type[i])
-        forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeader('snvheader')")
+        forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeader('snvheader','divSNV)")
         summary.dt$type[i]=gsub("openTabset",forAction,summary.dt$type[i])
   }
   if(grepl("proximity",summary.dt$type[i])){
@@ -407,7 +411,7 @@ driver.genes.cnv$min_normalized_cn=unlist(lapply(driver.genes.cnv$min_normalized
 driver.genes.cnv$max_normalized_cn=unlist(lapply(driver.genes.cnv$max_normalized_cn,FUN=signif,digits=4))
 driver.genes.cnv$expr.quantile=unlist(lapply(driver.genes.cnv$expr.quantile,FUN=signif,digits=4))
 
-cat('<div class="divScroll">')
+cat('<div class="divScroll" id="divCNV" style:"display:none>')
 cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="CNV_Table">')
 headerline='<tr id="cnvheader" style="display:none">'
 for(i in colnames(driver.genes.cnv)){
@@ -456,7 +460,7 @@ if (driver.genes.expr[,.N] > 0){
     driver.genes.expr = driver.genes.expr[order(-abs(zscore))] #  sort by Z-score
 }
 
-cat('<div class="divScroll">')
+cat('<div class="divScroll" id="divEXP" style:"display:none>')
 cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="EXP_Table">')
 headerline='<tr id="expheader" style="display:none">'
 for(i in colnames(driver.genes.expr)){
@@ -523,7 +527,7 @@ driverGenes=sapply(driverGenes,function(x) gsub(".*/gene/","",x))
 driverGenes=sapply(driverGenes,function(x) sub(" target.*$","",x))
 
 if(any(fusions.gallery.dt$genes %in% driverGenes)){
-  cat('<div class="divScroll">')
+  cat('<div class="divScroll" id="divFUS" style:"display:none>')
   cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="FUS_Table">')
   headerline='<tr id="fusheader" style="display:none">'
   for(i in colnames(driver.genes.expr)){
@@ -589,6 +593,8 @@ expr.histograms.dt = fread(paste0(params$outdir, "/", "expr.histograms.txt"))
 driver.mutations.dt = fread(file.path(params$outdir, "driver.mutations.txt"))
 driver.mutations.dt$Tier=as.character(driver.mutations.dt$Tier)
 driver.mutations.dt[is.na(driver.mutations.dt$Tier),]$Tier="Undefined"
+
+cat('<div class="divScroll" id="divSNV" style:"display:none>')
 cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SNV_Table">')
 headerline='<tr id="snvheader" style="display:none">'
 for(i in colnames(driver.mutations.dt)){
@@ -608,6 +614,7 @@ for(i in 1:nrow(driver.mutations.dt)){
 }
 
 cat('</table>')
+cat('</div>')
 ```
 ***
 
