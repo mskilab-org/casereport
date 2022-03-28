@@ -534,12 +534,13 @@ if(any(fusions.gallery.dt$genes %in% driverGenes)){
 
 
   for(i in 1:nrow(driver.genes.expr)){
-   rLine=paste0('<tr class="odd" id="',driver.genes.expr$gene[i],'.fust" style="display:none">')
-    for(j in 1:ncol(driver.genes.expr)){
-     thisL=paste0('<td>',as.vector(as.matrix(driver.genes.expr)[i,j]),'</td>')
+   if(driver.fusions.dt$driver.name[i] %in% driverGenes){
+    for(j in 1:ncol(dat)){
+     thisL=paste0('<td>',as.vector(as.matrix(dat)[i,j]),'</td>')
      rLine=paste0(rLine,thisL)
    }
    cat(paste0(rLine,'</tr>'))
+   }
   }
 
   cat('</table>')
@@ -801,13 +802,15 @@ if(any(fusions.gallery.dt$driver.name %in% driverGenes)){
   cat(paste0(headerline,'</tr>'))
 
 
-  for(i in 1:nrow(driver.genes.expr)){
+  for(i in 1:nrow(fusions.gallery.dt)){
    rLine=paste0('<tr class="odd" id="',driver.fusions.dt$driver.name[i],'.fust" style="display:none">')
+   if(driver.fusions.dt$driver.name[i] %in% driverGenes){
     for(j in 1:ncol(dat)){
      thisL=paste0('<td>',as.vector(as.matrix(dat)[i,j]),'</td>')
      rLine=paste0(rLine,thisL)
    }
    cat(paste0(rLine,'</tr>'))
+   }
   }
 
   cat('</table>')
