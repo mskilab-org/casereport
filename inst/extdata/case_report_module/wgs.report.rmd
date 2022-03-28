@@ -684,7 +684,7 @@ for(i in colnames(surface.genes.cnv)){
 cat(paste0(headerline,'</tr>'))
 
 
-for(i in 1:nrow(driver.genes.cnv)){
+for(i in 1:nrow(surface.genes.cnv)){
   rLine=paste0('<tr class="odd" id="',surface.genes.cnv$gene[i],'.scnvtt" style="display:none">')
   for(j in 1:ncol(driver.genes.cnv)){
     thisL=paste0('<td>',as.vector(as.matrix(surface.genes.cnv)[i,j]),'</td>')
