@@ -632,7 +632,7 @@ for(i in 1:nrow(summary.dt)){
       if(grepl(val,summary.dt$type[i])){
         summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
-        forAction=paste0("showImg('",g,".expr');showImg('",g,".gg')",";showImg('",g,".sexpt')",";showHeader('sexpheader')")
+        forAction=paste0("showImg('",g,".expr');showImg('",g,".gg')",";showImg('",g,".sexpt')",";showHeaderSurface('sexpheader')")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
       }
     }
@@ -642,7 +642,7 @@ for(i in 1:nrow(summary.dt)){
       if(grepl(val,summary.dt$type[i])){
         summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
-        forAction=paste0("showImg('",g,".cnv')",";showImg('",g,".scnvtt')",";showHeader('scnvheader')")
+        forAction=paste0("showImg('",g,".cnv')",";showImg('",g,".scnvtt')",";showHeaderSurface('scnvheader')")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
       }
     }
@@ -651,7 +651,7 @@ for(i in 1:nrow(summary.dt)){
         summary.dt$type[i]=gsub("fusion",basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue","fusion",summary.dt$type[i])
         
-        forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')",";showImg('",g,".fust')",";showHeader('sfusheader')")
+        forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')",";showImg('",g,".fust')",";showHeaderSurface('sfusheader')")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
   }
   summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
