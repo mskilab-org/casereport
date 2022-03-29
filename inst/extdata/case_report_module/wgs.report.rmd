@@ -190,6 +190,7 @@ function showHeader() {
 function showHeaderSurface() {
     var DivId = document.getElementById("summary-surface-table");
     var thisheader = arguments[0];
+    var thisDiv = arguments[1];
     var rows = DivId.getElementsByTagName("tr");
     var one = 0;
     for(var i=0, iLen=rows.length; i<iLen; i++) {
@@ -200,8 +201,10 @@ function showHeaderSurface() {
       }
       if(one==1) {
         document.getElementById(thisheader).style.display = "";
+        document.getElementById(thisDiv).style.display = "";
       }else{
       document.getElementById(thisheader).style.display = "none";
+      document.getElementById(thisDiv).style.display = "none";
       }
       }
 </script>
