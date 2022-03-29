@@ -624,7 +624,6 @@ for(i in 1:nrow(driver.mutations.dt)){
 
 cat('</table>')
 cat('</div>')
-cat('</div>')
 ```
 ***
 
@@ -828,7 +827,7 @@ if(any(fusions.gallery.dt$driver.name %in% driverGenes)){
 }
 ```
 
-```{r, fus-surface, results = "asis", echo = FALSE}
+```{r, fus-surface, dropBelow=TRUE, results = "asis", echo = FALSE}
 if (nrow(fusions.gallery.dt) > 0) {
         for (g in fusions.gallery.dt[, genes]) {
           if(!(g %in% driverGenes)){
