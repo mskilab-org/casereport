@@ -640,7 +640,7 @@ for(i in 1:nrow(summary.dt)){
       if(grepl(val,summary.dt$type[i])){
         summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
-        forAction=paste0("showImg('",g,".expr');showImg('",g,".gg')",";showImg('",g,".sexpt')",";showHeaderSurface('sexpheader')")
+        forAction=paste0("showImg('",g,".expr');showImg('",g,".gg')",";showImg('",g,".sexpt')",";showHeaderSurface('sexpheader','SdivEXP')")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
       }
     }
@@ -650,7 +650,7 @@ for(i in 1:nrow(summary.dt)){
       if(grepl(val,summary.dt$type[i])){
         summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
-        forAction=paste0("showImg('",g,".cnv')",";showImg('",g,".scnvtt')",";showHeaderSurface('scnvheader')")
+        forAction=paste0("showImg('",g,".cnv')",";showImg('",g,".scnvtt')",";showHeaderSurface('scnvheader','SdivCNV')")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
       }
     }
@@ -659,15 +659,8 @@ for(i in 1:nrow(summary.dt)){
         summary.dt$type[i]=gsub("fusion",basebutton,summary.dt$type[i])
         summary.dt$type[i]=gsub("thisValue","fusion",summary.dt$type[i])
         
-        forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')",";showImg('",g,".fust')",";showHeaderSurface('sfusheader')")
+        forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')",";showImg('",g,".fust')",";showHeaderSurface('sfusheader','SdivFUS')")
         summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
-  }
-  summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
-  if(grepl("missense",summary.dt$type[i])){
-        summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
-        summary.dt$type[i]=gsub("thisValue","missense",summary.dt$type[i])
-        forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeaderSurface('snvheader')")
-        summary.dt$type[i]=gsub("openTabset",forAction,summary.dt$type[i])
   }
   summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
 }
@@ -682,7 +675,7 @@ surface.genes.cnv$min_normalized_cn=unlist(lapply(surface.genes.cnv$min_normaliz
 surface.genes.cnv$max_normalized_cn=unlist(lapply(surface.genes.cnv$max_normalized_cn,FUN=signif,digits=4))
 surface.genes.cnv$expr.quantile=unlist(lapply(surface.genes.cnv$expr.quantile,FUN=signif,digits=4))
 
-cat('<div class="divScroll">')
+cat('<div class="divScroll" id="SdivCNV" style="display:none">')
 cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SCNV_Table">')
 headerline='<tr id="scnvheader" style="display:none">'
 for(i in colnames(surface.genes.cnv)){
@@ -733,7 +726,7 @@ if (surface.genes.expr[,.N] > 0){
     surface.genes.expr = surface.genes.expr[order(expr, -min_cn, -abs(zscore))] # sort to show over expressed, and then underexpressed. Whithin over-expressed we show highest CN first and for each CN we sort by Z-score
 }
 
-cat('<div class="divScroll">')
+cat('<div class="divScroll" id="SdivEXP" style="display:none">')
 cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SEXP_Table">')
 headerline='<tr id="sexpheader" style="display:none">'
 for(i in colnames(surface.genes.expr)){
@@ -799,7 +792,7 @@ driverGenes=sapply(driverGenes,function(x) gsub(".*/gene/","",x))
 driverGenes=sapply(driverGenes,function(x) sub(" target.*$","",x))
 
 if(any(fusions.gallery.dt$driver.name %in% driverGenes)){
-  cat('<div class="divScroll">')
+  cat('<div class="divScroll" id="SdivFUS" style="display:none">')
   cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SFUS_Table">')
   headerline='<tr id="sfusheader" style="display:none">'
   for(i in colnames(dat)){
