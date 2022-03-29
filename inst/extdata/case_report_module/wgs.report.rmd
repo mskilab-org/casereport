@@ -624,6 +624,7 @@ for(i in 1:nrow(driver.mutations.dt)){
 
 cat('</table>')
 cat('</div>')
+cat('</div>')
 ```
 ***
 
