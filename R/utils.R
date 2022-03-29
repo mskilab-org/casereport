@@ -3436,35 +3436,50 @@ wgs_gtrack = function(jabba_rds, cvgt.fname, agt.fname = NULL) {
 }
 
 
-#' @name makeSummaryTable
-#' @title makeSummaryTable
+#' @name makeSummaryTables
+#' @title makeSummaryTables
 #' @description
 #' 
-#' Function for generating a summary table of interesting driver genes for casereport.
+#' Function for generating summary tables of interesting driver and surface genes for casereport.
 #'
-#' @param cnv_table file path to casereport copy number variants table
+#' @param cnv_table file path to casereport driver copy number variants table
+#' @param surface_cnv file path to casereport surface copy number variants table
 #' @param fusions_table file path to casereport fusions table
-#' @param expression_table file path to casereport over/under expression table
+#' @param expression_table file path to casereport driver over/under expression table
+#' @param surface_expression file path to casereport surface over/under expression table
 #' @param mutations_table file path to casereport driver mutations table
 #' @param onco_table file path to casereport oncotable
-#' @param the directory of casereport
+#' @param onc file path to list of oncogenes to consider in the table
+#' @param tsg file path to list of tsgs to consider in the table
+#' @param surface file path to list of surface genes to consider in the table
 #' @return summary table of driver genes.
-makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_table,onco_table){
+makeSummaryTables = function(cnv_table,surface_cnv,fusions_table,expression_table,surface_expression,mutations_table,onco_table,onc,tsg,surface){
 	genelist=vector()
 	if(file.good(cnv_table)){
 		genelist=c(genelist,fread(cnv_table)$gene_name)
 	}
+    if(file.good(surface_cnv)){
+        genelist=c(genelist,fread(surface_cnv)$gene_name)
+    }
 	if(file.good(fusions_table)){
 		genelist=c(genelist,fread(fusions_table)$driver.name)
 	}
 	if(file.good(expression_table)){
 		genelist=c(genelist,fread(expression_table)$gene)
 	}
+    if(file.good(surface_expression)){
+        genelist=c(genelist,fread(surface_expression)$gene)
+    }
 	if(file.good(mutations_table)){
 		genelist=c(genelist,fread(mutations_table)$gene)
 	}
-
+	
+    genelist=unique(genelist)
     oncotable=readRDS(onco_table)
+    onc=readRDS(onc)
+    tsg=readRDS(tsg)
+    surface=readRDS(surface)
+
     summaryTable=NA
     pmkbTier=get_pmkb_tier_table(NA)
     if (length(genelist) == 0){
@@ -3488,28 +3503,35 @@ makeSummaryTable = function(cnv_table,fusions_table,expression_table,mutations_t
 		}
     }
     
+    summaryTable=summaryTable[!is.na(summaryTable$type) & summaryTable$type!=" ",]
+    summaryTable=summaryTable[summaryTable$type!="NA",]
+
     summaryTable$type=str_replace_all(summaryTable$type,"NA, ","")
     summaryTable$role=str_replace_all(summaryTable$role,"NA, ","")
     summaryTable$type=str_replace_all(summaryTable$type,", NA","")
     summaryTable$role=str_replace_all(summaryTable$role,", NA","")
     summaryTable$type=str_replace_all(summaryTable$type,", $","")
     summaryTable$role=str_replace_all(summaryTable$role,", $","")
+       summaryTable$role=str_replace_all(summaryTable$role,", ,",",")
 
     summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),"True","False")    
-
-    summaryTable$gene=paste0('<a href=https://www.oncokb.org/gene/', summaryTable$gene, ' target=_blank rel=noopener noreferrer >', summaryTable$gene, '</a>')
 
     summaryTable=summaryTable[order(summaryTable$tier,summaryTable$withHetdel),]
     summaryTable$withHetdel=NULL
 
-    summaryTable=summaryTable[!(summaryTable$type=="del"),]
     summaryTable=summaryTable[!(summaryTable$type=="del" & summaryTable$role=="ONC"),]
+    summaryTable=summaryTable[!(summaryTable$type=="amp" & summaryTable$role=="TSG"),]
     summaryTable=summaryTable[!(grepl("underexpression",summaryTable$type,fixed=TRUE) & summaryTable$role=="ONC"),]
     summaryTable=summaryTable[!(grepl("overexpression",summaryTable$type,fixed=TRUE) & summaryTable$role=="TSG"),]
 
     summaryTable$type=str_replace_all(summaryTable$type,"del"," loss")
-  
-	return(summaryTable)
+	summaryTable$type=str_replace_all(summaryTable$type,"het loss","hetdel")
+    driverTable=summaryTable[(gene %in% onc | gene %in% tsg) & !(gene %in% surface)]
+    surfaceTable=summaryTable[!(gene %in% onc | gene %in% tsg) & (gene %in% surface)]
+    driverTable$gene=paste0('<a href=https://www.oncokb.org/gene/', driverTable$gene, ' target=_blank rel=noopener noreferrer >', driverTable$gene, '</a>')
+    surfaceTable$gene=paste0('<a href=https://www.oncokb.org/gene/', surfaceTable$gene, ' target=_blank rel=noopener noreferrer >', surfaceTable$gene, '</a>')
+    
+	return(list(driverTable,surfaceTable))
 }
 
 

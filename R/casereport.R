@@ -151,6 +151,7 @@ wgs.report = function(opt){
     report.config$driver_scna = paste0(report.config$outdir, '/driver.genes.cnv.txt')
     report.config$surface_scna = paste0(report.config$outdir, '/surface.genes.cnv.txt')
     report.config$scna_gtracks = paste0(report.config$outdir, "/", "cn.gallery.txt")
+    report.config$surface_scna_gtracks = paste0(report.config$outdir, "/", "surface.cn.gallery.txt")
 
     ## SNVS
     report.config$driver_mutations = paste0(report.config$outdir, "/", "driver.mutations.txt")
@@ -202,6 +203,7 @@ wgs.report = function(opt){
     report.config$summary_stats = paste0(report.config$outdir, "/summary.rds")
     report.config$oncotable = paste0(report.config$outdir, "/oncotable.rds")
     report.config$summaryTable = paste0(report.config$outdir, "/summaryTable.txt")
+    report.config$summarySurfaceTable = paste0(report.config$outdir, "/summarySurfaceTable.txt")
 
     saveRDS(report.config, paste0(report.config$outdir, "/", "report.config.rds"))
 
@@ -507,8 +509,8 @@ wgs.report = function(opt){
 
                 cn.fields = intersect(fields, names(driver.genes_cn))
                 if (!is.null(opt$include_surface) && opt$include_surface) {
-                    fwrite(driver.genes_cn[surface != TRUE, ..cn.fields], report.config$driver_scna)
-                    fwrite(driver.genes_cn[surface == TRUE, ..cn.fields], report.config$surface_scna)
+                    fwrite(driver.genes_cn[is.na(surface) | !is.na(annot), ..cn.fields], report.config$driver_scna)
+                    fwrite(driver.genes_cn[surface == TRUE & is.na(annot), ..cn.fields], report.config$surface_scna)
                 } else {
                     fwrite(driver.genes_cn[, ..cn.fields], report.config$driver_scna)
                 }
@@ -543,8 +545,8 @@ wgs.report = function(opt){
                                                     by.x = "gene",
                                                     by.y = "gene_name",
                                                     all.x = TRUE)
-            fwrite(driver.genes.expr.dt[role != 'SURF'], report.config$rna_change_with_cn)
-            fwrite(driver.genes.expr.dt[role %like% 'SURF'], report.config$surface_rna_change_with_cn)
+            fwrite(driver.genes.expr.dt[role != 'SURF' & ((role %like% 'ONC' & expr.quantile>0.95) | (role %like% 'TSG' & expr.quantile<0.05))], report.config$rna_change_with_cn)
+            fwrite(driver.genes.expr.dt[role %like% 'SURF' & (expr.quantile>0.95 | expr.quantile<0.05)], report.config$surface_rna_change_with_cn)
         }
 
 
@@ -936,6 +938,31 @@ wgs.report = function(opt){
                                    overwrite = opt$overwrite,
                                    outdir = cn.gallery.dir)
             fwrite(cn.slickr.dt, report.config$scna_gtracks)
+        } else {
+            message("CN gallery files already exist")
+        }
+        
+        if (!check_file(report.config$surface_scna_gtracks, overwrite = opt$overwrite)) {
+            message("preparing Surface CN gallery")
+            ## grab ploidy
+            pl = readRDS(opt$jabba_rds)$ploidy
+            surface.cn.gallery.dir = paste0(opt$outdir, '/surface_cn_gallery')
+            dir.create(surface.cn.gallery.dir)
+            surface.cn.slickr.dt = cn.plot(drivers.fname = report.config$surface_scna,
+                                   report.config$complex,
+                                   cvgt.fname = report.config$coverage_gtrack,
+                                   gngt.fname = report.config$gencode_gtrack,
+                                   agt.fname = report.config$allele_gtrack,
+                                   server = opt$server,
+                                   pair = opt$pair,
+                                   amp.thresh = opt$amp_thresh,
+                                   ploidy = pl,
+                                   pad = 0.5,
+                                   height = 900,
+                                   width = 1000,
+                                   overwrite = opt$overwrite,
+                                   outdir = surface.cn.gallery.dir)
+            fwrite(surface.cn.slickr.dt, report.config$surface_scna_gtracks)
         } else {
             message("CN gallery files already exist")
         }
@@ -1593,12 +1620,21 @@ wgs.report = function(opt){
             message("Summary Table already exists. Skipping!")
         } else {
             message("Generating summary table")
-        wol=makeSummaryTable(report.config$driver_scna,report.config$driver_fusions, report.config$rna_change_with_cn,report.config$driver_mutations,report.config$oncotable)
-        wol$tier=as.character(wol$tier)
-        wol[is.na(wol$tier),]$tier="Undefined"
-        wol=wol[!is.na(wol$type),]
-        wol=wol[wol$type!="",]
-        fwrite(wol,report.config$summaryTable)
+        wol=makeSummaryTables(report.config$driver_scna,report.config$surface_scna, report.config$driver_fusions, report.config$rna_change_with_cn,
+                              report.config$surface_rna_change_with_cn, report.config$driver_mutations, report.config$oncotable,
+                              report.config$onc,report.config$tsg,report.config$surface)
+        print(wol)
+        driverTable=wol[[1]]
+        surfaceTable=wol[[2]]
+        driverTable$tier=as.character(driverTable$tier)
+        driverTable[is.na(driverTable$tier),]$tier="Undefined"
+        surfaceTable$tier=as.character(surfaceTable$tier)
+        surfaceTable[is.na(surfaceTable$tier),]$tier="Undefined"
+        #wol=wol[!is.na(wol$type),]
+        #wol=wol[wol$type!="",]
+              
+        fwrite(driverTable,report.config$summaryTable)
+        fwrite(surfaceTable,report.config$summarySurfaceTable)
         }
 
 
