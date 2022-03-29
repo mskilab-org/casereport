@@ -159,6 +159,12 @@ function hideImgsSurface() {
               rows[j].style.display = "none";
             }
           }
+          var scrolls = DivId.getElementsByClassName("divScroll");
+         for(var z=0, sLen=scrolls.length; z<sLen; z++) {
+            if(scrolls[z].id != "" && scrolls[z].style.display != "none"){
+              scrolls[z].style.display = "none";
+            }
+          }
         }
 </script>
 
