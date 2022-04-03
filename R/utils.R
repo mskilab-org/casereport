@@ -3526,6 +3526,7 @@ makeSummaryTables = function(cnv_table,surface_cnv,fusions_table,expression_tabl
 
     summaryTable$type=str_replace_all(summaryTable$type,"del"," loss")
 	summaryTable$type=str_replace_all(summaryTable$type,"het loss","hetdel")
+	summaryTable$type=str_replace_all(summaryTable$type,"hom loss","homdel")
     driverTable=summaryTable[(gene %in% onc | gene %in% tsg) & !(gene %in% surface)]
     surfaceTable=summaryTable[!(gene %in% onc | gene %in% tsg) & (gene %in% surface)]
     driverTable$gene=paste0('<a href=https://www.oncokb.org/gene/', driverTable$gene, ' target=_blank rel=noopener noreferrer >', driverTable$gene, '</a>')
