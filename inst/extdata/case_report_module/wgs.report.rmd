@@ -641,6 +641,7 @@ ExpSequences=c("overexpression","underexpression")
 CnvSequences=c("amp","hetdel")
 SnvSequences=c("missense")
 
+if(nrow(summary.dt)>1){
 for(i in 1:nrow(summary.dt)){
   g=gsub(".*/gene/","",summary.dt$gene[i])
   g=gsub(" target.*$","",g)
@@ -674,6 +675,7 @@ for(i in 1:nrow(summary.dt)){
   summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
 }
 DT::datatable(summary.dt, escape=FALSE, options = list(scrollX = TRUE))
+}
 ```
 
 <input type="button" value="Clear All" id="SCLBut" onclick="hideImgsSurface()" />
