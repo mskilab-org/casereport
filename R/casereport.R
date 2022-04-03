@@ -481,12 +481,12 @@ wgs.report = function(opt){
                     surface = readRDS(report.config$surface)
 
                     driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
-                                                         (cnv %in% c("hetdel", "homdel","loh") & gene_name %in% tsg) |
+                                                         ((cnv %in% c("hetdel", "homdel") | !is.na(loh)) & gene_name %in% tsg) |
                                                          (cnv == "amp" & gene_name %in% surface)]
                     driver.genes_cn[gene_name %in% surface, surface := TRUE]
                 } else {
                     driver.genes_cn = genes_cn_annotated[(cnv == "amp" & gene_name %in% onc) |
-                                                         (cnv %in% c("hetdel", "homdel","loh") & gene_name %in% tsg)]
+                                                         ((cnv %in% c("hetdel", "homdel") | !is.na(loh)) & gene_name %in% tsg)]
                 }
                 
                 # add whether gene is TSG or ONCO
@@ -494,14 +494,14 @@ wgs.report = function(opt){
                 driver.genes_cn[gene_name %in% tsg, annot := "TSG"]
 
                 fields = c("gene_name", "annot", "surface",
-                           "cnv", "expr", "min_cn",
+                           "cnv", "loh","expr", "min_cn",
                            "max_cn", "min_normalized_cn", "max_normalized_cn",
                            "expr.value", "expr.quantile",
                            "seqnames", "start", "end", "width", "ev.id", "ev.type")
                 if ('cn.low' %in% names(genes_cn_annotated) && 'cn.high' %in% names(genes_cn_annotated)){
                     # include allelic CN in the table
                     fields = c("gene_name", "annot", "surface",
-                           "cnv", "expr", "min_cn", 'cn.high', 'cn.low',
+                           "cnv", "loh", "expr", "min_cn", 'cn.high', 'cn.low',
                            "max_cn", "min_normalized_cn", "max_normalized_cn",
                            "expr.value", "expr.quantile",
                            "seqnames", "start", "end", "width", "ev.id", "ev.type")
