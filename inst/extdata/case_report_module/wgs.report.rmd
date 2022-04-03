@@ -360,7 +360,7 @@ fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
 
 basebutton=paste('<input type="button" onclick="openTabset"',';" value="thisValue" />',sep="'")
 ExpSequences=c("overexpression","underexpression")
-CnvSequences=c("amp","hetdel")
+CnvSequences=c("amp","hetdel","loh","homdel")
 SnvSequences=c("missense")
 
 for(i in 1:nrow(summary.dt)){
@@ -638,7 +638,7 @@ cn.gallery.dt = fread(file.path(params$outdir, "surface.cn.gallery.txt"))
 
 basebutton=paste('<input type="button" onclick="openTabset"',';" value="thisValue" />',sep="'")
 ExpSequences=c("overexpression","underexpression")
-CnvSequences=c("amp","hetdel")
+CnvSequences=c("amp","hetdel","loh","homdel")
 SnvSequences=c("missense")
 
 if(nrow(summary.dt)>1){
@@ -655,7 +655,7 @@ for(i in 1:nrow(summary.dt)){
       }
     }
   }
-  if(grepl("amp|hetdel",summary.dt$type[i])){
+  if(grepl("amp|hetdel|homdel|loh",summary.dt$type[i])){
     for(val in CnvSequences){
       if(grepl(val,summary.dt$type[i])){
         summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
