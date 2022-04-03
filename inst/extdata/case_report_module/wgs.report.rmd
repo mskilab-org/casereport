@@ -686,6 +686,7 @@ surface.genes.cnv$min_normalized_cn=unlist(lapply(surface.genes.cnv$min_normaliz
 surface.genes.cnv$max_normalized_cn=unlist(lapply(surface.genes.cnv$max_normalized_cn,FUN=signif,digits=4))
 surface.genes.cnv$expr.quantile=unlist(lapply(surface.genes.cnv$expr.quantile,FUN=signif,digits=4))
 
+if(nrow(surface.genes.cnv)>1){
 cat('<div class="divScroll" id="SdivCNV" style="display:none">')
 cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SCNV_Table">')
 headerline='<tr id="scnvheader" style="display:none">'
@@ -707,6 +708,7 @@ for(i in 1:nrow(surface.genes.cnv)){
 
 cat('</table>')
 cat('</div>')
+}
 ```
 
 ```{r surface-cn-driver, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
