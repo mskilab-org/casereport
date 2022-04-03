@@ -376,7 +376,7 @@ for(i in 1:nrow(summary.dt)){
       }
     }
   }
-  if(grepl("amp|hetdel",summary.dt$type[i])){
+  if(grepl("amp|hetdel|homdel|loh",summary.dt$type[i])){
     for(val in CnvSequences){
       if(grepl(val,summary.dt$type[i])){
         summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
