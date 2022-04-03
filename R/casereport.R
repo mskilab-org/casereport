@@ -1279,6 +1279,7 @@ wgs.report = function(opt){
                 ot = merge(list(ot.res$expl_variables),
                            list(ot.res$ot_scores))
                 ot$`.` = NULL
+                ot$"NA." = NULL
                 ## ot = data.table::melt(ot)
                 ot$pair = opt$pair
                 tx = paste0("ot[,c(", paste(!names(ot) %in% c("qrdup", "qrdel", "tib"), collapse = ","), "),drop=F]")
