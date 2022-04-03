@@ -469,27 +469,28 @@ if (driver.genes.expr[,.N] > 0){
     driver.genes.expr = driver.genes.expr[order(-abs(zscore))] #  sort by Z-score
 }
 
-cat('<div class="divScroll" id="divEXP" style="display:none">')
-cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="EXP_Table">')
-headerline='<tr id="expheader" style="display:none">'
-for(i in colnames(driver.genes.expr)){
-  thisH=paste0('<th>',i,'</th>')
-  headerline=paste0(headerline,thisH)
-}
-cat(paste0(headerline,'</tr>'))
-
-
-for(i in 1:nrow(driver.genes.expr)){
-  rLine=paste0('<tr class="odd" id="',driver.genes.expr$gene[i],'.expt" style="display:none">')
-  for(j in 1:ncol(driver.genes.expr)){
-    thisL=paste0('<td>',as.vector(as.matrix(driver.genes.expr)[i,j]),'</td>')
-    rLine=paste0(rLine,thisL)
+if(nrow(driver.genes.expr)>0){
+  cat('<div class="divScroll" id="divEXP" style="display:none">')
+  cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="EXP_Table">')
+  headerline='<tr id="expheader" style="display:none">'
+  for(i in colnames(driver.genes.expr)){
+    thisH=paste0('<th>',i,'</th>')
+    headerline=paste0(headerline,thisH)
   }
-  cat(paste0(rLine,'</tr>'))
-}
+  cat(paste0(headerline,'</tr>'))
 
-cat('</table>')
-cat('</div>')
+  for(i in 1:nrow(driver.genes.expr)){
+    rLine=paste0('<tr class="odd" id="',driver.genes.expr$gene[i],'.expt" style="display:none">')
+    for(j in 1:ncol(driver.genes.expr)){
+      thisL=paste0('<td>',as.vector(as.matrix(driver.genes.expr)[i,j]),'</td>')
+      rLine=paste0(rLine,thisL)
+    }
+    cat(paste0(rLine,'</tr>'))
+  }
+
+  cat('</table>')
+  cat('</div>')
+}
 ```
 
 ```{r, expr-driver, results = "asis", echo = FALSE}
@@ -696,7 +697,7 @@ cat(paste0(headerline,'</tr>'))
 for(i in 1:nrow(surface.genes.cnv)){
   rLine=paste0('<tr class="odd" id="',surface.genes.cnv$gene[i],'.scnvtt" style="display:none">')
   for(j in 1:ncol(driver.genes.cnv)){
-    thisL=paste0('<td>',as.vector(as.matrix(surface.genes.cnv)[i,j]),'</td>')
+    thisL=paste0('<td>',as.vector(as.matrix(surface.genes.cnv)),'</td>')
     rLine=paste0(rLine,thisL)
   }
   cat(paste0(rLine,'</tr>'))
@@ -734,27 +735,29 @@ if (surface.genes.expr[,.N] > 0){
     surface.genes.expr = surface.genes.expr[order(expr, -min_cn, -abs(zscore))] # sort to show over expressed, and then underexpressed. Whithin over-expressed we show highest CN first and for each CN we sort by Z-score
 }
 
-cat('<div class="divScroll" id="SdivEXP" style="display:none">')
-cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SEXP_Table">')
-headerline='<tr id="sexpheader" style="display:none">'
-for(i in colnames(surface.genes.expr)){
-  thisH=paste0('<th>',i,'</th>')
-  headerline=paste0(headerline,thisH)
-}
-cat(paste0(headerline,'</tr>'))
-
-
-for(i in 1:nrow(surface.genes.expr)){
-  rLine=paste0('<tr class="odd" id="',surface.genes.expr$gene[i],'.sexpt" style="display:none">')
-  for(j in 1:ncol(driver.genes.expr)){
-    thisL=paste0('<td>',as.vector(as.matrix(surface.genes.expr)[i,j]),'</td>')
-    rLine=paste0(rLine,thisL)
+if(nrow(surface.genes.expr)>0){
+  cat('<div class="divScroll" id="SdivEXP" style="display:none">')
+  cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SEXP_Table">')
+  headerline='<tr id="sexpheader" style="display:none">'
+  for(i in colnames(surface.genes.expr)){
+    thisH=paste0('<th>',i,'</th>')
+    headerline=paste0(headerline,thisH)
   }
-  cat(paste0(rLine,'</tr>'))
-}
+  cat(paste0(headerline,'</tr>'))
 
-cat('</table>')
-cat('</div>')
+
+  for(i in 1:nrow(surface.genes.expr)){
+    rLine=paste0('<tr class="odd" id="',surface.genes.expr$gene[i],'.sexpt" style="display:none">')
+    for(j in 1:ncol(driver.genes.expr)){
+      thisL=paste0('<td>',as.vector(as.matrix(surface.genes.expr)[i,j]),'</td>')
+      rLine=paste0(rLine,thisL)
+    }
+    cat(paste0(rLine,'</tr>'))
+  }
+
+  cat('</table>')
+  cat('</div>')
+}
 ```
 
 ```{r, expr-surface, results = "asis", echo = FALSE}
