@@ -1276,8 +1276,8 @@ wgs.report = function(opt){
             if (file.good(opt$ot_results)) {
                 message('Processing oneness_twoness')
                 ot.res = readRDS(opt$ot_results)
-                ot = merge(ot.res$expl_variables,
-                           ot.res$ot_scores)
+                ot = merge(list(ot.res$expl_variables),
+                           list(ot.res$ot_scores))
                 ot$`.` = NULL
                 ## ot = data.table::melt(ot)
                 ot$pair = opt$pair
