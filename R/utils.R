@@ -3493,7 +3493,9 @@ makeSummaryTables = function(cnv_table,surface_cnv,fusions_table,expression_tabl
     for(i in 1:length(genelist)){
         thisGene=oncotable[oncotable$gene==genelist[i] & !is.na(oncotable$gene),]
 	if(nrow(thisGene)==0){
+		print(genelist[i])
 		thisGene=genes_cn_annotated[genes_cn_annotated$gene==genelist[i] & !is.na(genes_cn_annotated$gene),]
+		print(thisGene)
 		#thisGene$type="missense"
 	}
         if(genelist[i] %in% pmkbTier$gene){
@@ -3530,8 +3532,8 @@ makeSummaryTables = function(cnv_table,surface_cnv,fusions_table,expression_tabl
     summaryTable=summaryTable[order(summaryTable$tier,summaryTable$withHetdel),]
     summaryTable$withHetdel=NULL
 
-    summaryTable=summaryTable[!(summaryTable$type=="del" & summaryTable$role=="ONC"),]
-    summaryTable=summaryTable[!(summaryTable$type=="amp" & summaryTable$role=="TSG"),]
+    summaryTable=summaryTable[!(grepl("del",summaryTable$type) & summaryTable$role=="ONC"),]
+    summaryTable=summaryTable[!(grepl("amp",summaryTable$type) & summaryTable$role=="TSG"),]
     summaryTable=summaryTable[!(grepl("underexpression",summaryTable$type,fixed=TRUE) & summaryTable$role=="ONC"),]
     summaryTable=summaryTable[!(grepl("overexpression",summaryTable$type,fixed=TRUE) & summaryTable$role=="TSG"),]
 
