@@ -3493,10 +3493,8 @@ makeSummaryTables = function(cnv_table,surface_cnv,fusions_table,expression_tabl
     for(i in 1:length(genelist)){
         thisGene=oncotable[oncotable$gene==genelist[i] & !is.na(oncotable$gene),]
 	if(nrow(thisGene)==0){
-		print(genelist[i])
 		thisGene=genes_cn_annotated[genes_cn_annotated$gene==genelist[i] & !is.na(genes_cn_annotated$gene),]
-		print(thisGene)
-		#thisGene$type="missense"
+		thisGene$type="missense"
 	}
         if(genelist[i] %in% pmkbTier$gene){
             #thisTier=min(pmkbTier[pmkbTier$gene==thisGene$gene[1],]$Tier)  
