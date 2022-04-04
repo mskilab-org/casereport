@@ -101,9 +101,9 @@ CDKN2B	copy number loss	copy number loss	FALSE		1	TSG
 CEBPA	any mutation	any mutation	TRUE		1	TSG
 CEBPA	Q83*	stop gain	FALSE		1	TSG
 CHD1	any indel	indel	TRUE		2	TSG
-CHEK2	any mutation	TRUE	NA	2	TSG
-CHEK2	copy number gain	FALSE	NA	2	TSG	
-CHEK2	copy number loss	FALSE	NA	2	TSG
+CHEK2	any mutation	any mutation	TRUE	NA	2	TSG
+CHEK2	copy number gain	copy number gain	FALSE	NA	2	TSG	
+CHEK2	copy number loss	copy number loss	FALSE	NA	2	TSG
 CRKL	copy number gain	copy number gain	FALSE		2	ONC
 CSF3R	T618I	missense	FALSE	codon	1	TSG
 CSF3R	any nonsense	nonsense	TRUE		1	TSG
@@ -396,9 +396,9 @@ MPL	S505N	missense	FALSE	codon	1	ONC
 MYD88	L265P	missense	FALSE	codon	1	ONC
 NCOA2	copy number gain	copy number gain	FALSE		1	ONC
 NFE2	any mutation	any mutation	TRUE		2	TSG
-NF1	any mutation	TRUE	NA	2	TSG
-NF1	copy number gain	FALSE	NA	2	TSG	
-NF1	copy number loss	FALSE	NA	2	TSG
+NF1	any mutation	any mutation	TRUE	NA	2	TSG
+NF1	copy number gain	copy number gain	FALSE	NA	2	TSG	
+NF1	copy number loss	copy number loss	FALSE	NA	2	TSG
 NKX2-1	copy number gain	copy number gain	FALSE		2	ONC
 NOTCH1	exon(s) 26 missense	missense	TRUE	exon	1	ONC
 NOTCH1	exon(s) 27 missense	missense	TRUE	exon	1	ONC
@@ -521,30 +521,30 @@ VHL	C162Y	missense	FALSE	codon	1	ONC
 VHL	codon(s) 430 nonsense	nonsense	TRUE	codon	1	ONC
 WT1	any mutation	any mutation	TRUE		2	TSG
 ZRSR2	any mutation	any mutation	TRUE		1	TSG
-CACNA1D	any mutation	TRUE	NA	2	ONC
-CACNA1D	copy number gain	FALSE	NA	2	ONC
-CACNA1D	copy number loss	FALSE	NA	2	ONC
-NR4A3	any mutation	TRUE	NA	2	ONC
-NR4A3	copy number gain	FALSE	NA	2	ONC
-NR4A3	copy number loss	FALSE	NA	2	ONC
-NCOR1	any mutation	TRUE	NA	2	TSG
-NCOR1	copy number gain	FALSE	NA	2	TSG
-NCOR1	copy number loss	FALSE	NA	2	TSG
-KMT2C	any mutation	TRUE	NA	2	TSG
-KMT2C	copy number gain	FALSE	NA	2	TSG
-KMT2C	copy number loss	FALSE	NA	2	TSG
-CDKN1B	any mutation	TRUE	NA	2	TSG
-CDKN1B	copy number gain	FALSE	NA	2	TSG
-CDKN1B	copy number loss	FALSE	NA	2	TSG
-SMARCD1	any mutation	TRUE	NA	2	TSG
-SMARCD1	copy number gain	FALSE	NA	2	TSG
-SMARCD1	copy number loss	FALSE	NA	2	TSG
-CYLD	any mutation	TRUE	NA	2	TSG
-CYLD	copy number gain	FALSE	NA	2	TSG
-CYLD	copy number loss	FALSE	NA	2	TSG
-NF2	any mutation	TRUE	NA	2	TSG
-NF2	copy number gain	FALSE	NA	2	TSG
-NF2	copy number loss	FALSE	NA	2	TSG
-APOBEC3B	any mutation	TRUE	NA	2	TSG
-APOBEC3B	copy number gain	FALSE	NA	2	TSG
-APOBEC3B	copy number loss	FALSE	NA	2	TSG
+CACNA1D	any mutation	any mutation	TRUE	NA	2	ONC
+CACNA1D	copy number gain	copy number gain	FALSE	NA	2	ONC
+CACNA1D	copy number loss	copy number loss	FALSE	NA	2	ONC
+NR4A3	any mutation	any mutation	TRUE	NA	2	ONC
+NR4A3	copy number gain	copy number gain	FALSE	NA	2	ONC
+NR4A3	copy number loss	copy number loss	FALSE	NA	2	ONC
+NCOR1	any mutation	any mutation	TRUE	NA	2	TSG
+NCOR1	copy number gain	copy number gain	FALSE	NA	2	TSG
+NCOR1	copy number loss	copy number loss	FALSE	NA	2	TSG
+KMT2C	any mutation	any mutation	TRUE	NA	2	TSG
+KMT2C	copy number gain	copy number gain	FALSE	NA	2	TSG
+KMT2C	copy number loss	copy number loss	FALSE	NA	2	TSG
+CDKN1B	any mutation	any mutation	TRUE	NA	2	TSG
+CDKN1B	copy number gain	copy number gain	FALSE	NA	2	TSG
+CDKN1B	copy number loss	copy number loss	FALSE	NA	2	TSG
+SMARCD1	any mutation	any mutation	TRUE	NA	2	TSG
+SMARCD1	copy number gain	copy number gain	FALSE	NA	2	TSG
+SMARCD1	copy number loss	copy number loss	FALSE	NA	2	TSG
+CYLD	any mutation	any mutation	TRUE	NA	2	TSG
+CYLD	copy number gain	copy number gain	FALSE	NA	2	TSG
+CYLD	copy number loss	copy number loss	FALSE	NA	2	TSG
+NF2	any mutation	any mutation	TRUE	NA	2	TSG
+NF2	copy number gain	copy number gain	FALSE	NA	2	TSG
+NF2	copy number loss	copy number loss	FALSE	NA	2	TSG
+APOBEC3B	any mutation	any mutation	TRUE	NA	2	TSG
+APOBEC3B	copy number gain	copy number gain	FALSE	NA	2	TSG
+APOBEC3B	copy number loss	copy number loss	FALSE	NA	2	TSG
