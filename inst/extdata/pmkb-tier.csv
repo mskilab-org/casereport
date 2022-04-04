@@ -548,3 +548,9 @@ NF2,copy number loss,copy number loss,FALSE,NA,2,TSG
 APOBEC3B,any mutation,any mutation,TRUE,NA,2,TSG
 APOBEC3B,copy number gain,copy number gain,FALSE,NA,2,TSG
 APOBEC3B,copy number loss,copy number loss,FALSE,NA,2,TSG
+KMT2D,any mutation,any mutation,TRUE,NA,2,TSG
+KMT2D,copy number gain,copy number gain,FALSE,NA,2,TSG
+KMT2D,copy number loss,copy number loss,FALSE,NA,2,TSG
+FANCA,any mutation,any mutation,TRUE,NA,2,TSG
+FANCA,copy number gain,copy number gain,FALSE,NA,2,TSG
+FANCA,copy number loss,copy number loss,FALSE,NA,2,TSG
