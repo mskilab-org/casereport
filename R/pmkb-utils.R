@@ -10,7 +10,7 @@
 #' @param pmkb_tsv (character) path to PMKB TSV (if not provided then the default table supplied with the package will be used
 get_pmkb_dt = function(pmkb_tsv = NA){
     if (is.na(pmkb_tsv)){
-        pmkb_tsv = system.file("extdata", "pmkb-tier.tsv", package = "casereport")
+        pmkb_tsv = system.file("extdata", "pmkb-tier.csv", package = "casereport")
         message('Using default PMKB annotations: ', pmkb_tsv)
     }
         pmkb.dt = fread(pmkb_tsv)
