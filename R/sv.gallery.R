@@ -212,7 +212,8 @@ grab.window = function(gr, complex.fname,
         gr$amp.fp = NA_character_
     }
 
-    ## grab node footprint
+  
+  ## grab node footprint
     node.gr = gg$nodes$gr[, c()]
     node.gr$footprint = gr.string(node.gr)
     node.ov = gr.findoverlaps(gr, node.gr, scol = c("footprint"), return.type = "data.table")
@@ -390,20 +391,33 @@ cn.plot = function(drivers.fname = NULL,
         if (verbose) {
             message("Grabbing windows for plotting")
         }
-        win.gr = grab.window(gr = drivers.gr, complex.fname = complex.fname,
+        win.gr.other = grab.window(gr = drivers.gr, complex.fname = complex.fname,
                              return.type = "GRanges", amp.thresh = amp.thresh,
-                             ploidy = ploidy, ev.types = ev.types)
-        drivers.gr$win = win.gr$win ## copy over plot window possibly return vector in the future
+                             ploidy = ploidy, ev.types = ev.types)}
+        
+        gg=readRDS(gg.rds)
+        gg2 = gg$copy$subgraph(gg$nodes[cn<gg$meta$ploidy] + pad)
+        gg2$clusters()
+        win.gr=GRangesList()
+        for(gene in drivers.dt$gene_name{
+            cl = (gg2$nodes %&% gene)$dt$cluster
+            thisWin = gg2$nodes[cluster == cl]$footprint
+            win.gr[[gene]]=thisWin
+        }
+        print(win.gr)
+        print("==========")
+        print(win.gr.other)
+        drivers.gr$win = win.gr ## copy over plot window possibly return vector in the future
 
         ## make one plot per range in drivers gr
         pts = lapply(1:length(drivers.gr),
                      function(ix) {
                          if (!file.good(drivers.dt$plot.fname[ix]) | overwrite){
                              ## prepare window
-                             if (is.null(drivers.gr$win) || is.na(drivers.gr$win[ix])) {
+                             if (is.null(drivers.gr$win) || is.na(drivers.gr$win[[ix]])) {
                                  win = drivers.gr[ix]
                              } else {
-                                 win = parse.grl(drivers.gr$win[ix]) %>% stack %>% gr.stripstrand
+                                 win = parse.grl(drivers.gr$win[[ix]]) %>% stack %>% gr.stripstrand
                              }
                              if (pad > 0 & pad <= 1) {
                                  adjust = pmax(5e5, pad * width(win))
