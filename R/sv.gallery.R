@@ -396,7 +396,7 @@ cn.plot = function(drivers.fname = NULL,
                              return.type = "GRanges", amp.thresh = amp.thresh,
                              ploidy = ploidy, ev.types = ev.types)
         
-        gg=readRDS(gg.rds)
+        gg=gG(jabba = gg.rds)
         gg2 = gg$copy$subgraph(gg$nodes[cn<gg$meta$ploidy] + pad)
         gg2$clusters()
         win.gr=GRangesList()
