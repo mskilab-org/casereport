@@ -933,7 +933,7 @@ get_gene_copy_numbers = function(gg, gene_ranges,
     }
     if (verbose)
         GRanges_are_compatible = check_GRanges_compatibility(ngr, gene_ranges, 'gGraph segments', 'genes')
-
+    print("wol1")
     if (is.character(nseg)){
         if (file.exists(nseg) & endsWith(nseg, '.rds')){
             nseg = readRDS(nseg)
@@ -953,22 +953,23 @@ get_gene_copy_numbers = function(gg, gene_ranges,
         ngr$ncn = 2
     }
     ndt = gr2dt(ngr)
-
+    print("wol1")
     seq_widths = as.numeric(width(ngr))
                                         # since we are comparing to CN data which is integer then we will also round the normal ploidy to the nearest integer.
     normal_ploidy = round(sum(seq_widths * ngr$ncn, na.rm = T) / sum(seq_widths, na.rm = T))
-
+    print("wol2")
+    
                                         # normalize the CN by ploidy and by local normal copy number
     ## ndt[, normalized_cn := cn * normal_ploidy / (jab$ploidy * ncn)] ## error because jab does not exist!
     ndt[, normalized_cn := ifelse(ncn == 0, 0, cn * normal_ploidy / (ploidy * ncn))]
-
+    print("wol3")
                                         # overlapping copy number segments with gene ranges
     gene_cn_segments = dt2gr(ndt, seqlengths = seqlengths(gg)) %*% gene_ranges %>% gr2dt
                                         # let's find genes that overlap with multiple copy number segments 
                                         # we would want to report the minimum and maximum CN for these genes as well as the number of CN segments overlapping the gene
                                         # we could do the same computation for all genes, but it is much more efficient to do it separately since the split_genes are a minority
     split_genes = gene_cn_segments[duplicated(get(gene_id_col)), get(gene_id_col)]
-
+    print("wol4")
     gene_cn_non_split_genes = gene_cn_segments[!(get(gene_id_col) %in% split_genes)]
     gene_cn_non_split_genes[, `:=`(max_normalized_cn = normalized_cn,
                                    min_normalized_cn = normalized_cn,
