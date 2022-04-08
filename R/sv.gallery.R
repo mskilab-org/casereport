@@ -399,7 +399,7 @@ cn.plot = function(drivers.fname = NULL,
         gg2 = gg$copy$subgraph(gg$nodes[cn<gg$meta$ploidy] + pad)
         gg2$clusters()
         win.gr=GRangesList()
-        for(gene in drivers.dt$gene_name{
+        for(gene in drivers.dt$gene_name){
             cl = (gg2$nodes %&% gene)$dt$cluster
             thisWin = gg2$nodes[cluster == cl]$footprint
             win.gr[[gene]]=thisWin
