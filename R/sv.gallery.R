@@ -393,7 +393,7 @@ cn.plot = function(drivers.fname = NULL,
         }
         win.gr.other = grab.window(gr = drivers.gr, complex.fname = complex.fname,
                              return.type = "GRanges", amp.thresh = amp.thresh,
-                             ploidy = ploidy, ev.types = ev.types)}
+                             ploidy = ploidy, ev.types = ev.types)
         
         gg=readRDS(gg.rds)
         gg2 = gg$copy$subgraph(gg$nodes[cn<gg$meta$ploidy] + pad)
