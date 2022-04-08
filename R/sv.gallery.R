@@ -397,7 +397,10 @@ cn.plot = function(drivers.fname = NULL,
                              ploidy = ploidy, ev.types = ev.types)
         
         gg=gG(jabba = gg.rds)
-        gg2 = gg$copy$subgraph(gg$nodes[cn<gg$meta$ploidy] + pad)
+        print(gg)
+        print("=======")
+        gg2=gg$copy$subgraph(trim(gg$nodes[cn<gg$meta$ploidy]$gr+10000)
+        #gg2 = gg$copy$subgraph(gg$nodes[cn<gg$meta$ploidy] + pad)
         gg2$clusters()
         win.gr=GRangesList()
         for(gene in drivers.dt$gene_name){
