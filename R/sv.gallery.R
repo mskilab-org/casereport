@@ -399,7 +399,7 @@ cn.plot = function(drivers.fname = NULL,
         gg=gG(jabba = gg.rds)
         print(gg)
         print("=======")
-        gg2=gg$copy$subgraph(trim(gg$nodes[cn<gg$meta$ploidy]$gr+10000)
+        gg2=gg$copy$subgraph(trim(gg$nodes[cn<gg$meta$ploidy]$gr+10000))
         #gg2 = gg$copy$subgraph(gg$nodes[cn<gg$meta$ploidy] + pad)
         gg2$clusters()
         win.gr=GRangesList()
