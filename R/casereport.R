@@ -930,6 +930,7 @@ wgs.report = function(opt){
                                    agt.fname = report.config$allele_gtrack,
                                    server = opt$server,
                                    pair = opt$pair,
+                                   gg.rds=report.config$jabba_rds,
                                    amp.thresh = opt$amp_thresh,
                                    ploidy = pl,
                                    pad = 0.5,
