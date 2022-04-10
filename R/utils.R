@@ -933,7 +933,6 @@ get_gene_copy_numbers = function(gg, gene_ranges,
     }
     if (verbose)
         GRanges_are_compatible = check_GRanges_compatibility(ngr, gene_ranges, 'gGraph segments', 'genes')
-    print("wol1")
     if (is.character(nseg)){
         if (file.exists(nseg) & endsWith(nseg, '.rds')){
             nseg = readRDS(nseg)
@@ -953,7 +952,6 @@ get_gene_copy_numbers = function(gg, gene_ranges,
         ngr$ncn = 2
     }
     ndt = gr2dt(ngr)
-    print("wol1")
     seq_widths = as.numeric(width(ngr))
                                         # since we are comparing to CN data which is integer then we will also round the normal ploidy to the nearest integer.
     normal_ploidy = round(sum(seq_widths * ngr$ncn, na.rm = T) / sum(seq_widths, na.rm = T))
