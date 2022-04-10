@@ -397,41 +397,43 @@ cn.plot = function(drivers.fname = NULL,
                              ploidy = ploidy, ev.types = ev.types)
         
         gg=gG(jabba = gg.rds)
-        print(gg)
-        print("=======")
-        gg2=gg$copy$subgraph(trim(gg$nodes[cn<gg$meta$ploidy]$gr+10000))
-        #gg2 = gg$copy$subgraph(gg$nodes[cn<gg$meta$ploidy] + pad)
+        gg2=gg$copy$subgraph(trim(gg$nodes[gg$nodes$dt$cn<gg$meta$ploidy]$gr+pad))
         gg2$clusters()
         win.gr=GRangesList()
         for(gene in drivers.dt$gene_name){
-            cl = (gg2$nodes %&% gene)$dt$cluster
-            thisWin = gg2$nodes[cluster == cl]$footprint
+            sqname=drivers.dt[gene_name==gene]$seqnames
+            sstart=drivers.dt[gene_name==gene]$start
+            send=drivers.dt[gene_name==gene]$end
+            cl = (gg2$nodes %&% GRanges(seqnames = sqname, ranges = IRanges(start = sstart, end = send)))$dt$cluster
+            thisWin = gg2$nodes[gg2$nodes$dt$cluster == cl]$footprint
             win.gr[[gene]]=thisWin
         }
-        print(win.gr)
-        print("==========")
-        print(win.gr.other)
-        drivers.gr$win = win.gr ## copy over plot window possibly return vector in the future
-
+        drivers.gr$win = win.gr.other$win ## copy over plot window possibly return vector in the future
         ## make one plot per range in drivers gr
         pts = lapply(1:length(drivers.gr),
                      function(ix) {
-                         if (!file.good(drivers.dt$plot.fname[ix]) | overwrite){
+
+                         if (!file.exists(drivers.dt$plot.fname[ix]) | overwrite){
                              ## prepare window
-                             if (is.null(drivers.gr$win) || is.na(drivers.gr$win[[ix]])) {
-                                 win = drivers.gr[ix]
-                             } else {
-                                 win = parse.grl(drivers.gr$win[[ix]]) %>% stack %>% gr.stripstrand
-                             }
-                             if (pad > 0 & pad <= 1) {
+                             if(grepl("homdel",drivers.dt$cnv[ix]) | grepl("hetdel",drivers.dt$cnv[ix])){
+                                win=win.gr[[ix]]
+                            }else{
+                                if (is.null(drivers.gr$win) || is.na(drivers.gr$win[[ix]])) {
+                                    win = drivers.gr[ix]
+                                } else {
+                                     win = parse.grl(drivers.gr$win[[ix]]) %>% stack %>% gr.stripstrand
+                                }
+
+                                if (pad > 0 & pad <= 1) {
                                  adjust = pmax(5e5, pad * width(win))
                                  message(gr.string(win))
                                  message("adjust size: ", adjust)
                                  win = GenomicRanges::trim(win + adjust)
                                  message(gr.string(win))
-                             } else {
+                                } else {
                                  win = GenomicRanges::trim(win + pad)
-                             }
+                                }
+                            }
 
                              # assigning greater cex value to the driver gene in order to highlight it 
                              drivers.df = values(drivers.gt@data[[1]])
