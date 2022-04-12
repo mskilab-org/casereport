@@ -212,7 +212,8 @@ grab.window = function(gr, complex.fname,
         gr$amp.fp = NA_character_
     }
 
-    ## grab node footprint
+  
+  ## grab node footprint
     node.gr = gg$nodes$gr[, c()]
     node.gr$footprint = gr.string(node.gr)
     node.ov = gr.findoverlaps(gr, node.gr, scol = c("footprint"), return.type = "data.table")
@@ -268,6 +269,7 @@ cn.plot = function(drivers.fname = NULL,
                    agt.fname = NULL,
                    server = "",
                    pair = "",
+                   gg.rds="",
                    ev.types = c("qrp", "tic", "qpdup", "qrdel",
                                 "bfb", "dm", "chromoplexy", "chromothripsis",
                                 "tyfonas", "rigma", "pyrgo", "cpxdm"),
@@ -390,30 +392,48 @@ cn.plot = function(drivers.fname = NULL,
         if (verbose) {
             message("Grabbing windows for plotting")
         }
-        win.gr = grab.window(gr = drivers.gr, complex.fname = complex.fname,
+        win.gr.other = grab.window(gr = drivers.gr, complex.fname = complex.fname,
                              return.type = "GRanges", amp.thresh = amp.thresh,
                              ploidy = ploidy, ev.types = ev.types)
-        drivers.gr$win = win.gr$win ## copy over plot window possibly return vector in the future
-
+        
+        gg=gG(jabba = gg.rds)
+        gg2=gg$copy$subgraph(trim(gg$nodes[gg$nodes$dt$cn<gg$meta$ploidy]$gr+pad))
+        gg2$clusters()
+        win.gr=GRangesList()
+        for(gene in drivers.dt$gene_name){
+            sqname=drivers.dt[gene_name==gene]$seqnames
+            sstart=drivers.dt[gene_name==gene]$start
+            send=drivers.dt[gene_name==gene]$end
+            cl = (gg2$nodes %&% GRanges(seqnames = sqname, ranges = IRanges(start = sstart, end = send)))$dt$cluster
+            thisWin = gg2$nodes[gg2$nodes$dt$cluster == cl]$footprint
+            win.gr[[gene]]=thisWin
+        }
+        drivers.gr$win = win.gr.other$win ## copy over plot window possibly return vector in the future
         ## make one plot per range in drivers gr
         pts = lapply(1:length(drivers.gr),
                      function(ix) {
-                         if (!file.good(drivers.dt$plot.fname[ix]) | overwrite){
+
+                         if (!file.exists(drivers.dt$plot.fname[ix]) | overwrite){
                              ## prepare window
-                             if (is.null(drivers.gr$win) || is.na(drivers.gr$win[ix])) {
-                                 win = drivers.gr[ix]
-                             } else {
-                                 win = parse.grl(drivers.gr$win[ix]) %>% stack %>% gr.stripstrand
-                             }
-                             if (pad > 0 & pad <= 1) {
+                             if(grepl("homdel",drivers.dt$cnv[ix]) | grepl("hetdel",drivers.dt$cnv[ix])){
+                                win=win.gr[[ix]]
+                            }else{
+                                if (is.null(drivers.gr$win) || is.na(drivers.gr$win[[ix]])) {
+                                    win = drivers.gr[ix]
+                                } else {
+                                     win = parse.grl(drivers.gr$win[[ix]]) %>% stack %>% gr.stripstrand
+                                }
+
+                                if (pad > 0 & pad <= 1) {
                                  adjust = pmax(5e5, pad * width(win))
                                  message(gr.string(win))
                                  message("adjust size: ", adjust)
                                  win = GenomicRanges::trim(win + adjust)
                                  message(gr.string(win))
-                             } else {
+                                } else {
                                  win = GenomicRanges::trim(win + pad)
-                             }
+                                }
+                            }
 
                              # assigning greater cex value to the driver gene in order to highlight it 
                              drivers.df = values(drivers.gt@data[[1]])
