@@ -1,14 +1,6 @@
 #!/usr/bin/env Rscript
 library(optparse)
 devtools::load_all('~/git/casereport')
-library('xtable')
-library('miniUI')
-library('ggExtra')
-library('codetools')
-library('png')
-library('cluster')
-library('ComplexHeatmap')
-library('shiny')
 
 if (!exists("opt")){
     option_list = list(
