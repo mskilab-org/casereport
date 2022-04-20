@@ -1583,8 +1583,8 @@ wgs.report = function(opt){
           #  rownames(tpm_read_new) <- tpm_read_new_name[,1]
           #  deconv_results = immunedeconv::deconvolute(tpm_read_new, opt$deconv)
           #  data.table::fwrite(deconv_results, file.path(opt$outdir,"deconv_results.txt"), sep = '\t', quote = F, row.names = F)
-          }
-        }
+          #}
+        #}
         
         
         ## ################
