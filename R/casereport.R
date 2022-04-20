@@ -30,7 +30,7 @@ wgs.report = function(opt){
             library(deconstructSigs)
             library(DT)
             library(VariantAnnotation)
-            library(immunedeconv)
+            #library(immunedeconv)
             library(readr)
             library(data.table)
             library(casereport)
