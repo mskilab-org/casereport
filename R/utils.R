@@ -3500,7 +3500,7 @@ makeSummaryTables = function(cnv_table,surface_cnv,fusions_table,expression_tabl
 	}
         if(genelist[i] %in% oncoKBTable$gene){
             thisTier=min(oncoKBTable[oncoKBTable$gene==thisGene$gene[1],]$Level)  
-	}else if(genelist[i] %in% pmkbTier$gene)
+	}else if(genelist[i] %in% pmkbTier$gene){
 		thisTier=pmkbTier[pmkbTier$gene==thisGene$gene[1],]$tier
         }else{
             thisTier=NA
@@ -3521,12 +3521,8 @@ makeSummaryTables = function(cnv_table,surface_cnv,fusions_table,expression_tabl
     summaryTable[summaryTable$gene %in% tsg,]$role="TSG"
     summaryTable[summaryTable$gene %in% surface,]$role="SURF"
     summaryTable$type=str_replace_all(summaryTable$type,"NA, ","")
-    #summaryTable$role=str_replace_all(summaryTable$role,"NA, ","")
     summaryTable$type=str_replace_all(summaryTable$type,", NA","")
-    #summaryTable$role=str_replace_all(summaryTable$role,", NA","")
     summaryTable$type=str_replace_all(summaryTable$type,", $","")
-    #summaryTable$role=str_replace_all(summaryTable$role,", $","")
-    #summaryTable$role=str_replace_all(summaryTable$role,", ,",",")
 
     summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),"True","False")    
 
