@@ -1,6 +1,9 @@
 #!/usr/bin/env Rscript
 library(optparse)
 devtools::load_all('~/git/casereport')
+library('ggExtra')
+library('ComplexHeatmap')
+library('shiny')
 
 if (!exists("opt")){
     option_list = list(
