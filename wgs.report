@@ -4,6 +4,7 @@ devtools::load_all('~/git/casereport')
 library('xtable')
 library('miniUI')
 library('ggExtra')
+library('codetools')
 library('ComplexHeatmap')
 library('shiny')
 
