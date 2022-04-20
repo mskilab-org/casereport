@@ -6,6 +6,7 @@ library('miniUI')
 library('ggExtra')
 library('codetools')
 library('png')
+library('cluster')
 library('ComplexHeatmap')
 library('shiny')
 
