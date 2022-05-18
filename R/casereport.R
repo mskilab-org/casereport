@@ -1663,7 +1663,7 @@ wgs.report = function(opt){
     
     if(!is.na(opt$pairs_out)){
             outRDS = readRDS(normalizePath(opt$pairs_out))
-            if(!("casereport_html" %in% colnames(outRDS)){
+            if(!("casereport_html" %in% colnames(outRDS))){
                 outRDS$casereport_html = rep(NA,nrow(outRDS))
             }
             if(!(opt$pair %in% outRDS$pair)){
