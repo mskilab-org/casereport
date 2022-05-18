@@ -601,6 +601,7 @@ expr.histograms.dt = fread(paste0(params$outdir, "/", "expr.histograms.txt"))
 
 ```{r, SNV-driver, dropBelow=TRUE, results = "asis", echo = FALSE}
 driver.mutations.dt = fread(file.path(params$outdir, "driver.mutations.txt"))
+if(nrow(driver.mutations.dt)>0){
 driver.mutations.dt$Tier=as.character(driver.mutations.dt$Tier)
 driver.mutations.dt[is.na(driver.mutations.dt$Tier),]$Tier="Undefined"
 
@@ -624,6 +625,8 @@ for(i in 1:nrow(driver.mutations.dt)){
 }
 
 cat('</table>')
+
+}
 ```
 ***
 
