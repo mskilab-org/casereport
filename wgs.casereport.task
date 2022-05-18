@@ -33,7 +33,7 @@ input	flags	flags	value	""
 input	drivers	"~/git/casereport/inst/extdata/ddr_pearl2015.tsv"	path
 input	condaenv	path_to_condaenv	path	"/gpfs/commons/groups/imielinski_lab/Software/anaconda3/envs/casereport"
 input	deconv	deconv	value	"epic"
-input pairs_out pairs_out path  /dev/null
-input html_vizdir html_vizdir path  /dev/null
+input	pairs_out	pairs_out	path	/dev/null
+input	html_vizdir	html_vizdir	path	/dev/null
 output	wgs_casereport	*wgs.report.html$
 output	oncotable	oncotable.rds$
