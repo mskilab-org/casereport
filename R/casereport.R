@@ -1660,4 +1660,26 @@ wgs.report = function(opt){
         quiet = FALSE)
 
     message("WGS case report completed.")
+    
+    if(!is.na(opt$pairs_out)){
+            outRDS = readRDS(normalizePath(opt$pairs_out))
+            if(!("casereport_html" %in% colnames(outRDS)){
+                outRDS$casereport_html = rep(NA,nrow(outRDS))
+            }
+            if(!(opt$pair %in% outRDS$pair)){
+               outRDS = merge(outRDS,data.table(pair=opt$pair,casereport_html=normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html")), by = "pair")
+            } else{
+                outRDS[pair == opt$pair]$casereport_html = normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html")), by = "pair")
+                }
+           saveRDS(outRDS,normalizePath(opt$pairs_out))
+           
+            message("Added html path to selected pairs table.")
+     }
+    
+    if(!is.na(opt$html_vizdir)){
+            move = paste("cp", normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html")), normalizePath(opt$html_vizdir))
+            system(move)
+            message("Copied html output to selected directory.")
+        }
+    
 }
