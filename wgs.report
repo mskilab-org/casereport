@@ -47,6 +47,8 @@ if (!exists("opt")){
         make_option(c("--cohort_metadata"), type = "character", default = NA_character_, help = "Metadata of the background cohort"),
         make_option(c("--pmkb_interpretations"), type = "character", default = system.file('extdata', 'pmkb-interpretations-06-11-2021.csv', package = 'casereport'), help = "Path to CVS with PMKB interpretations. If not provided, then a default table will be used (in data/pmkb-interpretations-06-11-2021.csv). See https://pmkb.weill.cornell.edu/about for details about PMKB."),
         make_option(c("--deconv"), type = "character", default = "epic", help = "Method for RNA deconvolution"),
+        make_option(c("--pairs_out"), type = "character", default = "NA", help = "Path to pairs table in which to add the location of casereport html"),
+        make_option(c("--html_vizdir"), type = "character", default = "NA", help = "Path to foldr where final html will be added for visualization"),
         make_option(c("--overwrite"), type = "logical", default = FALSE, action = "store_true", help = "overwrite existing data in the output dir"),
         make_option(c("--verbose"), type = "logical", default = TRUE, action = "store_true", help = "Be verbose and write more messages during the process of producing the report."),
         make_option(c("--quantile_thresh"), type = "numeric", default = 0.05, help = "threshold for quantile for RNA expression"),
