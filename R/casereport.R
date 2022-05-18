@@ -950,10 +950,11 @@ wgs.report = function(opt){
             surface.cn.gallery.dir = paste0(opt$outdir, '/surface_cn_gallery')
             dir.create(surface.cn.gallery.dir)
             surface.cn.slickr.dt = cn.plot(drivers.fname = report.config$surface_scna,
-                                   report.config$complex,
+                                   complex.fname = report.config$complex,
                                    cvgt.fname = report.config$coverage_gtrack,
                                    gngt.fname = report.config$gencode_gtrack,
                                    agt.fname = report.config$allele_gtrack,
+                                           gg.rds = report.config$jabba_rds,
                                    server = opt$server,
                                    pair = opt$pair,
                                    amp.thresh = opt$amp_thresh,
