@@ -304,7 +304,6 @@ cn.plot = function(drivers.fname = NULL,
     }
 
     message(nrow(drivers.dt))
-    message(gg.rds)
     ## if empty data table, return
     if (nrow(drivers.dt) > 0) {
 
