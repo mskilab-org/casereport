@@ -358,6 +358,7 @@ expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
 expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
 cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
 fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
+driver.mutations.dt = fread(file.path(params$outdir, "driver.mutations.txt"))
 
 
 basebutton=paste('<input type="button" onclick="openTabset"',';" value="thisValue" />',sep="'")
@@ -602,7 +603,6 @@ expr.histograms.dt = fread(paste0(params$outdir, "/", "expr.histograms.txt"))
 ```
 
 ```{r, SNV-driver, dropBelow=TRUE, results = "asis", echo = FALSE}
-driver.mutations.dt = fread(file.path(params$outdir, "driver.mutations.txt"))
 if(nrow(driver.mutations.dt)>0){
 driver.mutations.dt$Tier=as.character(driver.mutations.dt$Tier)
 driver.mutations.dt[is.na(driver.mutations.dt$Tier),]$Tier="Undefined"
