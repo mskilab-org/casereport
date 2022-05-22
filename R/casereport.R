@@ -1665,10 +1665,10 @@ wgs.report = function(opt){
     if(!is.na(opt$pairs_out)){
             outRDS = readRDS(normalizePath(opt$pairs_out))
             if(!("casereport_html" %in% colnames(outRDS))){
-                outRDS$casereport_html = rep(NA,nrow(outRDS))
+                outRDS$casereport_html = NA
             }
             if(!(opt$pair %in% outRDS$pair)){
-               outRDS = merge(outRDS,data.table(pair=opt$pair,casereport_html=normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html"))), by = "pair")
+               outRDS = rbind(outRDS,data.table(pair=opt$pair,casereport_html=normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html"))), fill=TRUE)
             } else{
                 outRDS[pair == opt$pair]$casereport_html = normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html"))
                 }
