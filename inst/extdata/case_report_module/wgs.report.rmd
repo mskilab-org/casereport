@@ -867,7 +867,7 @@ cat('<div id="gtrack" class="section level2">')
 
 <div class="superbigimage">
 ```{r, wgs-gtrack, max.width = "95%", results = "asis", echo = FALSE, fig.align = "center"}
-knitr::include_graphics(file.path(params$outdir, "wgs.gtrack.png"))
+knitr::include_graphics(file.path(params$outdir, "wgs.gtrack.png"),rel_path = getOption("knitr.graphics.rel_path", FALSE))
 ```
 </div>
 </div>
@@ -875,7 +875,7 @@ knitr::include_graphics(file.path(params$outdir, "wgs.gtrack.png"))
 `r paste('<div id="lead-circos" class="section level2">')`
 ## circos
 ```{r, wgs-circos, dropBelow=TRUE, out.width = "95%", results = "asis", echo = FALSE, fig.align = "center"}
-knitr::include_graphics(file.path(params$outdir, "wgs.circos.png"))
+knitr::include_graphics(file.path(params$outdir, "wgs.circos.png"),rel_path = getOption("knitr.graphics.rel_path", FALSE))
 ```
 </div>
 
@@ -1241,7 +1241,7 @@ if (file.exists(waterfall.fn)) {
 Count of complex events against background distribution from Cell cohort.
 
 ```{r, sv-burden, fig.align = "center", out.width = "80%"}
-knitr::include_graphics(file.path(params$outdir, "ridgeplot.png"))
+knitr::include_graphics(file.path(params$outdir, "ridgeplot.png"),rel_path = getOption("knitr.graphics.rel_path", FALSE))
 ```
 
 `r paste('<div id="complex-sv-gallery" class="section level2 tabset tabset-fade tabset-pills">')`
@@ -1505,7 +1505,7 @@ if (file.good(paste0(params$outdir, "/deconstruct_sigs.png"))){
     cat("\n")
     cat("## deconstructSigs: input profile, fitted, error")
     cat("\n")
-    ## knitr::include_graphics(paste0(params$outdir, "/deconstruct_sigs.png"))
+    ## knitr::include_graphics(paste0(params$outdir, "/deconstruct_sigs.png"),rel_path = getOption("knitr.graphics.rel_path", FALSE))
 
     cat(
         paste0("![](", paste0(params$outdir, "/deconstruct_sigs.png"),")"), "\n"
@@ -1644,14 +1644,14 @@ grid) align well with the peaks in the raw intensity distribution
 ## Total CN
 
 ```{r, total-cn, results = "asis", out.width = "45%", fig.align = "center"}
-knitr::include_graphics(file.path(params$outdir, "cn.pp.png"))
+knitr::include_graphics(file.path(params$outdir, "cn.pp.png"),rel_path = getOption("knitr.graphics.rel_path", FALSE))
 ```
 
 ## Allelic CN
 
 ```{r, allelic-cn, dropBelow=TRUE, echo = FALSE, out.width = "45%", out.height = "45%", fig.show = "hold", fig.align = "center"}
 if (file.good(file.path(params$outdir, "allele.scatter.png"))){
-    knitr::include_graphics(file.path(params$outdir, "allele.scatter.png"))
+    knitr::include_graphics(file.path(params$outdir, "allele.scatter.png"),rel_path = getOption("knitr.graphics.rel_path", FALSE))
 }
 ```
 
