@@ -418,9 +418,14 @@ cn.plot = function(drivers.fname = NULL,
 
                          if (!file.exists(drivers.dt$plot.fname[ix]) | overwrite){
                              ## prepare window
-                             if("cnv" %in% colnames(drivers.dt) & (grepl("homdel",drivers.dt$cnv[ix]) | grepl("hetdel",drivers.dt$cnv[ix]))){
+                           windowDef=FALSE
+                           if("cnv" %in% colnames(drivers.dt)){
+                              if(grepl("homdel",drivers.dt$cnv[ix]) | grepl("hetdel",drivers.dt$cnv[ix])){
                                 win=win.gr[[ix]]
-                            }else{
+                                windowDef=TRUE
+                            }
+                             }
+                           if(!windowDef){
                                 if (is.null(drivers.gr$win) || is.na(drivers.gr$win[[ix]])) {
                                     win = drivers.gr[ix]
                                 } else {
