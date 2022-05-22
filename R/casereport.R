@@ -1626,7 +1626,6 @@ wgs.report = function(opt){
         wol=makeSummaryTables(report.config$driver_scna,report.config$surface_scna, report.config$driver_fusions, report.config$rna_change_with_cn,
                               report.config$surface_rna_change_with_cn, report.config$driver_mutations, report.config$oncotable,report.config$gene_cn,
                               report.config$onc,report.config$tsg,report.config$surface)
-        print(wol)
         driverTable=wol[[1]]
         surfaceTable=wol[[2]]
         driverTable$tier=as.character(driverTable$tier)
