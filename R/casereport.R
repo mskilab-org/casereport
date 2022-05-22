@@ -227,6 +227,8 @@ wgs.report = function(opt){
         
         
         message("Preparing gTracks")
+        message(opt$pairs_out)
+        message(opt$html_vizdir)
         message("Preparing coverage gTrack")
         if (check_file(report.config$coverage_gtrack, overwrite = opt$overwrite, verbose = opt$verbose)){
             cvgt = readRDS(report.config$coverage_gtrack)
