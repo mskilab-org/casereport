@@ -1645,6 +1645,7 @@ wgs.report = function(opt){
 
 
     message("Start knitting")
+    print(normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html")))
     rmarkdown::render(
         input = normalizePath(system.file('extdata', 'case_report_module/wgs.report.rmd', package = 'casereport')),
         output_format = "html_document",
