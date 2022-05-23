@@ -1663,7 +1663,7 @@ wgs.report = function(opt){
 
     message("WGS case report completed.")
     
-    if(!is.na(opt$pairs_out) & opt$pairs_out!="/dev/null"){
+    if(!is.na(opt$pairs_out) & !(opt$pairs_out == "/dev/null")){
             outRDS = readRDS(normalizePath(opt$pairs_out))
             if(!("casereport_html" %in% colnames(outRDS))){
                 outRDS$casereport_html = NA
@@ -1678,7 +1678,7 @@ wgs.report = function(opt){
             message("Added html path to selected pairs table.")
      }
     
-    if(!is.na(opt$html_vizdir & opt$html_vizdir!="/dev/null")){
+    if(!is.na(opt$html_vizdir & !(opt$html_vizdir == "/dev/null"))){
             move = paste("cp", normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html")), normalizePath(opt$html_vizdir))
             system(move)
             message("Copied html output to selected directory.")
