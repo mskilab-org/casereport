@@ -30,7 +30,7 @@ wgs.report = function(opt){
             library(deconstructSigs)
             library(DT)
             library(VariantAnnotation)
-            library(immunedeconv)
+            #library(immunedeconv)
             library(readr)
             library(data.table)
             library(casereport)
@@ -954,9 +954,9 @@ wgs.report = function(opt){
                                    cvgt.fname = report.config$coverage_gtrack,
                                    gngt.fname = report.config$gencode_gtrack,
                                    agt.fname = report.config$allele_gtrack,
-                                           gg.rds = report.config$jabba_rds,
                                    server = opt$server,
                                    pair = opt$pair,
+                                   gg.rds=report.config$jabba_rds,       
                                    amp.thresh = opt$amp_thresh,
                                    ploidy = pl,
                                    pad = 0.5,
@@ -1005,6 +1005,7 @@ wgs.report = function(opt){
                                      agt.fname = report.config$allele_gtrack,
                                      server = opt$server,
                                      pair = opt$pair,
+                                     gg.rds = report.config$jabba_rds,
                                      amp.thresh = opt$amp_thresh,
                                      ploidy = report.config$ploidy,
                                      pad = 0.5,
@@ -1028,6 +1029,7 @@ wgs.report = function(opt){
                                      agt.fname = report.config$allele_gtrack,
                                      server = opt$server,
                                      pair = opt$pair,
+                                     gg.rds = report.config$jabba_rds,
                                      amp.thresh = opt$amp_thresh,
                                      ploidy = report.config$ploidy,
                                      pad = 0.5,
@@ -1568,24 +1570,24 @@ wgs.report = function(opt){
         ## #################
         ## deconv
         ## #################
-        if (check_file(report.config$deconv, opt$overwrite, opt$verbose)) {
-          message("Deconvolution data already exists, skipping")
-        } else {
-          if (file.good(opt$tpm)){
-            message("Running Deconvolution algorithm")
-            tpm_raw = as.character(opt$tpm)
-            tpm_read <- data.table::fread(tpm_raw, header = TRUE)
+        #if (check_file(report.config$deconv, opt$overwrite, opt$verbose)) {
+        #  message("Deconvolution data already exists, skipping")
+        #} else {
+          #if (file.good(opt$tpm)){
+          #  message("Running Deconvolution algorithm")
+          #  tpm_raw = as.character(opt$tpm)
+          #  tpm_read <- data.table::fread(tpm_raw, header = TRUE)
             # make sure gene name columns is deduped and take the top count per gene
-            names(tpm_read)[1:2] = c('gene', 'count')
-            tpm_read[, count_deduped := max(count), by = gene]
-            tpm_read = tpm_read[!duplicated(gene), .(gene, count_deduped)]
-            tpm_read_new <- tpm_read[,-1]
-            tpm_read_new_name <- as.matrix(tpm_read[,1])
-            rownames(tpm_read_new) <- tpm_read_new_name[,1]
-            deconv_results = immunedeconv::deconvolute(tpm_read_new, opt$deconv)
-            data.table::fwrite(deconv_results, file.path(opt$outdir,"deconv_results.txt"), sep = '\t', quote = F, row.names = F)
-          }
-        }
+          #  names(tpm_read)[1:2] = c('gene', 'count')
+          #  tpm_read[, count_deduped := max(count), by = gene]
+          #  tpm_read = tpm_read[!duplicated(gene), .(gene, count_deduped)]
+          #  tpm_read_new <- tpm_read[,-1]
+          #  tpm_read_new_name <- as.matrix(tpm_read[,1])
+          #  rownames(tpm_read_new) <- tpm_read_new_name[,1]
+          #  deconv_results = immunedeconv::deconvolute(tpm_read_new, opt$deconv)
+          #  data.table::fwrite(deconv_results, file.path(opt$outdir,"deconv_results.txt"), sep = '\t', quote = F, row.names = F)
+          #}
+        #}
         
         
         ## ################
@@ -1626,7 +1628,6 @@ wgs.report = function(opt){
         wol=makeSummaryTables(report.config$driver_scna,report.config$surface_scna, report.config$driver_fusions, report.config$rna_change_with_cn,
                               report.config$surface_rna_change_with_cn, report.config$driver_mutations, report.config$oncotable,report.config$gene_cn,
                               report.config$onc,report.config$tsg,report.config$surface)
-        print(wol)
         driverTable=wol[[1]]
         surfaceTable=wol[[2]]
         driverTable$tier=as.character(driverTable$tier)
@@ -1645,6 +1646,7 @@ wgs.report = function(opt){
 
 
     message("Start knitting")
+    print(normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html")))
     rmarkdown::render(
         input = normalizePath(system.file('extdata', 'case_report_module/wgs.report.rmd', package = 'casereport')),
         output_format = "html_document",
@@ -1660,4 +1662,26 @@ wgs.report = function(opt){
         quiet = FALSE)
 
     message("WGS case report completed.")
+    
+    if(!is.na(opt$pairs_out) & !(opt$pairs_out == "/dev/null")){
+            outRDS = readRDS(normalizePath(opt$pairs_out))
+            if(!("casereport_html" %in% colnames(outRDS))){
+                outRDS$casereport_html = NA
+            }
+            if(!(opt$pair %in% outRDS$pair)){
+               outRDS = rbind(outRDS,data.table(pair=opt$pair,casereport_html=normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html"))), fill=TRUE)
+            } else{
+                outRDS[pair == opt$pair]$casereport_html = normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html"))
+                }
+           saveRDS(outRDS,normalizePath(opt$pairs_out))
+           
+            message("Added html path to selected pairs table.")
+     }
+    
+    if(!is.na(opt$html_vizdir) & !(opt$html_vizdir == "/dev/null")){
+            move = paste("cp", normalizePath(paste0(opt$outdir, "/", opt$pair,".wgs.report.html")), normalizePath(opt$html_vizdir))
+            system(move)
+            message("Copied html output to selected directory.")
+        }
+    
 }

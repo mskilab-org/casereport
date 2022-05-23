@@ -3484,6 +3484,8 @@ makeSummaryTables = function(cnv_table,surface_cnv,fusions_table,expression_tabl
 
     summaryTable=NA
     pmkbTier=get_pmkb_tier_table(NA)
+    oncoKBTable=fread(system.file('extdata', 'oncokb_biomarker_drug_associations.tsv', package = "casereport"))
+	
     if (length(genelist) == 0){
         return(data.table(gene = character(), role = character(),
              type = character(), tier = character(),
@@ -3493,11 +3495,13 @@ makeSummaryTables = function(cnv_table,surface_cnv,fusions_table,expression_tabl
         thisGene=oncotable[oncotable$gene==genelist[i] & !is.na(oncotable$gene),]
 	if(nrow(thisGene)==0){
 		thisGene=genes_cn_annotated[genes_cn_annotated$gene==genelist[i] & !is.na(genes_cn_annotated$gene),]
-		thisGene$type="missense"
+		#TODO: Fix instances of oncotable not having the gene mutation (but the gene itself having a mutation).
+		#thisGene$type="missense"
 	}
-        if(genelist[i] %in% pmkbTier$gene){
-            #thisTier=min(pmkbTier[pmkbTier$gene==thisGene$gene[1],]$Tier)  
-            thisTier=pmkbTier[pmkbTier$gene==thisGene$gene[1],]$tier
+        if(genelist[i] %in% oncoKBTable$gene){
+            thisTier=min(oncoKBTable[oncoKBTable$gene==thisGene$gene[1],]$Level)  
+	}else if(genelist[i] %in% pmkbTier$gene){
+		thisTier=pmkbTier[pmkbTier$gene==thisGene$gene[1],]$tier
         }else{
             thisTier=NA
         }
@@ -3517,12 +3521,8 @@ makeSummaryTables = function(cnv_table,surface_cnv,fusions_table,expression_tabl
     summaryTable[summaryTable$gene %in% tsg,]$role="TSG"
     summaryTable[summaryTable$gene %in% surface,]$role="SURF"
     summaryTable$type=str_replace_all(summaryTable$type,"NA, ","")
-    #summaryTable$role=str_replace_all(summaryTable$role,"NA, ","")
     summaryTable$type=str_replace_all(summaryTable$type,", NA","")
-    #summaryTable$role=str_replace_all(summaryTable$role,", NA","")
     summaryTable$type=str_replace_all(summaryTable$type,", $","")
-    #summaryTable$role=str_replace_all(summaryTable$role,", $","")
-    #summaryTable$role=str_replace_all(summaryTable$role,", ,",",")
 
     summaryTable$withHetdel=ifelse(grepl("hetdel",summaryTable$type),"True","False")    
 
