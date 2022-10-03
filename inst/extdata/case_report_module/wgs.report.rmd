@@ -432,17 +432,19 @@ for(i in colnames(driver.genes.cnv)){
 }
 cat(paste0(headerline,'</tr>'))
 
-
-for(i in 1:nrow(driver.genes.cnv)){
+if(nrow(driver.genes.cnv)>0){
+ for(i in 1:nrow(driver.genes.cnv)){
   rLine=paste0('<tr class="odd" id="',driver.genes.cnv$gene[i],'.cnvtt" style="display:none">')
   for(j in 1:ncol(driver.genes.cnv)){
     thisL=paste0('<td>',as.vector(as.matrix(driver.genes.cnv)[i,j]),'</td>')
     rLine=paste0(rLine,thisL)
   }
   cat(paste0(rLine,'</tr>'))
-}
-
-cat('</table>')
+ }
+cat('</table>')	
+}else{
+cat('No driver genes with CNVs')   
+	}
 cat('</div>')
 ```
 
