@@ -113,6 +113,7 @@ annotate_germline_mutations = function(germline_snpeff_snv_bcf, pathogenic = NUL
             # to avoid collisions we include a random string in the temporary file name
             temp_vcf = paste0(tempdir(), '/', paste0(rand.string(), collapse = ''), '-germline_snpeff_snv.vcf')
             message('Making temporary VCF copy of the input BCF: ', temp_vcf)
+            system("module load bcftools")
             system(paste('bcftools index', germline_snpeff_snv_bcf))
             system(paste('bcftools view', germline_snpeff_snv_bcf, '-o', temp_vcf))
             germline_snpeff_snv_bcf = temp_vcf
