@@ -420,7 +420,7 @@ cn.plot = function(drivers.fname = NULL,
                              ## prepare window
                            windowDef=FALSE
                            if("cnv" %in% colnames(drivers.dt)){
-                              if(grepl("homdel",drivers.dt$cnv[ix]) | grepl("hetdel",drivers.dt$cnv[ix])){
+                              if((grepl("homdel",drivers.dt$cnv[ix]) | grepl("hetdel",drivers.dt$cnv[ix])) & !is.na(win.gr[[ix]])){
                                 win=win.gr[[ix]]
                                 windowDef=TRUE
                             }
