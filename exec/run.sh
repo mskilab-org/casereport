@@ -22,7 +22,8 @@
 	echo "$condaenv not a proper conda environment path"
 	conda activate casereport
     fi
-	
+    
+    module load bcftools
     
     cmd="Rscript $@"
     echo "Running R script:" && echo "$cmd" && eval $cmd
