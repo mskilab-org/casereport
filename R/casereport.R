@@ -510,7 +510,7 @@ wgs.report = function(opt){
                 cn.fields = intersect(fields, names(driver.genes_cn))
                 
                 if(length(unique(driver.genes_cn$gene_name))<nrow(driver.genes_cn)){
-                    toCheck = names(table(driver.genes_cn$gene)[table(driver.genes_cn$gene)>1])
+                    toCheck = names(table(driver.genes_cn$gene_name)[table(driver.genes_cn$gene_name)>1])
                     for(i in 1:length(toCheck)){
                         geneLines = driver.genes_cn[gene_name==toCheck[i],]
                         geneLines = geneLines[,length:= end-start] 
