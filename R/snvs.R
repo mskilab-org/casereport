@@ -137,7 +137,7 @@ annotate_germline_mutations = function(germline_snpeff_snv_bcf, pathogenic = NUL
             dt = as.data.table(som)[, pair := name]
             message('Marking pathogenic variants')
             dt = merge.data.table(dt,
-                                  select(dt.patho, -strand, -width),
+                                  dplyr::select(dt.patho, -strand, -width),
                                   by = c("seqnames", "start", "end", "REF", "ALT", "gene"),
                                   all.x = TRUE,
                                   allow.cartesian = TRUE)
