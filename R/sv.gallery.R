@@ -411,7 +411,7 @@ cn.plot = function(drivers.fname = NULL,
         }
         drivers.gr$win = win.gr.other$win ## copy over plot window possibly return vector in the future
         ## make one plot per range in drivers gr
-      
+        saveRDS(win.gr,"~/win.gr.rds")
         print(drivers.dt)
         pts = lapply(1:length(drivers.gr),
                      function(ix) {
