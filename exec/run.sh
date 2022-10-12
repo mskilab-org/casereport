@@ -1,6 +1,6 @@
 #!/bin/bash
 {
-    . ~/.bash_profile
+    source ~/.bash_profile
     set -a
     
     module unload gcc
@@ -24,7 +24,8 @@
     fi
     
     module load bcftools
-    
+    module unload R
+    module load R/4.0.2
     cmd="Rscript $@"
     echo "Running R script:" && echo "$cmd" && eval $cmd
     cmdsig=$?
