@@ -411,19 +411,19 @@ cn.plot = function(drivers.fname = NULL,
         }
         drivers.gr$win = win.gr.other$win ## copy over plot window possibly return vector in the future
         ## make one plot per range in drivers gr
-      
+        saveRDS(win.gr,"~/win.gr.rds")
         print(drivers.dt)
         pts = lapply(1:length(drivers.gr),
                      function(ix) {
-
+                         print(win.gr[[ix]])
                          if (!file.exists(drivers.dt$plot.fname[ix]) | overwrite){
                              ## prepare window
                            windowDef=FALSE
                            if("cnv" %in% colnames(drivers.dt)){
-                              if(grepl("homdel",drivers.dt$cnv[ix]) | grepl("hetdel",drivers.dt$cnv[ix])){
-                                win=win.gr[[ix]]
-                                windowDef=TRUE
-                            }
+                                    if(length(win.gr[[ix]])>0 & (grepl("homdel",drivers.dt$cnv[ix]) | grepl("hetdel",drivers.dt$cnv[ix]))){
+                                    win=win.gr[[ix]]
+                                    windowDef=TRUE
+                               }
                              }
                            if(!windowDef){
                                 if (is.null(drivers.gr$win) || is.na(drivers.gr$win[[ix]])) {

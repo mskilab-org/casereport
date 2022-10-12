@@ -508,6 +508,22 @@ wgs.report = function(opt){
                 }
 
                 cn.fields = intersect(fields, names(driver.genes_cn))
+                
+                if(length(unique(driver.genes_cn$gene_name))<nrow(driver.genes_cn)){
+                    toCheck = names(table(driver.genes_cn$gene_name)[table(driver.genes_cn$gene_name)>1])
+                    for(i in 1:length(toCheck)){
+                        geneLines = driver.genes_cn[gene_name==toCheck[i],]
+                        geneLines = geneLines[,length:= end-start] 
+                        geneLines = geneLines[order(length, decreasing=TRUE),]
+                        driver.genes_cn = driver.genes_cn[gene_name!=toCheck[i] | (start==geneLines$start[1] & end==geneLines$end[1] & seqnames==geneLines$seqnames[1]),]
+                        if(length(unique(geneLines$seqnames)) < nrow(geneLines)){
+                            message(paste0("For gene ",toCheck[i]," multiple lines found not from the same chromosome. Retaining line with longest GRange. Check input if needed."))
+                            }else{
+                                message(paste0("For gene ",toCheck[i]," multiple lines found. Retaining line with longest GRange. Check input if needed."))
+                                }
+                        }
+                    }
+                
                 if (!is.null(opt$include_surface) && opt$include_surface) {
                     fwrite(driver.genes_cn[is.na(surface) | !is.na(annot), ..cn.fields], report.config$driver_scna)
                     fwrite(driver.genes_cn[surface == TRUE & is.na(annot), ..cn.fields], report.config$surface_scna)
