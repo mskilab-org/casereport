@@ -415,7 +415,7 @@ cn.plot = function(drivers.fname = NULL,
         print(drivers.dt)
         pts = lapply(1:length(drivers.gr),
                      function(ix) {
-
+                         print(win.gr[[ix]])
                          if (!file.exists(drivers.dt$plot.fname[ix]) | overwrite){
                              ## prepare window
                            windowDef=FALSE
