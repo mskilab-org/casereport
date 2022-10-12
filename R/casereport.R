@@ -511,7 +511,7 @@ wgs.report = function(opt){
                 
                 if(length(unique(driver.genes_cn$gene_name))<nrow(driver.genes_cn)){
                     toCheck = names(table(rog$gene)[table(rog$gene)>1])
-                    for(gene in 1:length(toCheck){
+                    for(gene in 1:length(toCheck)){
                         geneLines = driver.genes_cn[gene_name==toCheck[i],]
                         geneLines = geneLines[,length:= end-start] 
                         geneLines = geneLines[order(length, decreasing=TRUE),]
