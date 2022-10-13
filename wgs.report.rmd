@@ -349,54 +349,57 @@ basebutton=paste('<input type="button" onclick="openTabset"',';" value="thisValu
 ExpSequences=c("overexpression","underexpression")
 CnvSequences=c("amp","hetdel")
 SnvSequences=c("missense")
-
-for(i in 1:nrow(summary.dt)){
-  g=gsub(".*/gene/","",summary.dt$gene[i])
-  g=gsub(" target.*$","",g)
-  if(grepl("expression",summary.dt$type[i])){
-    for(val in ExpSequences){
-      if(grepl(val,summary.dt$type[i])){
-        summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
-        summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
-        forAction=paste0("showImg('",g,".expr');showImg('",g,".gg')",";showImg('",g,".expt')",";showHeader('expheader')")
-        summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+if (nrow(summary.dt) == 0){
+  print("no genes found in summary dataframe.")
+}else{
+  for(i in 1:nrow(summary.dt)){
+    g=gsub(".*/gene/","",summary.dt$gene[i])
+    g=gsub(" target.*$","",g)
+    if(grepl("expression",summary.dt$type[i])){
+      for(val in ExpSequences){
+        if(grepl(val,summary.dt$type[i])){
+          summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
+          summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
+          forAction=paste0("showImg('",g,".expr');showImg('",g,".gg')",";showImg('",g,".expt')",";showHeader('expheader')")
+          summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+        }
       }
     }
-  }
-  if(grepl("amp|hetdel",summary.dt$type[i])){
-    for(val in CnvSequences){
-      if(grepl(val,summary.dt$type[i])){
-        summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
-        summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
-        forAction=paste0("showImg('",g,".cnv')",";showImg('",g,".cnvtt')",";showHeader('cnvheader')")
-        summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+    if(grepl("amp|hetdel",summary.dt$type[i])){
+      for(val in CnvSequences){
+        if(grepl(val,summary.dt$type[i])){
+          summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
+          summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
+          forAction=paste0("showImg('",g,".cnv')",";showImg('",g,".cnvtt')",";showHeader('cnvheader')")
+          summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+        }
       }
     }
+    if(grepl("fusion",summary.dt$type[i])){
+          summary.dt$type[i]=gsub("fusion",basebutton,summary.dt$type[i])
+          summary.dt$type[i]=gsub("thisValue","fusion",summary.dt$type[i])
+          
+          forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')",";showImg('",g,".fust')",";showHeader('fusheader')")
+          summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+    }
+    
+    if(grepl("missense",summary.dt$type[i])){
+          summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
+          summary.dt$type[i]=gsub("thisValue","missense",summary.dt$type[i])
+          forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeader('snvheader')")
+          summary.dt$type[i]=gsub("openTabset",forAction,summary.dt$type[i])
+    }
+    if(grepl("proximity",summary.dt$type[i])){
+          summary.dt$type[i]=gsub("proximity",basebutton,summary.dt$type[i])
+          summary.dt$type[i]=gsub("thisValue","proximity",summary.dt$type[i])
+          
+          forAction=paste0("showImg('",g,".prox')")
+          summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+    }
+    summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
   }
-  if(grepl("fusion",summary.dt$type[i])){
-        summary.dt$type[i]=gsub("fusion",basebutton,summary.dt$type[i])
-        summary.dt$type[i]=gsub("thisValue","fusion",summary.dt$type[i])
-        
-        forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')",";showImg('",g,".fust')",";showHeader('fusheader')")
-        summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
-  }
-  
-  if(grepl("missense",summary.dt$type[i])){
-        summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
-        summary.dt$type[i]=gsub("thisValue","missense",summary.dt$type[i])
-        forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeader('snvheader')")
-        summary.dt$type[i]=gsub("openTabset",forAction,summary.dt$type[i])
-  }
-  if(grepl("proximity",summary.dt$type[i])){
-        summary.dt$type[i]=gsub("proximity",basebutton,summary.dt$type[i])
-        summary.dt$type[i]=gsub("thisValue","proximity",summary.dt$type[i])
-        
-        forAction=paste0("showImg('",g,".prox')")
-        summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
-  }
-  summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
+  DT::datatable(summary.dt, escape=FALSE, options = list(scrollX = TRUE))
 }
-DT::datatable(summary.dt, escape=FALSE, options = list(scrollX = TRUE))
 ```
 
 <input type="button" value="Clear All" id="CLBut" onclick="hideImgs()" />
