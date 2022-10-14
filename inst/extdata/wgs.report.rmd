@@ -32,6 +32,28 @@ params:
   }
 </style>
 
+<style>
+div.scroll
+{
+Width-5px;
+Height-10 px;
+Overflow-x:scroll;
+}
+</style>
+
+<style>
+.divScroll {
+overflow:scroll;
+height:300px;
+width:500px;
+}
+</style>
+
+{
+Overflow-x:scroll;//add horizontal bar option in html
+Overflow-y:scroll; //add vertical bar option in html
+}
+
 <input type="button" style="height: 25px; width: 100px" value="Expand All" id="primaryButton" />
 <input type="button" style="height: 25px; width: 100px" value="Collapse All" id="2Button"  />
 
@@ -95,7 +117,6 @@ function collapseAll() {
 <script>
 function showImg() {
     var thisimg = arguments[0];
-    console.log(thisimg);
       if(document.getElementById(thisimg).style.display == ""){
             document.getElementById(thisimg).style.display = "none";
       }else{
@@ -105,14 +126,82 @@ function showImg() {
 </script>
 
 <script>
-function showVIM() {
-              if(document.getElementById("vim_img").style.display == ""){
-            document.getElementById("vim_img").style.display = "none";
-      }else{
-            document.getElementById("vim_img").style.display = "";
-        }
+function hideImgs() {
+          var DivId = document.getElementById("summary-driver-table");
+          var images = DivId.getElementsByTagName("img");
+          for(var i=0, iLen=images.length; i<iLen; i++) {
+            if(images[i].style.display != "none"){
+              images[i].style.display = "none";
+            }
+          }
+          var rows = DivId.getElementsByTagName("tr");
+          for(var j=0, rLen=rows.length; j<rLen; j++) {
+            if(rows[j].id != "" && rows[j].style.display != "none"){
+              rows[j].style.display = "none";
+            }
+          }
         }
 </script>
+
+<script>
+function hideImgsSurface() {
+          var DivId = document.getElementById("summary-surface-table");
+          var images = DivId.getElementsByTagName("img");
+          for(var i=0, iLen=images.length; i<iLen; i++) {
+            if(images[i].style.display != "none"){
+              images[i].style.display = "none";
+            }
+          }
+          var rows = DivId.getElementsByTagName("tr");
+          for(var j=0, rLen=rows.length; j<rLen; j++) {
+            if(rows[j].id != "" && rows[j].style.display != "none"){
+              rows[j].style.display = "none";
+            }
+          }
+        }
+</script>
+
+
+<script>
+function showHeader() {
+    var DivId = document.getElementById("summary-driver-table");
+    var thisheader = arguments[0];
+    var rows = DivId.getElementsByTagName("tr");
+    var one = 0;
+    for(var i=0, iLen=rows.length; i<iLen; i++) {
+            if(rows[i].id != arguments[0] && rows[i].id.length!=0 && rows[i].style.display != "none"){
+              console.log(rows[i].id)
+              one=1;
+            }
+      }
+      if(one==1) {
+        document.getElementById(thisheader).style.display = "";
+      }else{
+      document.getElementById(thisheader).style.display = "none";
+      }
+      }
+</script>
+
+<script>
+function showHeaderSurface() {
+    var DivId = document.getElementById("summary-surface-table");
+    var thisheader = arguments[0];
+    var rows = DivId.getElementsByTagName("tr");
+    var one = 0;
+    for(var i=0, iLen=rows.length; i<iLen; i++) {
+            if(rows[i].id != arguments[0] && rows[i].id.length!=0 && rows[i].style.display != "none"){
+              console.log(rows[i].id)
+              one=1;
+            }
+      }
+      if(one==1) {
+        document.getElementById(thisheader).style.display = "";
+      }else{
+      document.getElementById(thisheader).style.display = "none";
+      }
+      }
+</script>
+
 
 
 <style type="text/css">
@@ -246,12 +335,151 @@ Tumor Mutation Burden (TMB): `r format(round(summary.list$mut_per_mbp, 2), 2)` p
 ```
 
 ***
-
 # Summary Driver Table
 
-```{r, summ-driver, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE}
+```{r, summ-driver, dropAboveExp=TRUE, results = "asis", echo = FALSE}
 summary.dt = fread(file.path(params$outdir, "summaryTable.txt"))
-DT::datatable(summary.dt, escape=FALSE, options = list(scrollX = TRUE))
+expr.hist.dt = fread(file.path(params$outdir, "expr.histograms.txt"))
+expr.slickr.dt = fread(file.path(params$outdir, "expr.gallery.txt"))
+cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
+fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
+
+
+basebutton=paste('<input type="button" onclick="openTabset"',';" value="thisValue" />',sep="'")
+ExpSequences=c("overexpression","underexpression")
+CnvSequences=c("amp","hetdel")
+SnvSequences=c("missense")
+if (nrow(summary.dt) == 0){
+  print("no genes found in summary dataframe.")
+}else{
+  for(i in 1:nrow(summary.dt)){
+    g=gsub(".*/gene/","",summary.dt$gene[i])
+    g=gsub(" target.*$","",g)
+    if(grepl("expression",summary.dt$type[i])){
+      for(val in ExpSequences){
+        if(grepl(val,summary.dt$type[i])){
+          summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
+          summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
+          forAction=paste0("showImg('",g,".expr');showImg('",g,".gg')",";showImg('",g,".expt')",";showHeader('expheader')")
+          summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+        }
+      }
+    }
+    if(grepl("amp|hetdel",summary.dt$type[i])){
+      for(val in CnvSequences){
+        if(grepl(val,summary.dt$type[i])){
+          summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
+          summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
+          forAction=paste0("showImg('",g,".cnv')",";showImg('",g,".cnvtt')",";showHeader('cnvheader')")
+          summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+        }
+      }
+    }
+    if(grepl("fusion",summary.dt$type[i])){
+          summary.dt$type[i]=gsub("fusion",basebutton,summary.dt$type[i])
+          summary.dt$type[i]=gsub("thisValue","fusion",summary.dt$type[i])
+          
+          forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')",";showImg('",g,".fust')",";showHeader('fusheader')")
+          summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+    }
+    
+    if(grepl("missense",summary.dt$type[i])){
+          summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
+          summary.dt$type[i]=gsub("thisValue","missense",summary.dt$type[i])
+          forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeader('snvheader')")
+          summary.dt$type[i]=gsub("openTabset",forAction,summary.dt$type[i])
+    }
+    if(grepl("proximity",summary.dt$type[i])){
+          summary.dt$type[i]=gsub("proximity",basebutton,summary.dt$type[i])
+          summary.dt$type[i]=gsub("thisValue","proximity",summary.dt$type[i])
+          
+          forAction=paste0("showImg('",g,".prox')")
+          summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+    }
+    summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
+  }
+  DT::datatable(summary.dt, escape=FALSE, options = list(scrollX = TRUE))
+}
+```
+
+<input type="button" value="Clear All" id="CLBut" onclick="hideImgs()" />
+
+```{r, cnv-driver-table, results = "asis", echo = FALSE}
+driver.genes.cnv = fread(file.path(params$outdir, "driver.genes.cnv.txt"))
+driver.genes.cnv$min_normalized_cn=unlist(lapply(driver.genes.cnv$min_normalized_cn,FUN=signif,digits=4))
+driver.genes.cnv$max_normalized_cn=unlist(lapply(driver.genes.cnv$max_normalized_cn,FUN=signif,digits=4))
+driver.genes.cnv$expr.quantile=unlist(lapply(driver.genes.cnv$expr.quantile,FUN=signif,digits=4))
+
+cat('<div class="divScroll">')
+cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="CNV_Table">')
+headerline='<tr id="cnvheader" style="display:none">'
+for(i in colnames(driver.genes.cnv)){
+  thisH=paste0('<th>',i,'</th>')
+  headerline=paste0(headerline,thisH)
+}
+cat(paste0(headerline,'</tr>'))
+
+
+for(i in 1:nrow(driver.genes.cnv)){
+  rLine=paste0('<tr class="odd" id="',driver.genes.cnv$gene[i],'.cnvtt" style="display:none">')
+  for(j in 1:ncol(driver.genes.cnv)){
+    thisL=paste0('<td>',as.vector(as.matrix(driver.genes.cnv)[i,j]),'</td>')
+    rLine=paste0(rLine,thisL)
+  }
+  cat(paste0(rLine,'</tr>'))
+}
+
+cat('</table>')
+cat('</div>')
+```
+
+```{r, cn-driver, results = "asis", echo = FALSE}
+cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
+if (nrow(cn.gallery.dt) > 0) {
+    for (g in cn.gallery.dt[, gene_name]) {
+        cat(
+            paste0('<p>',
+                    '<img',' id="', g,'.cnv"',' src="',
+                    cn.gallery.dt[gene_name == g, plot.fname],
+                    '" style="display:none;" width="100%" />',
+                    '</p>'
+            )
+        )   
+    }
+}
+```
+
+```{r, expr-driver-table, results = "asis", echo = FALSE}
+driver.genes.expr = fread(file.path(params$outdir, "driver.genes.expr.txt"))
+driver.genes.expr$min_normalized_cn=unlist(lapply(driver.genes.expr$min_normalized_cn,FUN=signif,digits=4))
+driver.genes.expr$max_normalized_cn=unlist(lapply(driver.genes.expr$max_normalized_cn,FUN=signif,digits=4))
+driver.genes.expr$expr.quantile=unlist(lapply(driver.genes.expr$expr.quantile,FUN=signif,digits=4))
+if (driver.genes.expr[,.N] > 0){
+    driver.genes.expr$zscore=unlist(lapply(driver.genes.expr$zscore,FUN=signif,digits=4))
+    driver.genes.expr = driver.genes.expr[order(-abs(zscore))] #  sort by Z-score
+}
+
+cat('<div class="divScroll">')
+cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="EXP_Table">')
+headerline='<tr id="expheader" style="display:none">'
+for(i in colnames(driver.genes.expr)){
+  thisH=paste0('<th>',i,'</th>')
+  headerline=paste0(headerline,thisH)
+}
+cat(paste0(headerline,'</tr>'))
+
+
+for(i in 1:nrow(driver.genes.expr)){
+  rLine=paste0('<tr class="odd" id="',driver.genes.expr$gene[i],'.expt" style="display:none">')
+  for(j in 1:ncol(driver.genes.expr)){
+    thisL=paste0('<td>',as.vector(as.matrix(driver.genes.expr)[i,j]),'</td>')
+    rLine=paste0(rLine,thisL)
+  }
+  cat(paste0(rLine,'</tr>'))
+}
+
+cat('</table>')
+cat('</div>')
 ```
 
 ```{r, expr-driver, results = "asis", echo = FALSE}
@@ -267,11 +495,11 @@ for (g in valid.genes) {
          cat(
             paste0(
                 '<p float="left">',
-                '<img ', 'id="', expr.png.fn,'expr"',
-                'src="',
+                '<img ', 'id="', g,'.expr"',
+                ' src="',
             expr.png.fn,
                 '" style="display:none;" width="45%" />',
-                '<img', 'id="', gg.png.fn,'gg"', 'src="',
+                '<img', ' id="', g,'.gg"', ' src="',
                 gg.png.fn,
                 '" style="display:none;" width="45%" />',
                 '</p>'
@@ -281,13 +509,207 @@ for (g in valid.genes) {
     }
 ```
 
-```{r, cn-driver, results = "asis", echo = FALSE}
-cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
+```{r, fus-driver-table, results = "asis", echo = FALSE}
+driver.fusions.fname = file.path(params$outdir, "fusions.driver.txt")
+if (file.exists(driver.fusions.fname)) {
+   driver.fusions.dt = fread(driver.fusions.fname)
+   if (nrow(driver.fusions.dt)) {
+      driver.fusions.cols = intersect(c("genes", "walk.id", "driver.name", "chroms", "maxcn", "total.aa", "gene.pc", "ev.id", "ev.type"), colnames(driver.fusions.dt))
+      dat = driver.fusions.dt[, ..driver.fusions.cols]
+   }
+}
+
+fusions.gallery.dt = fread(file.path(params$outdir, "fusions.driver.txt"))
+summary.dt = fread(file.path(params$outdir, "summaryTable.txt"))
+driverGenes=summary.dt$gene
+driverGenes=sapply(driverGenes,function(x) gsub(".*/gene/","",x))
+driverGenes=sapply(driverGenes,function(x) sub(" target.*$","",x))
+
+if(any(fusions.gallery.dt$genes %in% driverGenes)){
+  cat('<div class="divScroll">')
+  cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="FUS_Table">')
+  headerline='<tr id="fusheader" style="display:none">'
+  for(i in colnames(driver.genes.expr)){
+   thisH=paste0('<th>',i,'</th>')
+   headerline=paste0(headerline,thisH)
+  }
+  cat(paste0(headerline,'</tr>'))
+
+
+  for(i in 1:nrow(driver.genes.expr)){
+   rLine=paste0('<tr class="odd" id="',driver.genes.expr$gene[i],'.fust" style="display:none">')
+    for(j in 1:ncol(driver.genes.expr)){
+     thisL=paste0('<td>',as.vector(as.matrix(driver.genes.expr)[i,j]),'</td>')
+     rLine=paste0(rLine,thisL)
+   }
+   cat(paste0(rLine,'</tr>'))
+  }
+
+  cat('</table>')
+  cat('</div>')
+}
+```
+
+```{r, fus-driver, results = "asis", echo = FALSE}
+if (nrow(fusions.gallery.dt) > 0) {
+      for (g in fusions.gallery.dt[, genes]) {
+        if(g %in% driverGenes){
+            cat(
+                paste0('<p>',
+                       '<img', ' id="',paste0(fusions.gallery.dt[genes == g, driver.name],'.fus'),'" src="',
+                       fusions.gallery.dt[genes == g, plot.fname],
+                       '" style="display:none;" width="75%" />',
+                       '</a>',
+                       '</p>'
+                       )
+            )
+        }
+        }
+    }
+```
+
+```{r, prox-driver, results = "asis", echo = FALSE}
+proximity.gallery.dt = fread(paste0(params$outdir, "/", "proximity.gallery.txt"))
+expr.histograms.dt = fread(paste0(params$outdir, "/", "expr.histograms.txt"))
+    if (nrow(proximity.gallery.dt) > 0) {
+      gns = intersect(proximity.gallery.dt$gene, expr.histograms.dt$gene)
+        for (g in gns) {
+            cat(
+                paste0('<p>',
+                       '<img', ' id="',paste0(g,'.prox'),'" src="',
+                       proximity.gallery.dt[gene == g, plot.fname],
+                       '" style="display:none;" width="75%" />',
+                       '</a>',
+                       '</p>'
+                       )
+            )
+        }
+    }
+```
+
+```{r, SNV-driver, dropBelow=TRUE, results = "asis", echo = FALSE}
+driver.mutations.dt = fread(file.path(params$outdir, "driver.mutations.txt"))
+driver.mutations.dt$Tier=as.character(driver.mutations.dt$Tier)
+driver.mutations.dt[is.na(driver.mutations.dt$Tier),]$Tier="Undefined"
+cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SNV_Table">')
+headerline='<tr id="snvheader" style="display:none">'
+for(i in colnames(driver.mutations.dt)){
+  thisH=paste0('<th>',i,'</th>')
+  headerline=paste0(headerline,thisH)
+}
+cat(paste0(headerline,'</tr>'))
+
+
+for(i in 1:nrow(driver.mutations.dt)){
+  rLine=paste0('<tr class="odd" id="',driver.mutations.dt$gene[i],'.snvt" style="display:none">')
+  for(j in 1:ncol(driver.mutations.dt)){
+    thisL=paste0('<td>',as.vector(as.matrix(driver.mutations.dt)[i,j]),'</td>')
+    rLine=paste0(rLine,thisL)
+  }
+  cat(paste0(rLine,'</tr>'))
+}
+
+cat('</table>')
+```
+***
+
+
+# Summary Surface Table
+
+```{r, summ-surface, dropAboveExp=TRUE, results = "asis", echo = FALSE}
+summary.dt = fread(file.path(params$outdir, "summarySurfaceTable.txt"))
+expr.hist.dt = fread(file.path(params$outdir, "surface.expr.histograms.txt"))
+expr.slickr.dt = fread(file.path(params$outdir, "surface.expr.gallery.txt"))
+cn.gallery.dt = fread(file.path(params$outdir, "surface.cn.gallery.txt"))
+
+basebutton=paste('<input type="button" onclick="openTabset"',';" value="thisValue" />',sep="'")
+ExpSequences=c("overexpression","underexpression")
+CnvSequences=c("amp","hetdel")
+SnvSequences=c("missense")
+if (nrow(summary.dt) == 0){
+  print("empty summary surface table.")
+}else{
+  for(i in 1:nrow(summary.dt)){
+    g=gsub(".*/gene/","",summary.dt$gene[i])
+    g=gsub(" target.*$","",g)
+    if(grepl("expression",summary.dt$type[i])){
+      for(val in ExpSequences){
+        if(grepl(val,summary.dt$type[i])){
+          summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
+          summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
+          forAction=paste0("showImg('",g,".expr');showImg('",g,".gg')",";showImg('",g,".sexpt')",";showHeaderSurface('sexpheader')")
+          summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+        }
+      }
+    }
+    if(grepl("amp|hetdel",summary.dt$type[i])){
+      for(val in CnvSequences){
+        if(grepl(val,summary.dt$type[i])){
+          summary.dt$type[i]=gsub(val,basebutton,summary.dt$type[i])
+          summary.dt$type[i]=gsub("thisValue",val,summary.dt$type[i])
+          forAction=paste0("showImg('",g,".cnv')",";showImg('",g,".scnvtt')",";showHeaderSurface('scnvheader')")
+          summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+        }
+      }
+    }
+      if(grepl("fusion",summary.dt$type[i])){
+          summary.dt$type[i]=gsub("fusion",basebutton,summary.dt$type[i])
+          summary.dt$type[i]=gsub("thisValue","fusion",summary.dt$type[i])
+          
+          forAction=paste0("showImg('",fusions.gallery.dt[driver.name == g, driver.name],".fus')",";showImg('",g,".fust')",";showHeaderSurface('sfusheader')")
+          summary.dt$type[i]=gsub('openTabset',forAction,summary.dt$type[i])
+    }
+    summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
+    if(grepl("missense",summary.dt$type[i])){
+          summary.dt$type[i]=gsub("missense",basebutton,summary.dt$type[i])
+          summary.dt$type[i]=gsub("thisValue","missense",summary.dt$type[i])
+          forAction=paste0("showImg('",driver.mutations.dt[gene == g, gene],".snvt')",";showHeaderSurface('snvheader')")
+          summary.dt$type[i]=gsub("openTabset",forAction,summary.dt$type[i])
+    }
+    summary.dt$type[i]=gsub(", ,",",",summary.dt$type[i])
+  }
+  DT::datatable(summary.dt, escape=FALSE, options = list(scrollX = TRUE))
+}
+```
+
+<input type="button" value="Clear All" id="SCLBut" onclick="hideImgsSurface()" />
+
+```{r, cnv-surface-table, results = "asis", echo = FALSE}
+surface.genes.cnv = fread(file.path(params$outdir, "surface.genes.cnv.txt"))
+surface.genes.cnv$min_normalized_cn=unlist(lapply(surface.genes.cnv$min_normalized_cn,FUN=signif,digits=4))
+surface.genes.cnv$max_normalized_cn=unlist(lapply(surface.genes.cnv$max_normalized_cn,FUN=signif,digits=4))
+surface.genes.cnv$expr.quantile=unlist(lapply(surface.genes.cnv$expr.quantile,FUN=signif,digits=4))
+
+cat('<div class="divScroll">')
+cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SCNV_Table">')
+headerline='<tr id="scnvheader" style="display:none">'
+for(i in colnames(surface.genes.cnv)){
+  thisH=paste0('<th>',i,'</th>')
+  headerline=paste0(headerline,thisH)
+}
+cat(paste0(headerline,'</tr>'))
+
+
+for(i in 1:nrow(surface.genes.cnv)){
+  rLine=paste0('<tr class="odd" id="',surface.genes.cnv$gene[i],'.scnvtt" style="display:none">')
+  for(j in 1:ncol(driver.genes.cnv)){
+    thisL=paste0('<td>',as.vector(as.matrix(surface.genes.cnv)[i,j]),'</td>')
+    rLine=paste0(rLine,thisL)
+  }
+  cat(paste0(rLine,'</tr>'))
+}
+
+cat('</table>')
+cat('</div>')
+```
+
+```{r surface-cn-driver, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
+cn.gallery.dt = fread(file.path(params$outdir, "surface.cn.gallery.txt"))
 if (nrow(cn.gallery.dt) > 0) {
     for (g in cn.gallery.dt[, gene_name]) {
         cat(
             paste0('<p>',
-                    '<img','id="', cn.gallery.dt[gene_name == g, plot.fname],'cnv"','src="',
+                    '<img',' id="', g,'.cnv"',' src="',
                     cn.gallery.dt[gene_name == g, plot.fname],
                     '" style="display:none;" width="100%" />',
                     '</p>'
@@ -297,8 +719,126 @@ if (nrow(cn.gallery.dt) > 0) {
 }
 ```
 
-***
+```{r, expr-surface-table, results = "asis", echo = FALSE}
+surface.genes.expr = fread(file.path(params$outdir, "surface.genes.expr.txt"))
+if (surface.genes.expr[,.N] > 0){
+    surface.genes.expr$min_normalized_cn=unlist(lapply(surface.genes.expr$min_normalized_cn,FUN=signif,digits=4))
+    surface.genes.expr$max_normalized_cn=unlist(lapply(surface.genes.expr$max_normalized_cn,FUN=signif,digits=4))
+    surface.genes.expr$expr.quantile=unlist(lapply(surface.genes.expr$expr.quantile,FUN=signif,digits=4))
+    surface.genes.expr$expr = factor(surface.genes.expr$expr, c('over', 'under', ''))
+    surface.genes.expr$zscore=unlist(lapply(surface.genes.expr$zscore,FUN=signif,digits=4))
+    surface.genes.expr = surface.genes.expr[order(-abs(zscore))] #  sort by Z-score
+    surface.genes.expr = surface.genes.expr[order(expr, -min_cn, -abs(zscore))] # sort to show over expressed, and then underexpressed. Whithin over-expressed we show highest CN first and for each CN we sort by Z-score
+}
 
+cat('<div class="divScroll">')
+cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SEXP_Table">')
+headerline='<tr id="sexpheader" style="display:none">'
+for(i in colnames(surface.genes.expr)){
+  thisH=paste0('<th>',i,'</th>')
+  headerline=paste0(headerline,thisH)
+}
+cat(paste0(headerline,'</tr>'))
+
+
+for(i in 1:nrow(surface.genes.expr)){
+  rLine=paste0('<tr class="odd" id="',surface.genes.expr$gene[i],'.sexpt" style="display:none">')
+  for(j in 1:ncol(driver.genes.expr)){
+    thisL=paste0('<td>',as.vector(as.matrix(surface.genes.expr)[i,j]),'</td>')
+    rLine=paste0(rLine,thisL)
+  }
+  cat(paste0(rLine,'</tr>'))
+}
+
+cat('</table>')
+cat('</div>')
+```
+
+```{r, expr-surface, results = "asis", echo = FALSE}
+expr.hist.dt = fread(file.path(params$outdir, "surface.expr.histograms.txt"))
+cool.exp = fread(paste0(params$outdir, "/", "surface.rna.change.txt"))
+expr.slickr.dt = fread(file.path(params$outdir, "surface.expr.gallery.txt"))
+cat("\n")
+valid.genes = intersect(expr.hist.dt[, gene], expr.slickr.dt[, gene_name])
+for (g in valid.genes) {
+    expr.png.fn = expr.hist.dt[gene == g, expr.hist.fname][1]
+    gg.png.fn = expr.slickr.dt[gene_name == g, plot.fname][1]
+    if (file.exists(expr.png.fn) & file.exists(gg.png.fn)) {
+         cat(
+            paste0(
+                '<p float="left">',
+                '<img ', 'id="', g,'.expr"',
+                ' src="',
+            expr.png.fn,
+                '" style="display:none;" width="45%" />',
+                '<img', ' id="', g,'.gg"', ' src="',
+                gg.png.fn,
+                '" style="display:none;" width="45%" />',
+                '</p>'
+            )
+        )
+    	}	
+    }
+```
+
+```{r, fus-surface-table, results = "asis", echo = FALSE}
+driver.fusions.fname = file.path(params$outdir, "fusions.driver.txt")
+if (file.exists(driver.fusions.fname)) {
+   driver.fusions.dt = fread(driver.fusions.fname)
+   if (nrow(driver.fusions.dt)) {
+      driver.fusions.cols = intersect(c("genes", "walk.id", "driver.name", "chroms", "maxcn", "total.aa", "gene.pc", "ev.id", "ev.type"), colnames(driver.fusions.dt))
+      dat = driver.fusions.dt[, ..driver.fusions.cols]
+   }
+}
+
+summary.dt = fread(file.path(params$outdir, "summaryTable.txt"))
+driverGenes=summary.dt$gene
+driverGenes=sapply(driverGenes,function(x) gsub(".*/gene/","",x))
+driverGenes=sapply(driverGenes,function(x) sub(" target.*$","",x))
+
+if(any(fusions.gallery.dt$driver.name %in% driverGenes)){
+  cat('<div class="divScroll">')
+  cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SFUS_Table">')
+  headerline='<tr id="sfusheader" style="display:none">'
+  for(i in colnames(dat)){
+   thisH=paste0('<th>',i,'</th>')
+   headerline=paste0(headerline,thisH)
+  }
+  cat(paste0(headerline,'</tr>'))
+
+
+  for(i in 1:nrow(driver.genes.expr)){
+   rLine=paste0('<tr class="odd" id="',driver.fusions.dt$driver.name[i],'.fust" style="display:none">')
+    for(j in 1:ncol(driver.genes.expr)){
+     thisL=paste0('<td>',as.vector(as.matrix(dat)[i,j]),'</td>')
+     rLine=paste0(rLine,thisL)
+   }
+   cat(paste0(rLine,'</tr>'))
+  }
+
+  cat('</table>')
+  cat('</div>')
+}
+```
+
+```{r, fus-surface, results = "asis", echo = FALSE}
+if (nrow(fusions.gallery.dt) > 0) {
+        for (g in fusions.gallery.dt[, genes]) {
+          if(!(g %in% driverGenes)){
+            cat(
+                paste0('<p>',
+                       '<img', ' id="',paste0(fusions.gallery.dt[genes == g, driver.name],'.fus'),'" src="',
+                       fusions.gallery.dt[genes == g, plot.fname],
+                       '" style="display:none;" width="75%" />',
+                       '</a>',
+                       '</p>'
+                       )
+            )
+          }
+        }
+    }
+```
+***
 
 # Whole genome view {.tabset .tabset-fade .tabset-pills}
 
@@ -340,12 +880,58 @@ driver.genes.cnv$expr.quantile=unlist(lapply(driver.genes.cnv$expr.quantile,FUN=
 DT::datatable(driver.genes.cnv, options = list(scrollX = TRUE))
 ```
 
-
 `r paste('<div id="driver-cnv-gallery" class="section level2 tabset tabset-fade tabset-pills">')`
 ## Driver CNV gallery {.tabset .tabset-fade .tabset-pills}
 
 ```{r cn-tabset, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
 cn.gallery.dt = fread(file.path(params$outdir, "cn.gallery.txt"))
+if (nrow(cn.gallery.dt) > 0) {
+    cat("\n")
+    for (g in cn.gallery.dt[, gene_name]) {
+        cat("\n")
+        cat('<div id="',paste0(g,"-dcnv"),'" class="section level3">')
+        cat("\n")
+        cat("###", paste0(g, "<br>","\n"))
+        cat(
+            paste0('<p>',
+                    '<a href="',
+                    cn.gallery.dt[gene_name == g, plot.link],
+                    '">',
+                    '<img src="',
+                    cn.gallery.dt[gene_name == g, plot.fname],
+                    '" width="100%" />',
+                    '</a>',
+                    '</p>'
+            )
+        )   
+        cat("</div>")
+    }
+    cat('\n', '<br>', '\n\n')
+}
+```
+</div>
+
+***
+
+# Surface Copy number variants
+Copy number variations (CNVs) in oncogenes and tumor suppressor genes.
+
+
+```{r, surface-cnv-table, dropAboveExp=TRUE, results = "asis", max.width= "100%"}
+surface.genes.cnv = fread(file.path(params$outdir, "surface.genes.cnv.txt"))
+surface.genes.cnv$min_normalized_cn=unlist(lapply(surface.genes.cnv$min_normalized_cn,FUN=signif,digits=4))
+surface.genes.cnv$max_normalized_cn=unlist(lapply(surface.genes.cnv$max_normalized_cn,FUN=signif,digits=4))
+surface.genes.cnv$expr.quantile=unlist(lapply(surface.genes.cnv$expr.quantile,FUN=signif,digits=4))
+
+## surface.genes.cnv[cnv != ''] %>% kbl() %>% kable_styling() %>% scroll_box(width = "100%", height = "300px")
+DT::datatable(surface.genes.cnv, options = list(scrollX = TRUE))
+```
+
+`r paste('<div id="surface-cnv-gallery" class="section level2 tabset tabset-fade tabset-pills">')`
+## Surface CNV gallery {.tabset .tabset-fade .tabset-pills}
+
+```{r, surface-cn-tabset, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
+cn.gallery.dt = fread(file.path(params$outdir, "surface.cn.gallery.txt"))
 if (nrow(cn.gallery.dt) > 0) {
     cat("\n")
     for (g in cn.gallery.dt[, gene_name]) {
@@ -480,7 +1066,10 @@ driver.genes.expr = fread(file.path(params$outdir, "driver.genes.expr.txt"))
 driver.genes.expr$min_normalized_cn=unlist(lapply(driver.genes.expr$min_normalized_cn,FUN=signif,digits=4))
 driver.genes.expr$max_normalized_cn=unlist(lapply(driver.genes.expr$max_normalized_cn,FUN=signif,digits=4))
 driver.genes.expr$expr.quantile=unlist(lapply(driver.genes.expr$expr.quantile,FUN=signif,digits=4))
-driver.genes.expr$zscore=unlist(lapply(driver.genes.expr$zscore,FUN=signif,digits=4))
+if (driver.genes.expr[,.N] > 0){
+    driver.genes.expr$zscore=unlist(lapply(driver.genes.expr$zscore,FUN=signif,digits=4))
+    driver.genes.expr = driver.genes.expr[order(-abs(zscore))] #  sort by Z-score
+}
 
 if (nrow(driver.genes.expr)) {
     DT::datatable(driver.genes.expr, options = list(scrollX = TRUE))
@@ -518,6 +1107,85 @@ if (file.exists(waterfall.fn)) {
         cat("\n")
 
 	if (file.exists(expr.png.fn) & file.exists(gg.png.fn)) {
+        cat("\n")
+        cat('<div id="',paste0(g,"-eg"),'" class="section level3">')
+        cat("\n")
+        cat("###", cool.exp[gene == g, paste0(gene, " (", direction, ")", "<br>", "\n")])
+        cat("Z-Score:",signif(cool.exp[cool.exp$gene==g,]$zscore,digits=4))
+
+        cat(
+       	    paste0(
+       			'<p float="left">',
+       			'<img src="',
+		    expr.png.fn,
+       			'" width="45%" />',
+       			'<img src="',
+       			gg.png.fn,
+        		'" width="45%" />',
+       			'</p>'
+        	)
+        )
+	}
+        cat("</div>")
+    }
+       	cat('\n', '<br>', '\n\n')
+	} else {
+    cat("\n", "Gene expression not available", "\n")
+	}
+```
+</div>
+
+***
+# Over/under-expression of surface genes
+
+```{r, surface-expr-table,  dropAboveExp=TRUE, results = "asis", max.width= "100%"}
+surface.genes.expr = fread(file.path(params$outdir, "surface.genes.expr.txt"))
+if (surface.genes.expr[,.N] > 0){
+    surface.genes.expr$min_normalized_cn=unlist(lapply(surface.genes.expr$min_normalized_cn,FUN=signif,digits=4))
+    surface.genes.expr$max_normalized_cn=unlist(lapply(surface.genes.expr$max_normalized_cn,FUN=signif,digits=4))
+    surface.genes.expr$expr.quantile=unlist(lapply(surface.genes.expr$expr.quantile,FUN=signif,digits=4))
+    surface.genes.expr$expr = factor(surface.genes.expr$expr, c('over', 'under', ''))
+    surface.genes.expr$zscore=unlist(lapply(surface.genes.expr$zscore,FUN=signif,digits=4))
+    surface.genes.expr = surface.genes.expr[order(-abs(zscore))] #  sort by Z-score
+    surface.genes.expr = surface.genes.expr[order(expr, -min_cn, -abs(zscore))] # sort to show over expressed, and then underexpressed. Whithin over-expressed we show highest CN first and for each CN we sort by Z-score
+}
+
+if (nrow(surface.genes.expr)) {
+    DT::datatable(surface.genes.expr, options = list(scrollX = TRUE))
+} else {
+    cat("\n", "No overexpressed/underexpressed surface genes", "\n")
+}
+```
+
+## Waterfall plot - surface genes
+```{r, surface-waterfall, results = "asis", max.width = "100%"}
+waterfall.fn = file.path(params$outdir, "surface.waterfall.png")
+## cat(waterfall.fn)
+if (file.exists(waterfall.fn)) {
+   cat(paste0("![](", waterfall.fn, ")"), "\n")
+   ##knitr::include_graphics(waterfall.fn)
+   cat(paste0("\n", "Waterfall plot showing relative gene expression of surface genes", "\n"))
+} else {
+   cat("Waterfall plot with relative gene expression of surface genes is not available")
+}
+```
+
+`r paste('<div id="surface-expression-gallery" class="section level2 tabset tabset-fade tabset-pills">')`
+## Expression gallery - surface genes{.tabset .tabset-fade .tabset-pills}
+
+```{r surface_expression, dropBelow=TRUE, results = "asis", echo = FALSE, out.width= "100%", fig.align = "center", max.height = 800}
+ if (file.good(paste0(params$outdir, "/", "surface.rna.change.txt"))) {
+     expr.hist.dt = fread(file.path(params$outdir, "surface.expr.histograms.txt"))
+     cool.exp = fread(paste0(params$outdir, "/", "surface.rna.change.txt"))
+     expr.slickr.dt = fread(file.path(params$outdir, "surface.expr.gallery.txt"))
+     cat("\n")
+     valid.genes = intersect(expr.hist.dt[, gene], expr.slickr.dt[, gene_name])
+     for (g in valid.genes) {
+        expr.png.fn = expr.hist.dt[gene == g, expr.hist.fname][1]
+	gg.png.fn = expr.slickr.dt[gene_name == g, plot.fname][1]
+        cat("\n")
+
+	if (file.exists(expr.png.fn) & file.exists(gg.png.fn)) {
 	      cat("\n")
         cat('<div id="',paste0(g,"-eg"),'" class="section level3">')
         cat("\n")
@@ -541,7 +1209,7 @@ if (file.exists(waterfall.fn)) {
     } 
        	cat('\n', '<br>', '\n\n')
 	} else {
-    cat("\n", "Gene expression not available", "\n")
+    cat("\n", "Gene expression for surface genes not available", "\n")
 	}
 ```
 </div>
@@ -782,6 +1450,13 @@ driver.mutations.dt[is.na(driver.mutations.dt$Tier),]$Tier="Undefined"
 DT::datatable(driver.mutations.dt, options = list(scrollX = TRUE))
 ```
 
+# Driver Germline SNVs/indels
+
+```{r, driver-germline-snv-indel, dropAboveExp=TRUE, dropBelow=TRUE, results = "asis", echo = FALSE, out.width = "100%", fig.align = "center"}
+driver.germline.mutations.dt = fread(file.path(params$outdir, "driver.germline.mutations.txt"))
+DT::datatable(driver.germline.mutations.dt, options = list(scrollX = TRUE))
+```
+
 # SNV signatures {.tabset .tabset-fade .tabset-pills}
 Fitting <a href="https://cancer.sanger.ac.uk/signatures/sbs/">COSMIC signatures</a> to the whole genome mutation profiles of
 this sample we obtain the following active SNV mutation signatures:
@@ -971,8 +1646,8 @@ if (file.good(file.path(params$outdir, "allele.scatter.png"))){
 if (file.good(file.path(params$outdir, "deconv_results.txt"))){
     cat(paste0("This is a deconvolution of this sample's TPM Transcriptome using the ",readRDS(file.path(params$outdir, "cmd.args.rds"))$deconv," algorithm."))
     deconv_results.dt = fread(file.path(params$outdir, "deconv_results.txt"))
-    #colnames(deconv_results.dt)=c("Cell_Type","Deconv_Value")
-    #deconv_results.dt$Deconv_Value=unlist(lapply(deconv_results.dt$Deconv_Value,FUN=signif,digits=4))
+    colnames(deconv_results.dt)=c("Cell_Type","Deconv_Value")
+    deconv_results.dt$Deconv_Value=unlist(lapply(deconv_results.dt$Deconv_Value,FUN=signif,digits=4))
     DT::datatable(deconv_results.dt, options = list(scrollX = TRUE))
 }
 ```
