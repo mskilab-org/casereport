@@ -371,6 +371,11 @@ cn.plot = function(drivers.fname = NULL,
 
         ## form gencode gTrack for just over/underexpressed genes
         drivers.gt.data = gngt@data[[1]][names(gngt@data[[1]]) %in% drivers.dt[, gene_name]]
+        # check here to see if there are no matches and drop from drivers.dt table
+        if (any(drivers.dt[, gene_name] %in% names(gngt@data[[1]]) == FALSE)){
+          drivers.dt = drivers.dt[-which(drivers.dt[, gene_name] %in% names(gngt@data[[1]]) == FALSE),]
+          drivers.gr = drivers.gr[-which(drivers.gr$gene_name %in% names(gngt@data[[1]]) == FALSE)]
+        }
         drivers.gt = gngt
         drivers.gt@data[[1]] = drivers.gt.data
         drivers.gt$labels.suppress = TRUE
@@ -411,8 +416,8 @@ cn.plot = function(drivers.fname = NULL,
         }
         drivers.gr$win = win.gr.other$win ## copy over plot window possibly return vector in the future
         ## make one plot per range in drivers gr
-        saveRDS(win.gr,"~/win.gr.rds")
-        print(drivers.dt)
+        #saveRDS(win.gr,"~/win.gr.rds") #??
+        #print(drivers.dt)
         pts = lapply(1:length(drivers.gr),
                      function(ix) {
                          print(win.gr[[ix]])
