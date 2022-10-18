@@ -931,8 +931,9 @@ get_gene_copy_numbers = function(gg, gene_ranges,
         ngr = gr.sub(ngr)
         gene_ranges = gr.sub(gene_ranges)
     }
-    if (verbose)
+    if (verbose){
         GRanges_are_compatible = check_GRanges_compatibility(ngr, gene_ranges, 'gGraph segments', 'genes')
+    }
     if (is.character(nseg)){
         if (file.exists(nseg) & endsWith(nseg, '.rds')){
             nseg = readRDS(nseg)
