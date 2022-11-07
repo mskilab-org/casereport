@@ -371,6 +371,8 @@ cn.plot = function(drivers.fname = NULL,
 
         ## form gencode gTrack for just over/underexpressed genes
         drivers.gt.data = gngt@data[[1]][names(gngt@data[[1]]) %in% drivers.dt[, gene_name]]
+        # another check here to drop duplicated gene names
+        
         # check here to see if there are no matches and drop from drivers.dt table
         if (any(drivers.dt[, gene_name] %in% names(gngt@data[[1]]) == FALSE)){
           drivers.dt = drivers.dt[-which(drivers.dt[, gene_name] %in% names(gngt@data[[1]]) == FALSE),]
@@ -420,6 +422,7 @@ cn.plot = function(drivers.fname = NULL,
         #print(drivers.dt)
         pts = lapply(1:length(drivers.gr),
                      function(ix) {
+                         print(paste0(ix, "value"))
                          print(win.gr[[ix]])
                          if (!file.exists(drivers.dt$plot.fname[ix]) | overwrite){
                              ## prepare window
@@ -695,7 +698,9 @@ ridge.plot = function(complex.fname = NULL,
         this.burden.dt = data.table(type = ev.types, burden = 0)
     } else {
         ev.counts = table(this.complex$meta$events$type)
-        this.burden.dt = data.table(type = ev.types, burden = ifelse(ev.types %in% names(ev.counts), ev.counts[ev.types], 0))
+        this.burden.dt = data.table(type = ev.types, burden = ifelse(ev.types %in% names(ev.counts),
+                                                                     ev.counts[ev.types],
+                                                                     0))
     }
 
     ## annotate each with a percentile
