@@ -119,6 +119,7 @@ annotate_germline_mutations = function(germline_snpeff_snv_bcf, pathogenic = NUL
             germline_snpeff_snv_bcf = temp_vcf
         }
         som = gr.nochr(parsesnpeff(germline_snpeff_snv_bcf, geno = "GT"))
+        message(paste0("som nrows:", NROW(som)))
         if (NROW(som) == 0) {
             germ.mut = data.table(pair = character(0),
                                   gene = character(0),
