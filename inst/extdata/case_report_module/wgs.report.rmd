@@ -606,23 +606,27 @@ driver.mutations.dt$Tier=as.character(driver.mutations.dt$Tier)
 driver.mutations.dt[is.na(driver.mutations.dt$Tier),]$Tier="Undefined"
 cat('<table class="display dataTable no-footer table table-condensed" aria-describedby="SNV_Table">')
 headerline='<tr id="snvheader" style="display:none">'
-for(i in colnames(driver.mutations.dt)){
-  thisH=paste0('<th>',i,'</th>')
-  headerline=paste0(headerline,thisH)
-}
-cat(paste0(headerline,'</tr>'))
-
-
-for(i in 1:nrow(driver.mutations.dt)){
-  rLine=paste0('<tr class="odd" id="',driver.mutations.dt$gene[i],'.snvt" style="display:none">')
-  for(j in 1:ncol(driver.mutations.dt)){
-    thisL=paste0('<td>',as.vector(as.matrix(driver.mutations.dt)[i,j]),'</td>')
-    rLine=paste0(rLine,thisL)
+if (nrow(driver.mutations.dt) > 0){
+  for(i in colnames(driver.mutations.dt)){
+    thisH=paste0('<th>',i,'</th>')
+    headerline=paste0(headerline,thisH)
   }
-  cat(paste0(rLine,'</tr>'))
+  cat(paste0(headerline,'</tr>'))
+  
+  
+  for(i in 1:nrow(driver.mutations.dt)){
+    rLine=paste0('<tr class="odd" id="',driver.mutations.dt$gene[i],'.snvt" style="display:none">')
+    for(j in 1:ncol(driver.mutations.dt)){
+      thisL=paste0('<td>',as.vector(as.matrix(driver.mutations.dt)[i,j]),'</td>')
+      rLine=paste0(rLine,thisL)
+    }
+    cat(paste0(rLine,'</tr>'))
+  }
+  
+  cat('</table>')
+} else{
+  cat('no driver mutations found. empty driver mutations table.')
 }
-
-cat('</table>')
 ```
 ***
 
